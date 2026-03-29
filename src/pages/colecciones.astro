@@ -1,0 +1,102 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+import Hero from '../components/sections/Hero.astro';
+---
+
+<Layout title="Forever One | Colecciones 2026">
+    <Header />
+    <main>
+        <Hero 
+            title="Temporada"
+            highlight="2026"
+            subtitle="atemporalidad y sofisticación"
+            tagline="Línea Editorial"
+            image="https://images.unsplash.com/photo-1590001155093-a3c66ab0c3ff?q=80&w=2000"
+            showButton={false}
+        />
+
+        <!-- Editorial Gallery -->
+        <section id="editorial-gallery" class="py-24 bg-white overflow-hidden w-full">
+            <div class="max-w-[1800px] mx-auto px-6 md:px-12">
+                <div class="mb-20 text-center md:text-left" data-aos="fade-right">
+                    <h2 class="text-gold font-bold tracking-[0.6em] uppercase text-[10px] mb-4">La Curaduría</h2>
+                    <p class="text-3xl md:text-5xl font-serif text-[#1A1A1A] font-black italic pr-4">Piezas que narran <span class="metal-gold-text">una historia</span></p>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-12 gap-8 items-start">
+                    <div class="md:col-span-8 group relative overflow-hidden bg-[#F9F8F6]" data-aos="fade-up">
+                        <div class="aspect-[16/9] md:aspect-[4/5] overflow-hidden">
+                            <img src="https://images.unsplash.com/photo-1483985988355-763728e1935b?q=80&w=1600" 
+                                 alt="Colección Mujer" 
+                                 class="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105">
+                        </div>
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-60"></div>
+                        <div class="absolute bottom-10 left-10 z-10 drop-shadow-2xl">
+                            <h3 class="text-white text-3xl md:text-6xl font-serif italic font-black tracking-tighter pr-4">Women's RTW</h3>
+                            <p class="text-white font-bold text-[10px] md:text-xs uppercase tracking-[0.5em] mt-3 opacity-90">Elegancia Estructural</p>
+                        </div>
+                    </div>
+
+                    <div class="md:col-span-4 space-y-8">
+                        <div class="group relative overflow-hidden bg-[#F9F8F6]" data-aos="fade-up" data-aos-delay="200">
+                            <div class="aspect-[3/4] overflow-hidden">
+                                <img src="https://images.unsplash.com/photo-1514090458221-65bb69cf63e6?q=80&w=800" 
+                                     alt="Colección Kids" 
+                                     class="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105">
+                            </div>
+                            <div class="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500 flex items-center justify-center">
+                                <span class="text-white border border-white px-6 py-2 text-[10px] uppercase tracking-[0.3em] backdrop-blur-sm">Kids Luxury</span>
+                            </div>
+                        </div>
+                        <div class="hidden md:block pt-4 border-l border-gold/30 pl-6" data-aos="fade-left">
+                            <p class="text-slate-400 text-sm font-light italic leading-relaxed pr-2">"La moda infantil reimaginada para los herederos del estilo."</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Details Section -->
+        <section id="details-zoom" class="py-24 md:py-32 bg-[#F9F8F6] w-full border-t border-gold/10 overflow-hidden">
+            <div class="max-w-7xl mx-auto px-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-20 items-center">
+                    <div data-aos="fade-right">
+                        <span class="text-gold font-bold tracking-[0.5em] uppercase text-[10px] mb-4 block">Craftsmanship</span>
+                        <h4 class="text-4xl md:text-6xl font-serif text-[#1A1A1A] font-black italic mb-10 leading-tight pr-4">La Excelencia en <br> <span class="metal-gold-text">cada Milímetro</span></h4>
+                        <div class="space-y-12">
+                            <div class="flex gap-8 group">
+                                <div class="text-gold font-serif text-4xl italic opacity-30 group-hover:opacity-100 transition-opacity pr-2">01</div>
+                                <div>
+                                    <p class="text-[#1A1A1A] font-bold text-xs md:text-sm uppercase tracking-widest mb-3">Herrajes en Oro de 18K</p>
+                                    <p class="text-slate-500 text-sm md:text-base font-light italic leading-relaxed pr-2">Cada cierre es bañado en una aleación de oro de alta resistencia.</p>
+                                </div>
+                            </div>
+                            <!-- More details... -->
+                        </div>
+                    </div>
+                    <div class="relative" data-aos="fade-left">
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="aspect-square overflow-hidden shadow-2xl border border-white/50 group">
+                                <img src="https://images.unsplash.com/photo-1582738411706-bfc8e691d1c2?q=80&w=800" class="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-150">
+                            </div>
+                            <div class="aspect-square overflow-hidden shadow-2xl border border-white/50 mt-12 group">
+                                <img src="https://images.unsplash.com/photo-1555529771-7888783a18d3?q=80&w=800" class="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-150">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+    <Footer />
+</Layout>
+
+<style>
+    @keyframes kenBurns {
+        0% { transform: scale(1) translate(0%, 0%); }
+        100% { transform: scale(1.1) translate(-2%, -1%); }
+    }
+    .animate-kenBurns { animation: kenBurns 25s ease-in-out infinite alternate; }
+</style>

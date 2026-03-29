@@ -1,0 +1,73 @@
+---
+const base = import.meta.env.BASE_URL;
+---
+
+<section id="coleccion" class="py-24 bg-white overflow-hidden w-full">
+    <div class="max-w-7xl mx-auto px-6">
+        
+        <div class="flex flex-col md:flex-row md:items-end justify-between mb-16 gap-8">
+            <div data-aos="fade-up">
+                <h3 class="text-gold font-bold tracking-[0.5em] uppercase text-[10px] mb-4">Explorar Colecciones</h3>
+                <h4 class="text-4xl md:text-6xl font-serif text-black font-black leading-none tracking-tighter italic pr-4">
+                    Curaduría de <span class="text-slate-400">Estilo</span>
+                </h4>
+            </div>
+            <p class="text-slate-500 max-w-sm text-sm md:text-base font-light italic pr-2" data-aos="fade-up" data-aos-delay="200">
+                Cuatro pilares de distinción diseñados para el cliente que no acepta menos que la perfection.
+            </p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-12 gap-6 h-auto">
+            
+            <div class="md:col-span-8 relative group overflow-hidden h-80 md:h-[700px]" data-aos="fade-up">
+                <img src="https://images.unsplash.com/photo-1590602847861-f357a9332bbc?auto=format&fit=crop&q=80&w=1200" 
+                     alt="Colección Resort" 
+                     class="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110">
+                <div class="absolute inset-0 bg-black/30 group-hover:bg-black/10 transition-colors duration-500"></div>
+                <div class="absolute bottom-8 left-8 text-white">
+                    <span class="text-[9px] uppercase tracking-[0.4em] mb-2 block font-bold">Línea de Verano</span>
+                    <h5 class="text-3xl md:text-5xl font-serif font-black italic pr-2">Resort</h5>
+                    <a href={`${base}/catalogos`} class="mt-4 inline-block text-[9px] uppercase tracking-widest border-b border-white/5 hover:border-gold transition-colors">Ver Catálogo</a>
+                </div>
+            </div>
+
+            <div class="md:col-span-4 flex flex-col gap-6">
+                <div class="h-80 md:h-1/2 relative group overflow-hidden" data-aos="fade-up" data-aos-delay="200">
+                    <img src="https://images.unsplash.com/photo-1434389677669-e08b4cac3105?auto=format&fit=crop&q=80&w=800" class="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110">
+                    <div class="absolute inset-0 bg-black/40 flex flex-col justify-center items-center text-center p-6">
+                        <h5 class="text-2xl font-serif font-black text-white italic pr-2">Premium</h5>
+                        <div class="w-8 h-px bg-gold mt-2 transition-all group-hover:w-16"></div>
+                    </div>
+                </div>
+                <div class="h-80 md:h-1/2 relative group overflow-hidden" data-aos="fade-up" data-aos-delay="400">
+                    <img src="https://images.unsplash.com/photo-1584917865442-de89df76afd3?auto=format&fit=crop&q=80&w=800" class="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110">
+                    <div class="absolute inset-0 bg-black/40 flex flex-col justify-center items-center text-center p-6">
+                        <h5 class="text-2xl font-serif font-black text-white italic pr-2">Luxe</h5>
+                        <p class="text-[9px] uppercase tracking-widest text-gold mt-2">Accesorios de Élite</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="md:col-span-12 mt-4 relative group overflow-hidden h-auto md:h-56 bg-black" data-aos="fade-up" data-aos-delay="600">
+                <div class="absolute right-0 top-1/2 -translate-y-1/2 text-[10rem] font-serif font-black text-white/5 pointer-events-none">FO1</div>
+                
+                <div class="relative h-full flex flex-col md:flex-row items-center justify-between px-10 py-12 md:py-0 gap-8 text-center md:text-left">
+                    <div class="space-y-2">
+                        <span class="text-gold font-bold tracking-[0.4em] uppercase text-[9px] block">Asesoría Global</span>
+                        <h5 class="text-3xl md:text-4xl font-serif font-black text-white italic pr-4">Shopping <span class="metal-gold-text">Concierge</span></h5>
+                    </div>
+
+                    <p class="text-slate-400 text-xs max-w-xs font-light italic leading-relaxed pr-2">
+                        Amazon, Alibaba y Shein gestionados por expertos para su total tranquilidad.
+                    </p>
+
+                    <div class="pb-4 md:pb-0">
+                        <a href={`${base}/asesorias`} class="inline-block px-10 py-4 border border-gold/50 text-gold text-[10px] uppercase tracking-[0.3em] font-black hover:bg-gold hover:text-black transition-all">
+                            Explorar Servicio
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
