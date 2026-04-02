@@ -13,16 +13,16 @@ const fallbackProducts = [
 ];
 ---
 
-<Layout title="Forever One | Ropa & Colecciones">
+<Layout title="Forever One | Prendas & Colecciones">
     <Header />
     
     <main id="ropas-page" class="relative">
         
         <Hero 
-            title="Santuario"
-            highlight="de Estilo"
-            subtitle="curaduría de alta gama"
-            tagline="Forever One Boutique"
+            title="Viste con"
+            highlight="Distinción"
+            subtitle="selección de prendas de calidad experta"
+            tagline="Nuestros Productos"
             image="https://images.unsplash.com/photo-1441984904996-e0b6ba687e04?q=80&w=2000"
             showButton={false}
         />
@@ -38,7 +38,7 @@ const fallbackProducts = [
                             <input 
                                 type="text" 
                                 id="search-input"
-                                placeholder="Buscar en la colección..." 
+                                placeholder="Buscar su próxima prenda..." 
                                 oninput="window.__setSearch(this.value)"
                                 class="w-full bg-white text-black border border-gold/20 py-5 pl-14 pr-6 text-xs uppercase tracking-[0.3em] font-black italic outline-none transition-all duration-500 focus:border-gold focus:shadow-[0_0_20px_rgba(184,134,11,0.1)] placeholder:text-slate-300"
                             />
@@ -91,7 +91,7 @@ const fallbackProducts = [
                 <!-- Cart Header -->
                 <div class="p-8 bg-black flex justify-between items-center shrink-0">
                     <div class="flex items-center gap-6">
-                        <img src={base + "/assets/Foreverone.png"} class="h-14 brightness-0 invert object-contain" alt="Forever One Logo">
+                        <img src={`${base}/logo_circular.png`} class="h-14 brightness-0 invert object-contain" alt="Forever One Logo">
                         <div class="border-l border-yellow-600/30 pl-6">
                             <h2 class="text-white text-xl font-serif font-black italic tracking-wider">MI PEDIDO</h2>
                             <p class="text-yellow-600 text-[8px] uppercase tracking-[0.4em] font-bold">Resumen Exclusivo</p>

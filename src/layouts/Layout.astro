@@ -16,7 +16,7 @@ const { title, description = "Forever One | Luxury Experience - High-End Fashion
 		<meta charset="UTF-8" />
 		<meta name="description" content={description} />
 		<meta name="viewport" content="width=device-width" />
-		<link rel="icon" type="image/png" href={`${import.meta.env.BASE_URL}/faviconf.png`} />
+		<link rel="icon" type="image/png" href={`${import.meta.env.BASE_URL}/logo_circular.png`} />
 		<meta name="generator" content={Astro.generator} />
 		<title>{title}</title>
 		
@@ -63,7 +63,7 @@ const { title, description = "Forever One | Luxury Experience - High-End Fashion
 			#preloader {
 				position: fixed;
 				inset: 0;
-				background: black;
+				background: white;
 				z-index: 10000;
 				display: flex;
 				justify-content: center;
@@ -74,15 +74,17 @@ const { title, description = "Forever One | Luxury Experience - High-End Fashion
 				opacity: 0;
 				visibility: hidden;
 			}
-			.loader-img {
-				width: 250px;
-				height: auto;
-				filter: brightness(0) invert(1);
-				animation: pulse 2.5s infinite ease-in-out;
+			.loader-logo {
+				width: 180px;
+				height: 180px;
+				animation: heartPulse 3s infinite ease-in-out;
 			}
-			@keyframes pulse {
-				0%, 100% { opacity: 0.3; transform: scale(0.95); }
-				50% { opacity: 1; transform: scale(1); }
+			@keyframes heartPulse {
+				0% { transform: scale(1); opacity: 0.8; }
+				15% { transform: scale(1.1); opacity: 1; }
+				30% { transform: scale(1); opacity: 0.8; }
+				45% { transform: scale(1.1); opacity: 1; }
+				100% { transform: scale(1); opacity: 0.8; }
 			}
 		</style>
 		
@@ -94,7 +96,9 @@ const { title, description = "Forever One | Luxury Experience - High-End Fashion
 		@scroll.window="atTop = (window.pageYOffset > 50 ? false : true)">
 
 		<div id="preloader">
-			<img src={`${import.meta.env.BASE_URL}/assets/Foreverone.png`} alt="Forever One Logo" class="loader-img">
+			<div class="loader-logo metal-gold-bg shadow-[0_0_40px_rgba(184,134,11,0.2)]"
+				 style={`-webkit-mask-image: url(${import.meta.env.BASE_URL}/logo_circular.png); -webkit-mask-size: contain; -webkit-mask-repeat: no-repeat; -webkit-mask-position: center; mask-image: url(${import.meta.env.BASE_URL}/logo_circular.png); mask-size: contain; mask-repeat: no-repeat; mask-position: center;`}>
+			</div>
 		</div>
 
 		<div class="cursor-dot hidden md:block" id="cursor-dot"></div>
@@ -165,6 +169,12 @@ const { title, description = "Forever One | Luxury Experience - High-End Fashion
 		animation: shine 6s linear infinite;
 	}
 
+	.metal-gold-bg {
+		background: linear-gradient(135deg, #8B6508 0%, #B8860B 25%, #f3cf7a 50%, #B8860B 75%, #8B6508 100%);
+		background-size: 200% auto;
+		animation: shine 6s linear infinite;
+	}
+
 	@keyframes shine { to { background-position: 200% center; } }
 
 	.glass-nav {
@@ -174,10 +184,10 @@ const { title, description = "Forever One | Luxury Experience - High-End Fashion
 	}
 
 	.nav-link {
-		@apply uppercase tracking-[0.5em] text-white/80 transition-all duration-300 relative;
+		@apply uppercase tracking-[0.2em] text-white transition-all duration-300 relative;
 		font-family: 'Montserrat', sans-serif;
 		font-size: 8px;
-		font-weight: 900;
+		font-weight: 400;
 	}
 	@media (min-width: 768px) {
 		.nav-link { font-size: 11px; }
