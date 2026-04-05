@@ -39,6 +39,15 @@ const stats = {
   deliveryEnabled,
   deliveryZones
 };
+
+// Iconos SVG de Alta Definición (Gold Plated Style)
+const Icons = {
+  Garment: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20.38 3.46L16 2a4 4 0 01-8 0L3.62 3.46a2 2 0 00-1.62 1.96V10a6 6 0 0012 0V5.41"/><path d="M12 21V10"/></svg>`,
+  Shipping: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M16 16h6v4a2 2 0 01-2 2H4a2 2 0 01-2-2v-4h6"/><path d="M20 16v-4a2 2 0 00-2-2H6a2 2 0 00-2 2v4"/><path d="M12 16V10"/><rect x="8" y="2" width="8" height="4" rx="1"/></svg>`,
+  Layers: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>`,
+  Alert: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0zM12 9v4M12 17h.01"/></svg>`,
+  Plus: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>`
+};
 ---
 
 <AdminLayout title="Panel Principal" activeNav="dashboard" user={{ email: user.email || '' }}>
@@ -55,25 +64,17 @@ const stats = {
     }
     @media (min-width: 768px) { .welcome-banner { padding: 2.5rem 3rem; margin-bottom: 2.5rem; } }
 
-    @media (max-width: 768px) {
-      .welcome-banner {
-        min-height: 320px;
-        border-radius: 20px;
-        padding: 2rem 1.5rem;
-        padding-bottom: calc(2rem + env(safe-area-inset-bottom));
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-      }
-      .welcome-banner::before {
-        font-size: 8rem;
+    .welcome-banner::before {
+        content: 'FOREVER';
+        position: absolute;
+        bottom: -2rem;
         right: -1rem;
-        bottom: 2rem;
-        top: auto;
-        transform: none;
-      }
+        font-family: 'Playfair Display', serif;
+        font-size: 8rem;
+        color: rgba(184, 134, 11, 0.05);
+        font-style: italic;
+        pointer-events: none;
     }
-    @media (min-width: 768px) { .welcome-banner::before { font-size: 6rem; right: 2rem; } }
 
     .welcome-label {
       font-size: 9px;
@@ -111,7 +112,7 @@ const stats = {
       letter-spacing: 0.05em;
     }
 
-    /* Stats */
+    /* Stats Grid Refined */
     .stats-grid {
       display: grid;
       grid-template-columns: repeat(2, 1fr);
@@ -123,357 +124,56 @@ const stats = {
     .stat-card {
       background: white;
       border: 1px solid rgba(184,134,11,0.08);
-      border-radius: 12px;
+      border-radius: 16px;
       padding: 1.25rem;
       display: flex;
       flex-direction: column;
       position: relative;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+      box-shadow: 0 4px 15px rgba(0,0,0,0.03);
       transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
-    @media (max-width: 768px) {
-      .stat-card {
-        border-radius: 20px;
-        padding: 1.5rem;
-      }
-      .stat-value {
-        font-size: 2.25rem;
-      }
-    }
+    
+    .stat-card:hover { transform: translateY(-5px); box-shadow: 0 12px 25px rgba(0,0,0,0.05); border-color: rgba(184,134,11,0.2); }
 
-    .stat-label {
-      font-size: 9px;
-      letter-spacing: 0.25em;
-      text-transform: uppercase;
-      color: #999;
-      font-weight: 700;
-      margin-bottom: 4px;
-    }
+    .stat-label { font-size: 8px; letter-spacing: 0.2em; text-transform: uppercase; color: #999; font-weight: 700; margin-bottom: 4px; }
+    .stat-value { font-family: 'Playfair Display', serif; font-size: 1.75rem; font-weight: 900; font-style: italic; color: #111; line-height: 1; }
+    @media (min-width: 768px) { .stat-value { font-size: 2.25rem; } }
+    .stat-meta { font-size: 9px; color: #B8860B; font-weight: 600; margin-top: 8px; opacity: 0.7; }
+    .stat-icon-box { width: 40px; height: 40px; background: #fafafa; border: 1px solid #f0f0f0; border-radius: 12px; display: flex; align-items: center; justify-content: center; margin-bottom: 12px; color: #B8860B; }
+    .stat-icon-box :global(svg) { width: 20px; height: 20px; filter: drop-shadow(0 2px 4px rgba(184,134,11,0.2)); }
 
-    .stat-value {
-      font-family: 'Playfair Display', serif;
-      font-size: 1.75rem;
-      font-weight: 900;
-      font-style: italic;
-      color: #111;
-      line-height: 1.2;
-    }
-    @media (min-width: 768px) { .stat-value { font-size: 2.5rem; } }
+    /* Rate Card */
+    .rate-card { background: #0a0a0a; border: 1px solid rgba(184,134,11,0.15); border-radius: 16px; padding: 1.5rem; margin-bottom: 2rem; display: flex; flex-direction: column; gap: 1.5rem; position: relative; overflow: hidden; box-shadow: 0 15px 40px rgba(0,0,0,0.15); }
+    @media (min-width: 768px) { .rate-card { flex-direction: row; justify-content: space-between; align-items: center; padding: 2.5rem 3rem; } }
+    .rate-info h3 { font-size: 8px; letter-spacing: 0.4em; text-transform: uppercase; color: #B8860B; margin-bottom: 0.75rem; font-weight: 800; }
+    .rate-value { font-family: 'Playfair Display', serif; font-size: 2.75rem; font-weight: 700; font-style: italic; color: white; line-height: 1; }
+    .rate-value span { font-size: 1rem; color: rgba(255,255,255,0.3); margin-right: 0.75rem; font-weight: 400; }
 
-    .stat-meta {
-      font-size: 10px;
-      color: #B8860B;
-      font-weight: 600;
-      margin-top: 4px;
-    }
+    .sync-btn { background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%); border: 1px solid rgba(184,134,11,0.3); color: #f3cf7a; padding: 0.75rem 2rem; font-size: 9px; letter-spacing: 0.25em; text-transform: uppercase; font-weight: 800; border-radius: 10px; cursor: pointer; transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1); width: 100%; }
+    @media (min-width: 768px) { .sync-btn { width: auto; padding: 1rem 2.5rem; } }
+    .sync-btn:hover { background: #B8860B; color: #000; border-color: #f3cf7a; transform: translateY(-2px); box-shadow: 0 10px 20px rgba(184,134,11,0.2); }
 
-    .stat-icon-box {
-      width: 32px; height: 32px;
-      background: rgba(184,134,11,0.06);
-      border-radius: 8px;
-      display: flex; align-items: center; justify-content: center;
-      margin-bottom: 12px;
-      font-size: 16px;
-    }
+    .section-label { font-size: 8px; letter-spacing: 0.5em; text-transform: uppercase; color: #bbb; margin: 2.5rem 0 1.25rem; font-weight: 700; display: flex; align-items: center; gap: 1rem; }
+    .section-label::after { content: ''; flex: 1; height: 1px; background: #f0f0f0; }
 
-    /* Quick Actions */
-    .section-label {
-      font-size: 8px;
-      letter-spacing: 0.5em;
-      text-transform: uppercase;
-      color: #bbb;
-      margin-bottom: 1.25rem;
-      font-weight: 600;
-    }
-
-    .actions-grid {
-      display: grid;
-      grid-template-columns: 1fr;
-      gap: 1rem;
-    }
+    .actions-grid { display: grid; grid-template-columns: repeat(1, 1fr); gap: 1rem; }
     @media (min-width: 640px) { .actions-grid { grid-template-columns: repeat(2, 1fr); } }
     @media (min-width: 1024px) { .actions-grid { grid-template-columns: repeat(3, 1fr); gap: 1.25rem; } }
-
-    .action-card {
-      background: white;
-      border: 1px solid rgba(0,0,0,0.05);
-      border-radius: 12px;
-      padding: 1.5rem;
-      display: flex;
-      align-items: center;
-      gap: 1.25rem;
-      text-decoration: none;
-      color: inherit;
-      transition: all 0.3s;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.02);
-    }
-
-    @media (max-width: 768px) {
-      .action-card {
-        border-radius: 20px;
-        padding: 1.75rem 1.5rem;
-        min-height: 80px;
-      }
-      .action-icon {
-        width: 54px; height: 54px;
-        border-radius: 14px;
-      }
-      .action-name {
-        font-size: 13px;
-      }
-    }
-
-    .action-icon {
-      font-size: 1.5rem;
-      width: 48px; height: 48px;
-      background: #fdfaf0;
-      border-radius: 10px;
-      display: flex; align-items: center; justify-content: center;
-      color: #B8860B;
-    }
-
-    .action-info { flex: 1; }
+    .action-card { background: white; border: 1px solid rgba(0,0,0,0.04); border-radius: 16px; padding: 1.5rem; display: flex; align-items: center; gap: 1.25rem; text-decoration: none; color: inherit; transition: all 0.3s; box-shadow: 0 4px 10px rgba(0,0,0,0.02); }
+    .action-card:hover { border-color: #B8860B; transform: translateY(-3px); box-shadow: 0 8px 20px rgba(0,0,0,0.05); }
+    .action-icon { width: 52px; height: 52px; background: #fdfaf0; border-radius: 14px; display: flex; align-items: center; justify-content: center; color: #B8860B; }
+    .action-icon :global(svg) { width: 22px; height: 22px; }
     .action-name { font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: #111; font-weight: 800; margin-bottom: 2px; }
     .action-desc { font-size: 10px; color: #aaa; }
 
-    .status-bar {
-      background: #fdfaf0;
-      border: 1px solid rgba(184,134,11,0.15);
-      border-radius: 10px;
-      padding: 0.875rem 1.25rem;
-      font-size: 10px;
-      color: #8B6508;
-      font-weight: 600;
-      letter-spacing: 0.02em;
-      margin-top: 3rem;
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-    }
-
-    .status-dot {
-      width: 6px;
-      height: 6px;
-      border-radius: 50%;
-      background: #B8860B;
-      animation: pulse 2s ease infinite;
-    }
-
-    @keyframes pulse {
-      0%, 100% { opacity: 1; transform: scale(1); }
-      50% { opacity: 0.5; transform: scale(0.8); }
-    }
-
-    /* Rate Card Special */
-    .rate-card {
-      background: #111;
-      border: 1px solid rgba(184,134,11,0.2);
-      border-radius: 12px;
-      padding: 1.5rem;
-      margin-bottom: 2rem;
-      display: flex;
-      flex-direction: column;
-      gap: 1.25rem;
-      position: relative;
-      overflow: hidden;
-      box-shadow: 0 12px 32px rgba(0,0,0,0.12);
-    }
-    @media (min-width: 768px) { .rate-card { flex-direction: row; justify-content: space-between; align-items: center; padding: 2rem; } }
-
-    @media (max-width: 768px) {
-      .rate-card {
-        border-radius: 20px;
-        min-height: 300px;
-        justify-content: center;
-        padding: 2rem 1.5rem;
-      }
-      .rate-card::after {
-        font-size: 8rem;
-        opacity: 0.08;
-      }
-    }
-    @media (min-width: 768px) { .rate-card::after { font-size: 6rem; } }
-
-    .rate-info h3 {
-      font-size: 8px;
-      letter-spacing: 0.4em;
-      text-transform: uppercase;
-      color: #B8860B;
-      margin-bottom: 0.5rem;
-      font-weight: 700;
-    }
-
-    .rate-value {
-      font-family: 'Playfair Display', serif;
-      font-size: 2.5rem;
-      font-weight: 700;
-      font-style: italic;
-      color: white;
-      line-height: 1;
-    }
-
-    .rate-value span {
-      font-size: 1rem;
-      color: rgba(255,255,255,0.4);
-      margin-right: 0.5rem;
-      font-weight: 400;
-    }
-
-    .sync-btn {
-      background: #0a0a0a;
-      border: 1px solid rgba(184,134,11,0.4);
-      color: #f3cf7a;
-      padding: 0.875rem 1.5rem;
-      font-size: 9px;
-      letter-spacing: 0.2em;
-      text-transform: uppercase;
-      font-weight: 800;
-      border-radius: 8px;
-      cursor: pointer;
-      transition: all 0.3s;
-      z-index: 10;
-      width: 100%;
-    }
-    @media (max-width: 768px) {
-      .sync-btn {
-        min-height: 52px;
-        border-radius: 12px;
-        font-size: 10px;
-      }
-    }
-
-    .sync-btn:hover {
-      background: rgba(184,134,11,0.1);
-      border-color: #f3cf7a;
-      box-shadow: 0 0 20px rgba(184,134,11,0.2);
-    }
-
-    .sync-btn:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-    }
-
-    /* Delivery Settings */
-    .settings-card {
-      background: white;
-      border: 1px solid rgba(0,0,0,0.05);
-      border-radius: 12px;
-      padding: 1.5rem;
-      margin-bottom: 2.5rem;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.02);
-    }
-    @media (max-width: 768px) {
-      .settings-card {
-        border-radius: 20px;
-      }
-    }
-
-    .form-group {
-      margin-bottom: 1.5rem;
-    }
-
-    .form-label {
-      display: block;
-      font-size: 9px;
-      text-transform: uppercase;
-      letter-spacing: 0.2em;
-      color: #888;
-      margin-bottom: 0.5rem;
-      font-weight: 700;
-    }
-
-    .form-input {
-      width: 100%;
-      padding: 0.75rem;
-      border: 1px solid #eee;
-      font-size: 13px;
-      font-family: inherit;
-      outline: none;
-      transition: border-color 0.3s;
-    }
-
-    .form-input:focus {
-      border-color: #B8860B;
-    }
-
-    .toggle-group {
-      display: flex;
-      align-items: center;
-      gap: 1rem;
-      margin-bottom: 1.5rem;
-    }
-
-    .save-btn {
-      background: #111;
-      color: white;
-      border: none;
-      padding: 0.875rem 2rem;
-      font-size: 9px;
-      text-transform: uppercase;
-      letter-spacing: 0.25em;
-      font-weight: 800;
-      border-radius: 8px;
-      cursor: pointer;
-      transition: all 0.3s;
-      width: 100%;
-    }
-    @media (max-width: 768px) {
-      .save-btn {
-        min-height: 52px;
-        border-radius: 12px;
-      }
-    }
-
-    .save-btn:hover {
-      background: #B8860B;
-      box-shadow: 0 8px 20px rgba(184,134,11,0.3);
-      transform: translateY(-2px);
-    }
-
-    @media (max-width: 1024px) {
-      .stats-grid {
-        grid-template-columns: repeat(2, 1fr);
-      }
-      .actions-grid {
-        grid-template-columns: repeat(2, 1fr);
-      }
-    }
-    @media (max-width: 640px) {
-      .welcome-banner {
-        padding: 1.5rem;
-      }
-      .welcome-title {
-        font-size: 1.5rem;
-      }
-      .welcome-banner::before {
-        display: none;
-      }
-      .stats-grid {
-        grid-template-columns: 1fr;
-      }
-      .actions-grid {
-        grid-template-columns: 1fr;
-      }
-      .rate-card {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 1.5rem;
-      }
-      .settings-card {
-        padding: 1.25rem;
-      }
-      .status-bar {
-        padding: 0.75rem 1rem;
-        line-height: 1.4;
-      }
-    }
+    .status-bar { background: #fafafa; border: 1px solid #f0f0f0; border-radius: 12px; padding: 1rem 1.5rem; font-size: 9px; color: #888; font-weight: 600; letter-spacing: 0.05em; margin-top: 4rem; display: flex; align-items: center; gap: 1rem; }
   </style>
 
   <!-- Welcome Banner -->
   <div class="welcome-banner">
     <p class="welcome-label">✦ Atelier Privado</p>
-    <h2 class="welcome-title">Bienvenido, <span>Administrador</span></h2>
-    <p class="welcome-sub">Sistema Forever One · Todo está bajo control.</p>
+    <h2 class="welcome-title">Bienvenida, <span>Nazareth</span></h2>
+    <p class="welcome-sub">Sistema Forever One · Gestión y Control de Alta Gama.</p>
   </div>
 
   <!-- BCV Rate Section -->
@@ -481,18 +181,15 @@ const stats = {
     <div class="rate-info">
       <h3>Tasa de Cambio Operativa (BCV + 1%)</h3>
       <div class="rate-value"><span>Bs.</span>{stats.bcvRate}</div>
-      <p style="font-size: 9px; color: rgba(255,255,255,0.3); margin-top: 0.5rem; letter-spacing: 0.05em;">
-        Última actualización: {stats.lastUpdate}
+      <p style="font-size: 9px; color: rgba(255,255,255,0.3); margin-top: 0.75rem; letter-spacing: 0.1em;">
+        ULTIMA SINCRONIZACION: {stats.lastUpdate}
       </p>
     </div>
-    <button id="sync-rate-btn" class="sync-btn">
-      ↻ Sincronizar Ahora
-    </button>
+    <button id="sync-rate-btn" class="sync-btn">↻ Sincronizar Ahora</button>
   </div>
 
   <script>
-    import { supabase } from '../../lib/supabase';
-
+    // NOTA: window.showToast se define en el Layout
     const syncBtn = document.getElementById('sync-rate-btn');
     syncBtn?.addEventListener('click', async () => {
       try {
@@ -505,13 +202,13 @@ const stats = {
         const data = await response.json();
         
         if (data.success) {
-          window.location.reload();
+          (window as any).showToast('Tasa de cambio actualizada con éxito');
+          setTimeout(() => window.location.reload(), 1000);
         } else {
-          alert('Error al sincronizar: ' + (data.error || 'Desconocido'));
+          (window as any).showToast(data.error || 'Fallo en la sincronización', 'error');
         }
       } catch (e) {
-        console.error(e);
-        alert('Error de conexión al sincronizar');
+        (window as any).showToast('Error de enlace con el servidor central', 'error');
       } finally {
         if (syncBtn instanceof HTMLButtonElement) {
           syncBtn.disabled = false;
@@ -532,25 +229,24 @@ const stats = {
         const enabled = (document.getElementById('delivery-toggle') as HTMLInputElement).checked;
         const zones = (document.getElementById('delivery-zones-input') as HTMLTextAreaElement).value;
 
-        const { error: err1 } = await supabase
-          .from('site_settings')
-          .upsert({ key: 'delivery_enabled', value: enabled.toString() }, { onConflict: 'key' });
+        const response = await fetch('/api/update-settings', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ enabled, zones })
+        });
 
-        const { error: err2 } = await supabase
-          .from('site_settings')
-          .upsert({ key: 'delivery_zones', value: zones }, { onConflict: 'key' });
-
-        if (err1 || err2) throw new Error('Error al guardar en Supabase');
+        const result = await response.json();
+        if (!result.success) throw new Error(result.error);
         
-        alert('✓ Ajustes de entrega actualizados');
-        window.location.reload();
-      } catch (e) {
-        console.error(e);
-        alert('Error al guardar los ajustes');
+        (window as any).showToast('Ajustes de entrega actualizados correctamente');
+        setTimeout(() => window.location.reload(), 1500);
+
+      } catch (e: any) {
+        (window as any).showToast(e.message || 'Error al actualizar ajustes', 'error');
       } finally {
         if (saveSettingsBtn instanceof HTMLButtonElement) {
           saveSettingsBtn.disabled = false;
-          saveSettingsBtn.textContent = 'Guardar Cambios';
+          saveSettingsBtn.textContent = 'Confirmar Cambios';
         }
       }
     });
@@ -559,77 +255,77 @@ const stats = {
   <!-- KPI Stats -->
   <div class="stats-grid">
     <div class="stat-card">
-      <div class="stat-icon-box">👗</div>
+      <div class="stat-icon-box" set:html={Icons.Garment} />
       <p class="stat-label">Prendas Activas</p>
       <p class="stat-value">{stats.totalProducts}</p>
       <p class="stat-meta">En catálogo</p>
     </div>
     <div class="stat-card">
-      <div class="stat-icon-box">📦</div>
+      <div class="stat-icon-box" set:html={Icons.Shipping} />
       <p class="stat-label">Pedidos Pendientes</p>
       <p class="stat-value">{stats.pendingOrders}</p>
-      <p class="stat-meta">Por confirmar</p>
+      <p class="stat-meta">En verificación</p>
     </div>
     <div class="stat-card">
-      <div class="stat-icon-box">◈</div>
+      <div class="stat-icon-box" set:html={Icons.Layers} />
       <p class="stat-label">Subcategorías</p>
       <p class="stat-value">{stats.subcategories}</p>
-      <p class="stat-meta">Clasificaciones</p>
+      <p class="stat-meta">Organizadas</p>
     </div>
     <div class="stat-card">
-      <div class="stat-icon-box">⚠️</div>
+      <div class="stat-icon-box" set:html={Icons.Alert} />
       <p class="stat-label">Stock Crítico</p>
       <p class="stat-value">{stats.lowStock}</p>
-      <p class="stat-meta">Bajo mínimo</p>
+      <p class="stat-meta">Reponer pronto</p>
     </div>
   </div>
 
   <!-- Delivery Settings -->
-  <p class="section-label">Gestión de Entregas</p>
-  <div class="settings-card">
-    <div class="toggle-group">
-      <input type="checkbox" id="delivery-toggle" checked={stats.deliveryEnabled} class="w-5 h-5 accent-[#B8860B]">
-      <label for="delivery-toggle" class="form-label" style="margin-bottom:0">Habilitar Delivery local</label>
+  <p class="section-label">Ajustes de Entrega</p>
+  <div class="settings-card shadow-sm" style="background:white; border-radius:16px; padding:2rem; border: 1px solid rgba(0,0,0,0.04);">
+    <div class="toggle-group" style="display:flex; align-items:center; gap:1.5rem; margin-bottom:2rem;">
+      <input type="checkbox" id="delivery-toggle" checked={stats.deliveryEnabled} style="width:24px; height:24px; cursor:pointer;" class="accent-[#B8860B]">
+      <label for="delivery-toggle" style="font-size:10px; text-transform:uppercase; letter-spacing: 0.2em; color:#111; font-weight:700; cursor:pointer;">Habilitar Delivery local</label>
     </div>
     
-    <div class="form-group">
-      <label class="form-label">Zonas de Reparto (Separadas por coma)</label>
-      <textarea id="delivery-zones-input" class="form-input" rows="3" placeholder="Ej: Yuma, Güigüe, San Joaquín">{stats.deliveryZones}</textarea>
+    <div class="form-group" style="margin-bottom:2rem;">
+      <label style="display:block; font-size:8px; text-transform:uppercase; letter-spacing:0.3em; color:#aaa; margin-bottom:0.75rem; font-weight:700;">Zonas de Reparto Operativas</label>
+      <textarea id="delivery-zones-input" style="width:100%; min-height:100px; padding:1.25rem; background:#fcfcfc; border:1px solid #f0f0f0; border-radius:12px; font-size:13px; font-family:inherit; outline:none; transition: all 0.3s;" onfocus="this.style.borderColor='#B8860B'; this.style.background='white';">{stats.deliveryZones}</textarea>
     </div>
 
-    <button id="save-settings-btn" class="save-btn">Guardar Cambios</button>
+    <button id="save-settings-btn" class="save-btn" style="background:#111; color:#B8860B; border:1px solid #222; padding:1.15rem; font-size:9px; letter-spacing:0.4em; text-transform:uppercase; font-weight:800; border-radius:12px; cursor:pointer; width:100%; transition:all 0.3s;">Confirmar Cambios</button>
   </div>
 
   <!-- Quick Actions -->
-  <p class="section-label">Acciones Rápidas</p>
+  <p class="section-label">Gestión Rápida</p>
   <div class="actions-grid">
     <a href="/admin/products/new" class="action-card">
-      <div class="action-icon">✦</div>
+      <div class="action-icon" set:html={Icons.Plus} />
       <div class="action-info">
         <p class="action-name">Nueva Prenda</p>
-        <p class="action-desc">Añadir al catálogo exclusivo</p>
+        <p class="action-desc">Añadir al Atelier</p>
       </div>
     </a>
     <a href="/admin/subcategories" class="action-card">
-      <div class="action-icon">◈</div>
+      <div class="action-icon" set:html={Icons.Layers} />
       <div class="action-info">
-        <p class="action-name">Subcategorías</p>
-        <p class="action-desc">Gestionar clasificaciones</p>
+        <p class="action-name">Categorización</p>
+        <p class="action-desc">Gestionar Estilos</p>
       </div>
     </a>
     <a href="/admin/orders" class="action-card">
-      <div class="action-icon">📦</div>
+      <div class="action-icon" set:html={Icons.Shipping} />
       <div class="action-info">
         <p class="action-name">Ver Pedidos</p>
-        <p class="action-desc">Gestionar órdenes recibidas</p>
+        <p class="action-desc">Panel de Compras</p>
       </div>
     </a>
   </div>
 
   <!-- Status -->
   <div class="status-bar">
-    <div class="status-dot"></div>
-    Sistema Forever One — Conectado a Supabase. Todas las funciones operativas.
+    <div style="width:8px; height:8px; border-radius:50%; background:#B8860B; box-shadow:0 0 10px rgba(184,134,11,0.5); animation: pulse 2s infinite;"></div>
+    SISTEMA FOREVER ONE — ESTADO: ACTIVO · SESIÓN DE ADMINISTRADOR CIFRADA
   </div>
 
 </AdminLayout>

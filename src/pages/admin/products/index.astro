@@ -51,13 +51,6 @@ const accesoriosSubcategories = allSubcategories?.filter(s => s.parent_category 
       color: #111;
     }
 
-    @media (max-width: 768px) {
-      .tab-btn {
-        min-height: 44px;
-        padding: 0 1.5rem;
-      }
-    }
-
     .add-btn {
       padding: 0.75rem 1.25rem;
       background: #111;
@@ -72,20 +65,34 @@ const accesoriosSubcategories = allSubcategories?.filter(s => s.parent_category 
       box-shadow: 0 4px 12px rgba(0,0,0,0.1);
     }
 
-    @media (max-width: 768px) {
-      .action-pill {
-        min-height: 44px;
-        border-radius: 10px;
-        padding: 0.5rem 1rem;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-      }
-    }
-
     @media (min-width: 768px) { .add-btn { padding: 0.875rem 2rem; } }
 
     .add-btn:hover { background: #B8860B; color: #fff; transform: translateY(-2px); box-shadow: 0 6px 20px rgba(184,134,11,0.3); }
+
+    /* ─── BOTÓN EDITAR ATELIER (COHERENTE CON EL SISTEMA) ─── */
+    .edit-btn-pro {
+      display: inline-flex;
+      align-items: center;
+      background: #111;
+      border: 1px solid rgba(184, 134, 11, 0.4);
+      color: #f3cf7a;
+      padding: 6px 14px;
+      border-radius: 6px;
+      font-size: 8px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+      text-decoration: none;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .edit-btn-pro:hover {
+      background: #B8860B;
+      color: white;
+      border-color: #f3cf7a;
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(184, 134, 11, 0.3);
+    }
 
     /* ── Tabs & Filters ──────────────────────────── */
     .inventory-tabs {
@@ -156,23 +163,6 @@ const accesoriosSubcategories = allSubcategories?.filter(s => s.parent_category 
     /* ── Product Card List (Mobile) ──────────────── */
     .product-cards-list { display: flex; flex-direction: column; gap: 1rem; }
 
-    @media (max-width: 768px) {
-      .product-mobile-card {
-        border-radius: 20px;
-        padding: 1rem;
-      }
-      .pc-img-wrap {
-        aspect-ratio: 4/5;
-        border-radius: 14px;
-        overflow: hidden;
-      }
-      .pc-img-wrap img {
-        object-fit: cover;
-        width: 100%;
-        height: 100%;
-      }
-    }
-
     .product-mobile-card {
       background: white;
       border-radius: 12px;
@@ -219,23 +209,11 @@ const accesoriosSubcategories = allSubcategories?.filter(s => s.parent_category 
     }
 
     @media (max-width: 640px) {
-      .page-header {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 1.25rem;
-      }
-      .inventory-tabs {
-        gap: 1.5rem;
-      }
-      .tab-btn {
-        font-size: 1rem;
-      }
-      .table-card {
-        overflow-x: auto;
-      }
-      table {
-        min-width: 600px;
-      }
+      .page-header { flex-direction: column; align-items: flex-start; gap: 1.25rem; }
+      .inventory-tabs { gap: 1.5rem; }
+      .tab-btn { font-size: 1rem; }
+      .table-card { overflow-x: auto; }
+      table { min-width: 600px; }
     }
   </style>
 
@@ -312,10 +290,7 @@ const accesoriosSubcategories = allSubcategories?.filter(s => s.parent_category 
     </div>
 
     <!-- Table/List: ROPA -->
-    <div 
-      x-show="activeTab === 'ropa'" 
-      x-transition:enter.duration.300ms
-    >
+    <div x-show="activeTab === 'ropa'" x-transition:enter.duration.300ms>
       {ropaProducts.length === 0 ? (
         <div style="text-align:center;padding:5rem">
           <p style="font-size:11px;letter-spacing:0.2em;text-transform:uppercase;color:#ccc;margin-bottom:2rem">No hay piezas de ropa registradas.</p>
@@ -323,14 +298,9 @@ const accesoriosSubcategories = allSubcategories?.filter(s => s.parent_category 
         </div>
       ) : (
         <>
-          <!-- Mobile List -->
           <div class="product-cards-list">
             {ropaProducts.map(product => (
-              <div 
-                class="product-mobile-card"
-                x-show={`activeSubcategory === 'all' || activeSubcategory === '${product.subcategory_id}'`}
-                x-transition:enter.duration.200ms
-              >
+              <div class="product-mobile-card" x-show={`activeSubcategory === 'all' || activeSubcategory === '${product.subcategory_id}'`} x-transition:enter.duration.200ms>
                 <div class="pmc-header">
                   <div>
                     <h4 class="pmc-name">{product.name}</h4>
@@ -340,22 +310,14 @@ const accesoriosSubcategories = allSubcategories?.filter(s => s.parent_category 
                     {product.is_active ? 'Activo' : 'Oculto'}
                   </span>
                 </div>
-                <div class="variants-pills">
-                  {product.variants?.map((v: any) => (
-                    <span class={`variant-pill ${v.stock_quantity <= 1 ? 'low' : 'ok'}`} style="border-radius:4px;">
-                      {v.size}: {v.stock_quantity}
-                    </span>
-                  ))}
-                </div>
                 <div class="pmc-footer">
                   <span class="pmc-price">${product.price}</span>
-                  <a href={`/admin/products/${product.id}`} class="action-link" style="border-radius:6px; font-weight:800; color:#111; border-color:#eee;">Editar</a>
+                  <a href={`/admin/products/${product.id}`} class="edit-btn-pro">✦ Editar</a>
                 </div>
               </div>
             ))}
           </div>
 
-          <!-- Desktop Table -->
           <div class="desktop-table-card">
             <table>
               <thead>
@@ -390,7 +352,7 @@ const accesoriosSubcategories = allSubcategories?.filter(s => s.parent_category 
                       </span>
                     </td>
                     <td>
-                      <a href={`/admin/products/${product.id}`} class="action-link">Editar</a>
+                      <a href={`/admin/products/${product.id}`} class="edit-btn-pro">✦ Editar</a>
                     </td>
                   </tr>
                 ))}
@@ -410,39 +372,26 @@ const accesoriosSubcategories = allSubcategories?.filter(s => s.parent_category 
         </div>
       ) : (
         <>
-          <!-- Mobile List -->
           <div class="product-cards-list">
             {accesoriosProducts.map(product => (
-              <div 
-                class="product-mobile-card"
-                x-show={`activeSubcategory === 'all' || activeSubcategory === '${product.subcategory_id}'`}
-                x-transition:enter.duration.200ms
-              >
+              <div class="product-mobile-card" x-show={`activeSubcategory === 'all' || activeSubcategory === '${product.subcategory_id}'`} x-transition:enter.duration.200ms>
                 <div class="pmc-header">
                   <div>
                     <h4 class="pmc-name">{product.name}</h4>
-                    <p class="pmc-meta">{product.collections?.name} · {product.subcategories?.name}</p>
+                    <p class="PMc-meta">{product.collections?.name} · {product.subcategories?.name}</p>
                   </div>
                   <span class={`status-badge ${product.is_active ? 'active' : 'inactive'}`} style="border-radius:6px; font-size:7px;">
                     {product.is_active ? 'Activo' : 'Oculto'}
                   </span>
                 </div>
-                <div class="variants-pills">
-                  {product.variants?.map((v: any) => (
-                    <span class={`variant-pill ${v.stock_quantity <= 1 ? 'low' : 'ok'}`} style="border-radius:4px;">
-                      {v.size}: {v.stock_quantity}
-                    </span>
-                  ))}
-                </div>
                 <div class="pmc-footer">
                   <span class="pmc-price">${product.price}</span>
-                  <a href={`/admin/products/${product.id}`} class="action-link" style="border-radius:6px; font-weight:800; color:#111; border-color:#eee;">Editar</a>
+                  <a href={`/admin/products/${product.id}`} class="edit-btn-pro">✦ Editar</a>
                 </div>
               </div>
             ))}
           </div>
 
-          <!-- Desktop Table -->
           <div class="desktop-table-card">
             <table>
               <thead>
@@ -477,7 +426,7 @@ const accesoriosSubcategories = allSubcategories?.filter(s => s.parent_category 
                       </span>
                     </td>
                     <td>
-                      <a href={`/admin/products/${product.id}`} class="action-link">Editar</a>
+                      <a href={`/admin/products/${product.id}`} class="edit-btn-pro">✦ Editar</a>
                     </td>
                   </tr>
                 ))}

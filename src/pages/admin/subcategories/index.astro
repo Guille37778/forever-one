@@ -66,173 +66,117 @@ const accesoriosSubs = subcategories?.filter(s => s.parent_category === 'accesor
 <AdminLayout title="Subcategorías" activeNav="subcategories" user={{ email: user?.email || '' }}>
 
   <style>
-    .page-header { margin-bottom: 2rem; }
-    .page-header p { font-size: 8px; letter-spacing: 0.45em; text-transform: uppercase; color: #B8860B; font-weight: 600; margin-bottom: 0.35rem; }
-    .page-header h2 { font-family: 'Playfair Display', serif; font-size: 1.75rem; font-weight: 700; font-style: italic; color: #111; }
+    /* TITULO SUPERIOR - REFINAMIENTO PIXEL-PERFECT */
+    :global(.topbar-title) {
+        font-size: 1rem !important;
+        opacity: 0.9;
+        letter-spacing: 0.05em;
+    }
 
-    .layout { display: grid; grid-template-columns: 320px 1fr; gap: 2rem; align-items: start; }
+    .page-header { margin-bottom: 2.25rem; }
+    .page-header p { font-size: 8px; letter-spacing: 0.45em; text-transform: uppercase; color: #B8860B; font-weight: 600; margin-bottom: 0.35rem; }
+    .page-header h2 { font-family: 'Playfair Display', serif; font-size: 1.5rem; font-weight: 700; font-style: italic; color: #111; }
+
+    .layout { display: grid; grid-template-columns: 320px 1fr; gap: 2.5rem; align-items: start; }
 
     /* Form Card */
-    @media (max-width: 768px) {
-      .form-card {
-        border-radius: 20px;
-        position: static;
-        margin-bottom: 2rem;
-        width: 100%;
-        border: 1px solid rgba(184,134,11,0.1);
-        overflow: visible; /* Prevent shadow clipping */
-      }
-    }
     .form-card {
-      background: white;
-      border: 1px solid rgba(0,0,0,0.07);
-      overflow: hidden;
-      position: sticky;
-      top: 80px;
+      background: white; border: 1px solid rgba(0,0,0,0.07); overflow: hidden; position: sticky; top: 85px;
     }
 
     .card-header {
-      padding: 1.5rem 1.75rem;
-      border-bottom: 1px solid rgba(0,0,0,0.06);
-      background: rgba(0,0,0,0.015);
+      padding: 1.5rem 1.75rem; border-bottom: 1px solid rgba(0,0,0,0.06); background: rgba(0,0,0,0.015);
     }
     .card-header p { font-size: 8px; letter-spacing: 0.4em; text-transform: uppercase; color: #B8860B; font-weight: 600; margin-bottom: 0.2rem; }
-    .card-header h3 { font-family: 'Playfair Display', serif; font-size: 1rem; font-style: italic; color: #111; }
+    .card-header h3 { font-family: 'Playfair Display', serif; font-size: 0.95rem; font-style: italic; color: #111; font-weight: 700; }
 
-    .card-body { padding: 1.5rem; }
+    .card-body { padding: 1.75rem 1.5rem; }
 
-    .form-group { margin-bottom: 1.25rem; }
-    label { display: block; font-size: 8px; letter-spacing: 0.3em; text-transform: uppercase; color: #999; margin-bottom: 0.5rem; font-weight: 600; text-align: center;}
+    .form-group { margin-bottom: 1.5rem; width: 100%; display: flex; flex-direction: column; }
+    label { display: block; font-size: 8px; letter-spacing: 0.3em; text-transform: uppercase; color: #999; margin-bottom: 0.75rem; font-weight: 600; text-align: center;}
 
     .form-input {
-      width: 100%; padding: 0.75rem 1rem; background: white;
-      border: 1px solid rgba(0,0,0,0.12); color: #111;
+      width: 100%; box-sizing: border-box; padding: 0.75rem 1rem; background: white;
+      border: 1px solid rgba(0,0,0,0.1); color: #111;
       font-family: 'Montserrat', sans-serif; font-size: 13px; outline: none;
-      transition: border-color 0.25s, box-shadow 0.25s;
-      min-height: 44px; /* App target */
-      text-align: center; /* Center horizontally like target design */
+      transition: border-color 0.25s, box-shadow 0.25s; min-height: 46px; text-align: center;
     }
     
-    select.form-input {
-      text-align-last: center;
-    }
+    select.form-input { text-align-last: center; }
 
     .form-input:focus {
-      border-color: rgba(184,134,11,0.5);
-      box-shadow: 0 0 0 3px rgba(184,134,11,0.07);
+      border-color: rgba(184,134,11,0.5); box-shadow: 0 0 0 3px rgba(184,134,11,0.05);
     }
 
     .submit-btn {
-      width: 100%;
-      padding: 0.875rem;
+      width: 100%; padding: 0.875rem;
       background: linear-gradient(135deg, #8B6508, #B8860B, #f3cf7a, #B8860B, #8B6508);
       background-size: 200% auto; animation: shine 4s linear infinite;
       color: #0a0a0a; border: none; font-family: 'Montserrat', sans-serif;
-      font-size: 9px; letter-spacing: 0.4em; text-transform: uppercase; font-weight: 700;
-      cursor: pointer; margin-top: 0.5rem; transition: opacity 0.3s;
-      min-height: 48px; /* App target */
-    }
-    @media (max-width: 768px) {
-      .submit-btn {
-        border-radius: 12px;
-      }
+      font-size: 9px; letter-spacing: 0.35em; text-transform: uppercase; font-weight: 700;
+      cursor: pointer; margin-top: 0.5rem; transition: opacity 0.3s; min-height: 48px;
     }
     .submit-btn:hover { opacity: 0.85; }
     @keyframes shine { to { background-position: 200% center; } }
 
     /* List cards */
-    .list-section { display: flex; flex-direction: column; gap: 1.5rem; }
-
-    .group-card {
-      background: white;
-      border: 1px solid rgba(0,0,0,0.07);
-      overflow: hidden;
-    }
-    @media (max-width: 768px) {
-      .group-card {
-        border-radius: 20px;
-      }
-    }
+    .list-section { display: flex; flex-direction: column; gap: 2rem; }
+    .group-card { background: white; border: 1px solid rgba(0,0,0,0.07); overflow: hidden; }
 
     .group-header {
-      padding: 1.25rem 1.75rem;
-      background: rgba(0,0,0,0.02);
-      border-bottom: 1px solid rgba(0,0,0,0.06);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
+      padding: 1.25rem 1.75rem; background: rgba(0,0,0,0.02); border-bottom: 1px solid rgba(0,0,0,0.06);
+      display: flex; align-items: center; justify-content: space-between;
     }
 
-    .group-label {
-      font-size: 8px; letter-spacing: 0.4em; text-transform: uppercase;
-      color: #B8860B; font-weight: 700;
-    }
-
-    .group-count {
-      font-size: 10px; color: #ccc; font-weight: 500;
-    }
+    .group-label { font-size: 8px; letter-spacing: 0.4em; text-transform: uppercase; color: #B8860B; font-weight: 700; }
+    .group-count { font-size: 10px; color: #ccc; font-weight: 500; }
 
     .subcat-list { padding: 0.5rem 0; }
-
     .subcat-item {
       display: flex; align-items: center; justify-content: space-between;
-      padding: 0.875rem 1.75rem;
-      border-bottom: 1px solid rgba(0,0,0,0.04);
+      padding: 0.875rem 1.75rem; border-bottom: 1px solid rgba(0,0,0,0.04);
       transition: background 0.2s;
     }
     .subcat-item:last-child { border-bottom: none; }
     .subcat-item:hover { background: rgba(184,134,11,0.02); }
 
-    .subcat-name {
-      font-family: 'Playfair Display', serif;
-      font-size: 14px; font-style: italic; color: #111; font-weight: 700;
-    }
-
+    .subcat-name { font-family: 'Playfair Display', serif; font-size: 14px; font-style: italic; color: #111; font-weight: 700; }
     .subcat-slug { font-size: 10px; color: #ccc; letter-spacing: 0.05em; margin-top: 1px; }
 
     .delete-btn {
       background: none; border: 1px solid rgba(220,38,38,0.2); color: #dc2626;
       font-size: 8px; letter-spacing: 0.2em; text-transform: uppercase;
       padding: 5px 12px; cursor: pointer; transition: all 0.25s; font-weight: 600;
-      font-family: 'Montserrat', sans-serif;
-      min-height: 44px; /* App target */
-      display: flex; align-items: center; justify-content: center;
-    }
-    @media (max-width: 768px) {
-      .delete-btn {
-        border-radius: 8px;
-        padding: 0 1.5rem;
-      }
+      font-family: 'Montserrat', sans-serif; min-height: 40px; display: flex; align-items: center; justify-content: center;
     }
     .delete-btn:hover { background: rgba(220,38,38,0.05); border-color: #dc2626; }
 
-    .empty-group {
-      padding: 2rem 1.75rem;
-      text-align: center;
-      color: #ccc;
-      font-size: 11px;
-      letter-spacing: 0.1em;
-    }
-
-    /* Feedback messages */
-    .status-msg {
-      padding: 1rem;
-      font-size: 11px;
-      letter-spacing: 0.1em;
-      margin-bottom: 1.5rem;
-      border-left: 3px solid;
-      font-weight: 500;
-    }
+    .status-msg { padding: 1rem; font-size: 11px; letter-spacing: 0.1em; margin-bottom: 1.5rem; border-left: 3px solid; font-weight: 500; }
     .status-msg.success { background: rgba(184,134,11,0.05); color: #8B6508; border-color: #B8860B; }
     .status-msg.error { background: rgba(220,38,38,0.05); color: #dc2626; border-color: #dc2626; }
 
     @media (max-width: 1024px) {
-      .layout {
-        grid-template-columns: 1fr;
+      .layout { grid-template-columns: 1fr; }
+      .form-card { position: static; }
+    }
+
+    /* ─── CORRECCIÓN QUIRÚRGICA MÓVIL ─── */
+    @media (max-width: 768px) {
+      .form-card { border-radius: 20px; width: 100%; border: 1px solid rgba(184,134,11,0.1); overflow: hidden; margin-bottom: 2rem; }
+      .group-card { border-radius: 20px; }
+      .card-body { padding: 1.25rem 1rem; }
+      
+      /* Reducción de escala y alineación perfecta */
+      .form-input { 
+          width: 100% !important; 
+          box-sizing: border-box !important;
+          font-size: 12px; 
+          padding: 0.6rem 0.75rem; 
+          min-height: 40px; 
       }
-      .form-card {
-        position: static;
-      }
+      
+      .submit-btn { border-radius: 12px; }
+      .delete-btn { border-radius: 8px; padding: 0 1.25rem; }
     }
   </style>
 
@@ -268,7 +212,7 @@ const accesoriosSubs = subcategories?.filter(s => s.parent_category === 'accesor
                 <option value="accesorios">Accesorios</option>
               </select>
             </div>
-            <button type="submit" class="submit-btn">✦ Registrar Subcategoría</button>
+            <button type="submit" class="submit-btn" style="border-radius:12px">✦ Registrar Subcategoría</button>
           </form>
         </div>
       </div>

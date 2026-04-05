@@ -72,6 +72,13 @@ if (Astro.request.method === 'POST') {
 <AdminLayout title="Nueva Prenda" activeNav="products" user={{ email: user?.email || '' }}>
 
   <style>
+    /* TITULO SUPERIOR - REFINAMIENTO DISCRETO */
+    :global(.topbar-title) {
+        font-size: 1rem !important;
+        opacity: 0.9;
+        letter-spacing: 0.05em;
+    }
+
     .back-link {
       display: inline-flex;
       align-items: center;
@@ -100,7 +107,7 @@ if (Astro.request.method === 'POST') {
     }
     .page-header h2 {
       font-family: 'Playfair Display', serif;
-      font-size: 1.75rem;
+      font-size: 1.5rem;
       font-weight: 700;
       font-style: italic;
       color: #111;
@@ -116,25 +123,16 @@ if (Astro.request.method === 'POST') {
     .message.success { border-color: #B8860B; background: rgba(184,134,11,0.05); color: #8B6508; }
     .message.error { border-color: #dc2626; background: rgba(220,38,38,0.05); color: #dc2626; }
 
-    @media (max-width: 768px) {
-      .form-card {
-        border-radius: 20px;
-        width: 100%;
-        border: 1px solid rgba(184,134,11,0.1);
-        margin-bottom: 2rem;
-        overflow: visible; /* Allow input shadows */
-      }
-    }
     .form-card {
       background: white;
       border: 1px solid rgba(0,0,0,0.07);
       padding: 0;
-      max-width: 780px;
+      max-width: 820px;
       overflow: hidden;
     }
 
     .form-section {
-      padding: 2rem 2.5rem;
+      padding: 2.25rem 2.5rem;
       border-bottom: 1px solid rgba(0,0,0,0.06);
     }
     .form-section:last-of-type { border-bottom: none; }
@@ -145,7 +143,7 @@ if (Astro.request.method === 'POST') {
       text-transform: uppercase;
       color: #B8860B;
       font-weight: 700;
-      margin-bottom: 1.5rem;
+      margin-bottom: 1.75rem;
       display: flex;
       align-items: center;
       gap: 0.5rem;
@@ -157,19 +155,21 @@ if (Astro.request.method === 'POST') {
       background: rgba(184,134,11,0.15);
     }
 
-    .form-row {
+    /* ─── GRID ESCRITORIO (70/30) ─── */
+    .form-grid-main {
       display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 1.25rem;
+      grid-template-columns: 2.5fr 1fr;
+      gap: 1.5rem;
+      margin-bottom: 1.5rem;
     }
-    .form-row-3 {
+    .form-grid-three {
       display: grid;
       grid-template-columns: 1fr 1fr 1fr;
-      gap: 1.25rem;
+      gap: 1.5rem;
+      margin-bottom: 1.5rem;
     }
 
-    .form-group { margin-bottom: 1.25rem; }
-    .form-group:last-child { margin-bottom: 0; }
+    .form-group { width: 100%; display: flex; flex-direction: column; }
 
     label {
       display: block;
@@ -177,50 +177,34 @@ if (Astro.request.method === 'POST') {
       letter-spacing: 0.3em;
       text-transform: uppercase;
       color: #999;
-      margin-bottom: 0.5rem;
+      margin-bottom: 0.65rem;
       font-weight: 600;
       text-align: center;
     }
-
-    /* Target specific labels to NOT center them if needed */
-    .size-label {
-      text-align: center;
-    }
-    .stock-item label {
-      text-align: center;
-    }
-    
-    /* Left align description label if preferred */
-   .form-section:nth-of-type(2) label {
-     text-align: center; 
-   }
 
     input[type="text"],
     input[type="number"],
     textarea,
     select {
       width: 100%;
+      box-sizing: border-box;
       padding: 0.75rem 1rem;
       background: white;
-      border: 1px solid rgba(0,0,0,0.12);
+      border: 1px solid rgba(0,0,0,0.1);
       color: #111;
       font-family: 'Montserrat', sans-serif;
       font-size: 13px;
       outline: none;
       transition: border-color 0.25s, box-shadow 0.25s;
-      appearance: auto;
-      min-height: 44px; /* App touch target */
-      text-align: center; /* Center horizontally like target design */
+      min-height: 46px;
+      text-align: center;
     }
 
-    /* Target specifically selects to center their text on some browsers */
-    select {
-      text-align-last: center;
-    }
+    select { text-align-last: center; }
 
     input:focus, textarea:focus, select:focus {
       border-color: rgba(184,134,11,0.5);
-      box-shadow: 0 0 0 3px rgba(184,134,11,0.07);
+      box-shadow: 0 0 0 3px rgba(184,134,11,0.05);
     }
 
     textarea { resize: vertical; min-height: 110px; }
@@ -280,7 +264,7 @@ if (Astro.request.method === 'POST') {
       font-weight: 700;
       cursor: pointer;
       transition: opacity 0.3s;
-      min-height: 48px; /* App target */
+      min-height: 48px;
     }
     .submit-btn:hover { opacity: 0.85; }
 
@@ -297,29 +281,33 @@ if (Astro.request.method === 'POST') {
     }
     .cancel-link:hover { color: #666; }
 
-    @media (max-width: 640px) {
-      .form-row, .form-row-3 {
-        grid-template-columns: 1fr;
+    /* ─── CORRECCIÓN QUIRÚRGICA MÓVIL ─── */
+    @media (max-width: 768px) {
+      .form-section { padding: 1.25rem 1rem; }
+      
+      .form-grid-main, .form-grid-three { 
+          display: block; 
+          width: 100%; 
+          margin-bottom: 0; 
       }
-      .sizes-grid {
-        grid-template-columns: repeat(4, 1fr);
+      
+      .form-group { 
+          margin-bottom: 1.25rem; 
+          width: 100%; 
       }
-      .stock-inputs {
-        grid-template-columns: repeat(2, 1fr);
+      
+      input[type="text"], input[type="number"], select { 
+          width: 100% !important; 
+          font-size: 12px; 
+          padding: 0.6rem 0.75rem; 
+          min-height: 40px; 
       }
-      .form-section {
-        padding: 1.5rem;
-      }
-      .form-footer {
-        flex-direction: column-reverse;
-        gap: 1rem;
-        padding: 1.5rem 1.25rem;
-      }
-      .submit-btn, .cancel-link {
-        width: 100%;
-        text-align: center;
-        display: block;
-      }
+
+      .sizes-grid { grid-template-columns: repeat(4, 1fr); }
+      .stock-inputs { grid-template-columns: repeat(2, 1fr); }
+      .form-section { padding: 1.5rem; }
+      .form-footer { flex-direction: column-reverse; gap: 1rem; padding: 1.5rem 1.25rem; }
+      .submit-btn, .cancel-link { width: 100%; text-align: center; display: block; }
     }
   </style>
 
@@ -339,19 +327,19 @@ if (Astro.request.method === 'POST') {
     <!-- Info Básica -->
     <div class="form-section">
       <p class="section-label">✦ Información de la Prenda</p>
-      <div class="form-row">
+      
+      <div class="form-grid-main">
         <div class="form-group">
           <label for="name">Nombre de la Prenda *</label>
           <input type="text" id="name" name="name" placeholder="Ej: Camiseta de Algodón" required>
         </div>
-      </div>
-      <div class="form-row">
         <div class="form-group">
           <label for="price">Precio (USD) *</label>
           <input type="number" id="price" name="price" placeholder="0.00" min="0" step="0.01" required>
         </div>
       </div>
-      <div class="form-row">
+
+      <div class="form-grid-three">
         <div class="form-group">
           <label for="category">Categoría Principal *</label>
           <select id="category" name="category" required>
@@ -368,8 +356,6 @@ if (Astro.request.method === 'POST') {
             ))}
           </select>
         </div>
-      </div>
-      <div class="form-row">
         <div class="form-group">
           <label for="collection_id">Colección / Drop</label>
           <select id="collection_id" name="collection_id">

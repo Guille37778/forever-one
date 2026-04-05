@@ -6,7 +6,6 @@ interface Props {
 }
 
 const { title, activeNav = '', user } = Astro.props;
-const base = import.meta.env.BASE_URL.replace(/\/$/, '');
 ---
 <!DOCTYPE html>
 <html lang="es" data-admin="true">
@@ -30,14 +29,6 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
       --cream: #FAF9F6;
     }
 
-    /* ─── RESET GLOBAL para la zona admin ──────── */
-    /* Sobreescribimos cualquier color blanco que Tailwind pueda heredar */
-    html {
-      width: 100%;
-      margin: 0;
-      padding: 0;
-    }
-
     body {
       background: var(--cream) !important;
       color: #1a1a1a !important;
@@ -48,70 +39,24 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
       display: flex;
     }
 
-    /* Zona de contenido principal: forzar texto oscuro */
-    .admin-main,
-    .admin-main *:not(.sidebar):not(.sidebar *):not(.topbar-badge) {
-      color: inherit;
-    }
-
-    .page-content, .page-content p, .page-content span,
-    .page-content h1, .page-content h2, .page-content h3,
-    .page-content h4, .page-content label, .page-content td,
-    .page-content th, .page-content input, .page-content select,
-    .page-content textarea, .page-content button,
-    .page-content div, .page-content a {
-      /* Evitar que Tailwind/global CSS fuerce white */
-      --tw-text-opacity: 1;
-    }
-
-    /* Inputs y selects dentro del admin: siempre texto oscuro */
-    .admin-main input,
-    .admin-main select,
-    .admin-main textarea {
-      color: #111 !important;
-      background: white !important;
-    }
-
-    /* Tablas: texto oscuro */
-    .admin-main table td,
-    .admin-main table th {
-      color: inherit !important;
-    }
-
-    body {
-      background: var(--cream);
-      color: #1a1a1a;
-      font-family: 'Montserrat', sans-serif;
-      min-height: 100vh;
-      display: flex;
-    }
-
     /* ─── SIDEBAR ──────────────────────────────── */
     .sidebar {
       width: var(--sidebar-w);
       min-height: 100vh;
       background: var(--black);
       border-right: 1px solid rgba(184,134,11,0.15);
-      padding: 0;
       position: fixed;
       top: 0; left: 0; bottom: 0;
       display: flex;
       flex-direction: column;
       z-index: 100;
-      transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-    
-    @media (max-width: 768px) {
-      .sidebar {
-        padding-bottom: env(safe-area-inset-bottom);
-      }
+      transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     }
     
     body.sidebar-hidden .sidebar {
       transform: translateX(-100%);
     }
 
-    /* Logo area */
     .sidebar-logo {
       padding: 2rem 1.75rem;
       border-bottom: 1px solid rgba(184,134,11,0.12);
@@ -120,168 +65,35 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
       gap: 1rem;
     }
 
-    /* Gold mask logo - same as website nav */
     .logo-icon {
-      width: 44px;
-      height: 44px;
-      flex-shrink: 0;
+      width: 44px; height: 44px;
       background: linear-gradient(135deg, #8B6508 0%, #B8860B 30%, #f3cf7a 55%, #B8860B 80%, #8B6508 100%);
       background-size: 200% auto;
       animation: logoShine 4s linear infinite;
       -webkit-mask-image: url('/logo_circular.png');
       -webkit-mask-size: contain;
-      -webkit-mask-repeat: no-repeat;
-      -webkit-mask-position: center;
       mask-image: url('/logo_circular.png');
       mask-size: contain;
-      mask-repeat: no-repeat;
-      mask-position: center;
       filter: drop-shadow(0 0 12px rgba(184,134,11,0.5));
     }
 
-    @keyframes logoShine {
-      to { background-position: 200% center; }
-    }
+    @keyframes logoShine { to { background-position: 200% center; } }
 
-    .logo-text {
-      display: flex;
-      flex-direction: column;
-      gap: 1px;
-    }
+    .logo-brand { font-family: 'Playfair Display', serif; font-size: 1.3rem; font-weight: 700; font-style: italic; color: white; }
+    .logo-brand span { background: linear-gradient(135deg, #B8860B, #f3cf7a, #B8860B); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .logo-sub { font-size: 7px; letter-spacing: 0.4em; text-transform: uppercase; color: rgba(184,134,11,0.5); font-weight: 500; }
 
-    .logo-brand {
-      font-family: 'Playfair Display', serif;
-      font-size: 1.3rem;
-      font-weight: 700;
-      font-style: italic;
-      letter-spacing: -0.02em;
-      line-height: 1;
-      color: white;
-    }
+    .nav-section { padding: 1.5rem 0; flex: 1; overflow-y: auto; }
+    .nav-label { font-size: 8px; letter-spacing: 0.35em; text-transform: uppercase; color: rgba(255,255,255,0.2); padding: 0 1.75rem; margin-bottom: 0.75rem; font-weight: 700; }
+    .nav-item { display: flex; align-items: center; gap: 0.875rem; padding: 0.75rem 1.75rem; font-size: 10px; text-transform: uppercase; color: rgba(255,255,255,0.4); text-decoration: none; transition: all 0.25s; border-left: 2px solid transparent; font-weight: 500; }
+    .nav-item:hover { color: rgba(255,255,255,0.85); background: rgba(184,134,11,0.05); }
+    .nav-item.active { color: var(--gold-light); background: rgba(184,134,11,0.08); border-left-color: var(--gold); }
 
-    .logo-brand span {
-      background: linear-gradient(135deg, #B8860B, #f3cf7a, #B8860B);
-      background-size: 200% auto;
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-      animation: logoShine 4s linear infinite;
-    }
-
-    .logo-sub {
-      font-size: 7px;
-      letter-spacing: 0.4em;
-      text-transform: uppercase;
-      color: rgba(184,134,11,0.5);
-      font-weight: 500;
-    }
-
-    /* Nav items */
-    .nav-section {
-      padding: 1.5rem 0;
-      flex: 1;
-      overflow-y: auto;
-      scrollbar-width: thin;
-      scrollbar-color: rgba(184,134,11,0.2) transparent;
-    }
-
-    .nav-section::-webkit-scrollbar { width: 4px; }
-    .nav-section::-webkit-scrollbar-thumb { background: rgba(184,134,11,0.2); border-radius: 10px; }
-
-    .nav-label {
-      font-size: 8px;
-      letter-spacing: 0.35em;
-      text-transform: uppercase;
-      color: rgba(255,255,255,0.2);
-      padding: 0 1.75rem;
-      margin-bottom: 0.75rem;
-      font-weight: 700;
-    }
-
-    .nav-item {
-      display: flex;
-      align-items: center;
-      gap: 0.875rem;
-      padding: 0.75rem 1.75rem;
-      font-size: 10px;
-      letter-spacing: 0.18em;
-      text-transform: uppercase;
-      color: rgba(255,255,255,0.4);
-      text-decoration: none;
-      transition: all 0.25s;
-      border-left: 2px solid transparent;
-      font-weight: 500;
-      position: relative;
-      min-height: 44px; /* Touch target for mobile app */
-    }
-
-    .nav-item:hover {
-      color: rgba(255,255,255,0.85);
-      background: rgba(184,134,11,0.05);
-    }
-
-    .nav-item.active {
-      color: var(--gold-light);
-      background: rgba(184,134,11,0.08);
-      border-left-color: var(--gold);
-    }
-
-    .nav-item .nav-icon {
-      font-size: 13px;
-      opacity: 0.7;
-      width: 18px;
-      text-align: center;
-    }
-
-    .nav-item.active .nav-icon { opacity: 1; }
-
-    /* Divider */
-    .nav-divider {
-      height: 1px;
-      background: rgba(255,255,255,0.05);
-      margin: 1rem 1.75rem;
-    }
-
-    /* Footer */
-    .sidebar-footer {
-      padding: 1.5rem 1.75rem;
-      border-top: 1px solid rgba(184,134,11,0.12);
-    }
-
-    .user-email {
-      font-size: 9px;
-      color: rgba(255,255,255,0.25);
-      margin-bottom: 0.875rem;
-      word-break: break-all;
-      letter-spacing: 0.05em;
-    }
-
-    .logout-btn {
-      font-size: 9px;
-      letter-spacing: 0.15em;
-      text-transform: uppercase;
-      color: rgba(255,255,255,0.6);
-      background: rgba(255,255,255,0.03);
-      border: 1px solid rgba(255,255,255,0.1);
-      border-radius: 8px;
-      padding: 0.75rem 1rem;
-      cursor: pointer;
-      width: 100%;
-      transition: all 0.3s;
-      font-family: 'Montserrat', sans-serif;
-      font-weight: 700;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 0.5rem;
-      min-height: 48px; /* App target */
-    }
-    .logout-btn:hover { 
-      color: white; 
-      border-color: var(--gold);
-      background: rgba(184,134,11,0.1);
-    }
-    .logout-btn::before { content: '✕'; font-size: 11px; opacity: 0.6; }
+    /* Footer ULTRA-MINIMALISTA */
+    .sidebar-footer { padding: 1.25rem 1.75rem; border-top: 1px solid rgba(255,255,255,0.05); background: transparent; }
+    .user-email { font-size: 8px; color: rgba(184,134,11,0.4); word-break: break-all; letter-spacing: 0.05em; font-weight: 500; margin-bottom: 0.75rem; display: block; text-align: center; }
+    .logout-btn { font-size: 9px; text-transform: uppercase; color: rgba(255,255,255,0.3); background: transparent; border: 1px solid rgba(255,255,255,0.05); border-radius: 6px; padding: 0.5rem; cursor: pointer; width: 100%; transition: all 0.3s; font-weight: 700; }
+    .logout-btn:hover { border-color: rgba(220, 38, 38, 0.3); color: #f87171; }
 
     /* ─── MAIN ──────────────────────────────────── */
     .admin-main {
@@ -289,60 +101,17 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
       flex: 1;
       min-height: 100vh;
       background: var(--cream);
-      transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-      width: auto; /* Prevent overflow */
+      width: auto;
       max-width: 100%;
+      transition: margin-left 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     }
     
-    body.sidebar-hidden .admin-main {
-      margin-left: 0;
-    }
-
-    /* Overlay for mobile */
-    .sidebar-overlay {
-      display: none;
-      position: fixed;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(0,0,0,0.5);
-      z-index: 90;
-      backdrop-filter: blur(2px);
-      transition: opacity 0.3s;
-    }
-
-    @media (max-width: 1024px) {
-      .sidebar {
-        transform: translateX(-100%) !important;
-      }
-      body.sidebar-mobile-open .sidebar {
-        transform: translateX(0) !important;
-      }
-      body.sidebar-mobile-open .sidebar-overlay {
-        display: block !important;
-      }
-      .admin-main, body.sidebar-hidden .admin-main {
-        margin-left: 0 !important;
-      }
-      .topbar {
-        padding: 0 1.5rem; /* Standardized 24px (1.5rem) side padding for mobile PWA */
-        height: 72px; /* Increased height for better ergonomics */
-      }
-      .topbar-title {
-        font-size: 1.15rem;
-      }
-      .topbar-badge {
-        display: none; /* Hide badge on mobile to save space */
-      }
-      .page-content {
-        padding: 1.5rem; /* Standardized 24px side padding for mobile content */
-        padding-bottom: calc(1.5rem + env(safe-area-inset-bottom));
-      }
-    }
-
-    /* Top bar */
+    body.sidebar-hidden .admin-main { margin-left: 0; }
+    
     .topbar {
       background: white;
       border-bottom: 1px solid rgba(0,0,0,0.07);
-      padding: 0 2.5rem;
+      padding: 0 2rem;
       height: 64px;
       display: flex;
       align-items: center;
@@ -351,151 +120,91 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
       top: 0;
       z-index: 50;
     }
-
-    .topbar-title {
-      font-family: 'Playfair Display', serif;
-      font-size: 1.25rem;
-      font-weight: 400;
-      color: #1a1a1a;
-      font-style: italic;
+    
+    .topbar-left { display: flex; align-items: center; gap: 1.25rem; }
+    
+    /* Botón Hamburguesa de Lujo (Fino y Oro) */
+    .hamburger { 
+      background: none; border: none; cursor: pointer; color: var(--gold); 
+      padding: 0.5rem; display: flex; align-items: center; justify-content: center; 
+      transition: opacity 0.3s;
     }
+    .hamburger:hover { opacity: 0.5; }
 
-    .topbar-badge {
-      font-size: 8px;
-      letter-spacing: 0.35em;
-      text-transform: uppercase;
-      background: rgba(184,134,11,0.1);
-      color: var(--gold);
-      padding: 4px 12px;
-      border: 1px solid rgba(184,134,11,0.2);
-      font-weight: 600;
-    }
+    .topbar-title { font-family: 'Playfair Display', serif; font-size: 1.25rem; font-style: italic; color: #1a1a1a; }
+    .topbar-badge { font-size: 8px; text-transform: uppercase; background: rgba(184,134,11,0.1); color: var(--gold); padding: 4px 12px; font-weight: 600; }
 
-    /* Content area */
-    .page-content {
-      padding: 2.5rem;
-      color: #1a1a1a;
-    }
+    .page-content { padding: 2.5rem; }
 
-    /* ─── OVERRIDE GLOBAL: forzar texto oscuro en zona admin ── */
-    /* Tailwind global puede poner color: white; lo neutralizamos */
-    [data-admin="true"] .admin-main {
-      color: #1a1a1a !important;
-    }
+    /* ─── NOTIFICACIONES (AISLADAS) ─────────────── */
+    #toast-container { position: fixed; top: 1.5rem; right: 1.5rem; z-index: 999999; pointer-events: none; display: flex; flex-direction: column; gap: 0.75rem; }
+    .atelier-toast { pointer-events: auto; background: #0a0a0a !important; border: 1px solid var(--gold) !important; padding: 1rem 1.5rem; border-radius: 8px; color: var(--gold-pale) !important; display: flex; align-items: center; gap: 1rem; box-shadow: 0 10px 30px rgba(0,0,0,0.5); min-width: 280px; animation: toast-pop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+    @keyframes toast-pop { from { opacity: 0; transform: translateY(-10px) scale(0.9); } to { opacity: 1; transform: translateY(0) scale(1); } }
+    .atelier-toast.fade-out { animation: toast-out 0.3s ease forwards; }
+    @keyframes toast-out { to { opacity: 0; transform: scale(0.9); } }
+    .toast-msg { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; }
 
-    [data-admin="true"] .admin-main p,
-    [data-admin="true"] .admin-main span:not(.nav-icon):not(.status-badge),
-    [data-admin="true"] .admin-main h1,
-    [data-admin="true"] .admin-main h2,
-    [data-admin="true"] .admin-main h3,
-    [data-admin="true"] .admin-main h4,
-    [data-admin="true"] .admin-main li,
-    [data-admin="true"] .admin-main dt,
-    [data-admin="true"] .admin-main dd {
-      color: inherit;
-    }
-
-    [data-admin="true"] .admin-main label {
-      color: #999 !important;
-    }
-
-    [data-admin="true"] .admin-main td {
-      color: #333 !important;
-    }
-
-    [data-admin="true"] .admin-main th {
-      color: #aaa !important;
-    }
-
-    [data-admin="true"] .admin-main input,
-    [data-admin="true"] .admin-main select,
-    [data-admin="true"] .admin-main textarea {
-      color: #111 !important;
-    }
-
-    [data-admin="true"] .topbar .topbar-title {
-      color: #1a1a1a !important;
+    @media (max-width: 1024px) {
+      .sidebar { transform: translateX(-100%); }
+      .admin-main { margin-left: 0 !important; }
+      body.sidebar-mobile-open .sidebar { transform: translateX(0); }
     }
   </style>
 </head>
 <body>
 
-  <!-- MOBILE OVERLAY -->
-  <div id="sidebar-overlay" class="sidebar-overlay" onclick="document.body.classList.remove('sidebar-mobile-open')"></div>
+  <div id="toast-container"></div>
 
-  <!-- SIDEBAR -->
   <aside class="sidebar">
-    <!-- Logo -->
     <div class="sidebar-logo">
-      <div class="logo-icon" aria-label="Forever One Logo"></div>
+      <div class="logo-icon"></div>
       <div class="logo-text">
         <div class="logo-brand">Forever <span>One</span></div>
         <div class="logo-sub">Atelier Privado</div>
       </div>
     </div>
-
-    <!-- Navigation -->
     <nav class="nav-section">
       <p class="nav-label">Gestión</p>
-      <a href="/admin/dashboard" class={`nav-item ${activeNav === 'dashboard' ? 'active' : ''}`}>
-        <span class="nav-icon">◈</span> Panel Principal
-      </a>
-      <a href="/admin/products" class={`nav-item ${activeNav === 'products' ? 'active' : ''}`}>
-        <span class="nav-icon">◇</span> Inventario
-      </a>
-      <a href="/admin/subcategories" class={`nav-item ${activeNav === 'subcategories' ? 'active' : ''}`}>
-        <span class="nav-icon">◈</span> Subcategorías
-      </a>
-      <a href="/admin/orders" class={`nav-item ${activeNav === 'orders' ? 'active' : ''}`}>
-        <span class="nav-icon">◇</span> Pedidos
-      </a>
-      
-      <div class="nav-divider"></div>
-      <p class="nav-label">Reportes</p>
-      <a href="/admin/analytics" class={`nav-item ${activeNav === 'analytics' ? 'active' : ''}`}>
-        <span class="nav-icon">◈</span> Analíticas
-      </a>
-      
-      <div class="nav-divider"></div>
-      <a href="/" target="_blank" class="nav-item">
-        <span class="nav-icon">↗</span> Ver Sitio
-      </a>
-    </nav>
+      <a href="/admin/dashboard" class={`nav-item ${activeNav === 'dashboard' ? 'active' : ''}`}>Panel Principal</a>
+      <a href="/admin/products" class={`nav-item ${activeNav === 'products' ? 'active' : ''}`}>Inventario</a>
+      <a href="/admin/subcategories" class={`nav-item ${activeNav === 'subcategories' ? 'active' : ''}`}>Categorización</a>
+      <a href="/admin/orders" class={`nav-item ${activeNav === 'orders' ? 'active' : ''}`}>Pedidos</a>
 
-    <!-- Footer -->
+      <p class="nav-label" style="margin-top:1.5rem;">Reportes</p>
+      <a href="/admin/analytics" class={`nav-item ${activeNav === 'analytics' ? 'active' : ''}`}>Analíticas Pro</a>
+      
+      <p class="nav-label" style="margin-top:1.5rem;">Sistema</p>
+      <a href="/" target="_blank" class="nav-item">Ver Sitio Público</a>
+    </nav>
+    
     <div class="sidebar-footer">
-      {user && <p class="user-email">{user.email}</p>}
+      {user && <span class="user-email">{user.email}</span>}
       <form action="/admin/logout" method="POST">
-        <button type="submit" class="logout-btn">Cerrar Sesión</button>
+        <button type="submit" class="logout-btn">Finalizar Sesión</button>
       </form>
     </div>
   </aside>
 
-  <!-- MAIN -->
   <main class="admin-main">
-    <!-- Top Bar -->
-    <div class="topbar">
-      <div style="display: flex; align-items: center; gap: 1.25rem;">
-        <button id="sidebar-toggle" onclick="toggleSidebar()" aria-label="Alternar menú lateral" style="background: none; border: none; cursor: pointer; color: #1a1a1a; display: flex; align-items: center; justify-content: center; padding: 0.5rem; margin-left: -0.5rem; transition: color 0.2s;">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <line x1="3" y1="12" x2="21" y2="12"></line>
-            <line x1="3" y1="6" x2="21" y2="6"></line>
-            <line x1="3" y1="18" x2="21" y2="18"></line>
+    <header class="topbar">
+      <div class="topbar-left">
+        <button class="hamburger" onclick="toggleSidebar()" aria-label="Menu">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="5" y1="7" x2="19" y2="7"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+            <line x1="5" y1="17" x2="19" y2="17"></line>
           </svg>
         </button>
         <h1 class="topbar-title">{title}</h1>
       </div>
-      <span class="topbar-badge">✦ Área Restringida</span>
-    </div>
-
-    <!-- Page Content -->
-    <div class="page-content">
+      <span class="topbar-badge">Nodo — {title}</span>
+    </header>
+    <section class="page-content">
       <slot />
-    </div>
+    </section>
   </main>
 
   <script is:inline>
-    // Ejecutar inmediatamente para evitar parpadeos
     if (localStorage.getItem('sidebar-hidden') === 'true' && window.innerWidth > 1024) {
       document.body.classList.add('sidebar-hidden');
     }
@@ -503,218 +212,29 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
     function toggleSidebar() {
       const body = document.body;
       if (window.innerWidth <= 1024) {
-         body.classList.toggle('sidebar-mobile-open');
+        body.classList.toggle('sidebar-mobile-open');
       } else {
-         body.classList.toggle('sidebar-hidden');
-         localStorage.setItem('sidebar-hidden', body.classList.contains('sidebar-hidden').toString());
-      }
-      
-      const btn = document.getElementById('sidebar-toggle');
-      if (btn) {
-        const svg = btn.querySelector('svg');
-        if (svg) {
-          svg.style.opacity = '0.5';
-          setTimeout(() => svg.style.opacity = '1', 150);
-        }
+        body.classList.toggle('sidebar-hidden');
+        localStorage.setItem('sidebar-hidden', body.classList.contains('sidebar-hidden').toString());
       }
     }
+
+    window.showToast = function(message, type = 'success') {
+      const container = document.getElementById('toast-container');
+      if (!container) return;
+      const toast = document.createElement('div');
+      toast.className = 'atelier-toast';
+      const icon = type === 'success' 
+        ? `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>`
+        : `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`;
+      
+      toast.innerHTML = `<div style="color:var(--gold); display:flex;">${icon}</div><div class="toast-msg">${message}</div>`;
+      container.appendChild(toast);
+      setTimeout(() => {
+        toast.classList.add('fade-out');
+        setTimeout(() => toast.remove(), 400);
+      }, 4000);
+    };
   </script>
 </body>
 </html>
-
-<!-- GLOBAL ADMIN STYLES: afectan al slot y a todos los hijos -->
-<style is:global>
-  /* ─── Base admin reset ─────────────────────────────────────── */
-  [data-admin="true"] body {
-    background: #FAF9F6 !important;
-    color: #1a1a1a !important;
-  }
-
-  /* ─── Zona de contenido blanca: texto siempre oscuro ──────── */
-  .admin-main {
-    color: #1a1a1a;
-  }
-
-  /* Topbar */
-  .topbar {
-    background: white;
-    border-bottom: 1px solid rgba(0,0,0,0.07);
-  }
-  .topbar-title {
-    color: #1a1a1a !important;
-    font-family: 'Playfair Display', serif;
-    font-style: italic;
-  }
-
-  /* Page content: todos los elementos de texto */
-  .page-content {
-    color: #1a1a1a;
-  }
-
-  .page-content h1,
-  .page-content h2,
-  .page-content h3,
-  .page-content h4,
-  .page-content h5,
-  .page-content p,
-  .page-content li,
-  .page-content div {
-    color: inherit;
-  }
-
-  /* Labels de formulario */
-  .page-content label,
-  .admin-main label {
-    color: #999;
-    font-size: 8px;
-    letter-spacing: 0.3em;
-    text-transform: uppercase;
-    font-weight: 600;
-  }
-
-  /* Inputs, selects y textareas: siempre texto oscuro */
-  .page-content input,
-  .page-content select,
-  .page-content textarea,
-  .admin-main input,
-  .admin-main select,
-  .admin-main textarea {
-    color: #111 !important;
-    background: white;
-  }
-
-  /* Tablas */
-  .page-content table td,
-  .admin-main table td {
-    color: #333;
-  }
-
-  .page-content table th,
-  .admin-main table th {
-    color: #aaa;
-    font-size: 8px;
-    text-transform: uppercase;
-    letter-spacing: 0.3em;
-  }
-
-  /* Cards blancas */
-  .page-content .kpi-card,
-  .page-content .stat-card,
-  .page-content .chart-card,
-  .page-content .form-card,
-  .page-content .table-card,
-  .page-content .order-card,
-  .page-content .group-card,
-  .page-content .action-card {
-    background: white;
-  }
-
-  /* KPI values */
-  .kpi-value,
-  .stat-value {
-    color: #111 !important;
-    font-family: 'Playfair Display', serif;
-  }
-
-  .kpi-label,
-  .stat-label,
-  .kpi-sub,
-  .stat-meta {
-    color: #999;
-  }
-
-  /* Badges que deben quedar con su color propio */
-  .badge-gold { color: #B8860B !important; }
-  .badge-green { color: #1a9e50 !important; }
-
-  /* Headings dentro de cards */
-  .card-heading,
-  .chart-heading,
-  .table-heading {
-    color: #111 !important;
-  }
-
-  .card-title,
-  .chart-title,
-  .table-title {
-    color: #999 !important;
-  }
-
-  /* Subcat names */
-  .subcat-name,
-  .product-name,
-  .product-name-cell {
-    color: #111 !important;
-  }
-
-  .subcat-slug,
-  .product-meta,
-  .product-id-cell {
-    color: #bbb !important;
-  }
-
-  /* Links de acción */
-  .action-link,
-  .cancel-link,
-  .back-link {
-    color: #888;
-  }
-
-  /* Precio */
-  .price {
-    color: #B8860B !important;
-  }
-
-  /* Botones de acción estándar */
-  .action-btn {
-    color: #555;
-  }
-
-  /* Welcome banner: texto blanco sobre fondo negro → SÍ blanco */
-  .welcome-banner,
-  .welcome-banner .welcome-title,
-  .welcome-banner .welcome-label,
-  .welcome-banner .welcome-sub {
-    color: inherit;
-  }
-
-  /* Status bar dorado */
-  .status-bar {
-    color: #B8860B;
-  }
-
-  /* Action cards: Negro */
-  .action-name { color: #111 !important; }
-  .action-desc { color: #aaa !important; }
-
-  /* Page headers */
-  .page-header h2 { color: #111 !important; }
-  .page-header p  { color: #B8860B !important; }
-  .page-header-left h2 { color: #111 !important; }
-  .page-header-left p  { color: #B8860B !important; }
-
-  /* Order cards */
-  .order-code { color: #B8860B !important; }
-  .order-date { color: #bbb; }
-  .info-row { color: #444; }
-  .info-row strong { color: #111 !important; }
-  .info-label { color: #bbb; }
-  .price-total { color: #111; }
-  .price-total span { color: #B8860B !important; }
-
-  /* Group headers */
-  .group-label { color: #B8860B !important; }
-  .group-count { color: #ccc; }
-
-  /* Section labels con línea */
-  .section-label { color: #B8860B !important; }
-
-  /* Footer de formulario */
-  .form-footer { background: rgba(0,0,0,0.02); }
-
-  /* Heat bar */
-  .heat-pct { color: #B8860B !important; }
-
-  /* Empty states */
-  .empty-state, .empty-group, .empty-msg { color: #ccc; }
-</style>
