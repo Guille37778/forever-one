@@ -7,3 +7,135 @@
   --font-serif: "Cinzel", serif;
   --font-sans: "Inter", sans-serif;
 }
+
+/* ─── Estilos de Lujo (Forever One) ────────────────────────── */
+
+.metal-gold-text {
+  background: linear-gradient(135deg, #8B6508 0%, #B8860B 25%, #f3cf7a 50%, #B8860B 75%, #8B6508 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-size: 200% auto;
+  animation: shine 6s linear infinite;
+}
+
+.metal-gold-bg {
+  background: linear-gradient(135deg, #8B6508 0%, #B8860B 25%, #f3cf7a 50%, #B8860B 75%, #8B6508 100%);
+  background-size: 200% auto;
+  animation: shine 6s linear infinite;
+}
+
+@keyframes shine { to { background-position: 200% center; } }
+
+.glass-nav {
+  background: rgba(0, 0, 0, 0.98);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+.nav-link {
+  @apply uppercase tracking-[0.2em] text-white transition-all duration-300 relative;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 8px;
+  font-weight: 400;
+}
+
+@media (min-width: 768px) {
+  .nav-link { font-size: 11px; }
+}
+
+.nav-link:hover {
+  color: #B8860B;
+}
+
+.nav-link::after {
+  content: '';
+  @apply absolute -bottom-1 left-0 w-0 h-px bg-gold transition-all duration-500;
+}
+
+.nav-link:hover::after { @apply w-full; }
+
+.soft-shadow { box-shadow: 0 15px 40px -10px rgba(184, 134, 11, 0.4); }
+
+/* ─── Cursores y Preloader ─────────────────────────────────── */
+
+.cursor-dot {
+  width: 6px;
+  height: 6px;
+  background-color: #B8860B;
+  border-radius: 50%;
+  position: fixed;
+  pointer-events: none;
+  z-index: 9999;
+  transition: transform 0.1s;
+}
+
+.cursor-outline {
+  width: 30px;
+  height: 30px;
+  border: 1px solid rgba(184, 134, 11, 0.5);
+  border-radius: 50%;
+  position: fixed;
+  pointer-events: none;
+  z-index: 9998;
+  transition: transform 0.15s cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+#preloader {
+  position: fixed;
+  inset: 0;
+  background: white;
+  z-index: 10000;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  transition: opacity 1s ease-in-out, visibility 1s;
+}
+
+#preloader.fade-out {
+  opacity: 0;
+  visibility: hidden;
+}
+
+.loader-logo {
+  width: 180px;
+  height: 180px;
+  animation: heartPulse 3s infinite ease-in-out;
+}
+
+@keyframes heartPulse {
+  0% { transform: scale(1); opacity: 0.8; }
+  15% { transform: scale(1.1); opacity: 1; }
+  30% { transform: scale(1); opacity: 0.8; }
+  45% { transform: scale(1.1); opacity: 1; }
+  100% { transform: scale(1); opacity: 0.8; }
+}
+
+/* ─── Admin panel: neutralizar colores de Tailwind ─────────── */
+[data-admin="true"],
+[data-admin="true"] body {
+  background: #FAF9F6 !important;
+  color: #1a1a1a !important;
+}
+
+[data-admin="true"] .admin-main {
+  color: #1a1a1a;
+}
+
+[data-admin="true"] .admin-main p,
+[data-admin="true"] .admin-main h1,
+[data-admin="true"] .admin-main h2,
+[data-admin="true"] .admin-main h3,
+[data-admin="true"] .admin-main h4,
+[data-admin="true"] .admin-main label,
+[data-admin="true"] .admin-main span:not(.nav-icon):not(.badge),
+[data-admin="true"] .admin-main td,
+[data-admin="true"] .admin-main th {
+  color: inherit;
+}
+
+[data-admin="true"] .admin-main input,
+[data-admin="true"] .admin-main select,
+[data-admin="true"] .admin-main textarea {
+  color: #111 !important;
+}
