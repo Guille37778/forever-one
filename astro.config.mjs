@@ -1,13 +1,13 @@
 import { defineConfig, passthroughImageService } from 'astro/config';
 import tailwindcss from '@tailwindcss/vite';
 import alpinejs from '@astrojs/alpinejs';
-import vercel from '@astrojs/vercel';
+import netlify from '@astrojs/netlify';
 
 // https://astro.build/config
 export default defineConfig({
   // Modo SSR para soporte dinámico (base de datos, auth, etc.)
   output: 'server',
-  adapter: vercel(),
+  adapter: netlify(),
   image: {
     service: passthroughImageService()
   },

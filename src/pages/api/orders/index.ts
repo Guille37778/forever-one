@@ -1,5 +1,5 @@
 import type { APIRoute } from 'astro';
-import { supabaseAdmin as supabase } from '../../lib/supabase';
+import { supabaseAdmin as supabase } from '../../../lib/supabase';
 
 /**
  * Endpoint de Creación de Orden
