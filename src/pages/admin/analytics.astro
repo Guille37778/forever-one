@@ -49,18 +49,27 @@ const avgTime = analyticsData?.length
     /* ── KPI Cards ──────────────────────────────── */
     .kpi-grid {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 1.5rem;
-      margin-bottom: 2.5rem;
+      grid-template-columns: 1fr;
+      gap: 1.25rem;
+      margin-bottom: 2rem;
+    }
+    @media (min-width: 640px) {
+      .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (min-width: 1024px) {
+      .kpi-grid { grid-template-columns: repeat(3, 1fr); gap: 1.5rem; margin-bottom: 2.5rem; }
     }
 
     .kpi-card {
       background: white;
       border: 1px solid rgba(0,0,0,0.07);
-      padding: 1.75rem 2rem;
+      padding: 1.25rem 1.5rem;
       position: relative;
       overflow: hidden;
       transition: box-shadow 0.3s;
+    }
+    @media (min-width: 768px) {
+      .kpi-card { padding: 1.75rem 2rem; }
     }
 
     .kpi-card::after {
@@ -88,12 +97,15 @@ const avgTime = analyticsData?.length
 
     .kpi-value {
       font-family: 'Playfair Display', serif;
-      font-size: 2.75rem;
+      font-size: 1.75rem;
       font-weight: 700;
       font-style: italic;
       color: #111;
       line-height: 1;
       margin-bottom: 0.5rem;
+    }
+    @media (min-width: 768px) {
+      .kpi-value { font-size: 2.75rem; }
     }
 
     .kpi-sub {
@@ -149,7 +161,10 @@ const avgTime = analyticsData?.length
 
     .chart-wrap {
       position: relative;
-      height: 260px;
+      height: 220px;
+    }
+    @media (min-width: 768px) {
+      .chart-wrap { height: 260px; }
     }
 
     /* ── Table below charts ──────────────────────── */
@@ -174,7 +189,7 @@ const avgTime = analyticsData?.length
 
     table { width: 100%; border-collapse: collapse; }
     th {
-      padding: 1rem 2rem;
+      padding: 0.75rem 1rem;
       font-size: 8px;
       text-transform: uppercase;
       letter-spacing: 0.3em;
@@ -184,11 +199,17 @@ const avgTime = analyticsData?.length
       font-weight: 600;
       background: rgba(0,0,0,0.015);
     }
+    @media (min-width: 768px) {
+      th { padding: 1rem 2rem; }
+    }
     td {
-      padding: 1rem 2rem;
+      padding: 0.75rem 1rem;
       font-size: 12px;
       border-bottom: 1px solid rgba(0,0,0,0.04);
       color: #444;
+    }
+    @media (min-width: 768px) {
+      td { padding: 1rem 2rem; }
     }
     tr:last-child td { border-bottom: none; }
     tr:hover td { background: rgba(184,134,11,0.025); }
@@ -232,20 +253,19 @@ const avgTime = analyticsData?.length
     }
 
     @media (max-width: 640px) {
-      .kpi-grid {
-        grid-template-columns: 1fr;
-      }
       .table-card {
         overflow-x: auto;
       }
       table {
-        min-width: 600px;
+        min-width: 500px;
       }
       .table-header {
+        padding: 1.25rem 1.5rem;
         flex-direction: column;
         align-items: flex-start;
-        gap: 1rem;
+        gap: 0.75rem;
       }
+      .table-heading { font-size: 1rem; }
     }
   </style>
 
