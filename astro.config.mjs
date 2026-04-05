@@ -8,9 +8,7 @@ import vercel from '@astrojs/vercel';
 export default defineConfig({
   // Modo SSR para soporte dinámico (base de datos, auth, etc.)
   output: 'server',
-  adapter: vercel({
-    webAnalytics: { enabled: true },
-  }),
+  adapter: vercel(),
 
   vite: {
     plugins: [tailwindcss()]
