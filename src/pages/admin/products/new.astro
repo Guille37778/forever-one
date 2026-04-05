@@ -47,7 +47,7 @@ if (Astro.request.method === 'POST') {
     if (!name || !price) {
         errorMessage = 'El nombre y precio son obligatorios.';
     } else {
-        const { data: product, error: productError } = await supabase
+        const { data: product, error: productError } = await supabaseAdmin
             .from('products')
             .insert({ name, description, price, collection_id: collectionId, category, subcategory_id: subcategoryId, image_urls: imageUrls })
             .select().single();
@@ -61,7 +61,7 @@ if (Astro.request.method === 'POST') {
                     size,
                     stock_quantity: parseInt(form.get(`stock_${size}`)?.toString() || '0')
                 }));
-                await supabase.from('variants').insert(variants);
+                await supabaseAdmin.from('variants').insert(variants);
             }
             successMessage = `✦ "${name}" añadida al catálogo exitosamente.`;
         }

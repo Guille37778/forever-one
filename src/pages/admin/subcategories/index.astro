@@ -1,6 +1,6 @@
 ---
 import AdminLayout from '../../../layouts/AdminLayout.astro';
-import { supabase } from '../../../lib/supabase';
+import { supabase, supabaseAdmin } from '../../../lib/supabase';
 
 const accessToken = Astro.cookies.get('sb-access-token')?.value;
 if (!accessToken) return Astro.redirect('/admin/login');
@@ -20,7 +20,7 @@ if (Astro.request.method === 'POST') {
         const slug = name?.toLowerCase().trim().replace(/\s+/g, '-').replace(/[^\w-]+/g, '');
         
         if (name && parentCategory && slug) {
-            const { error } = await supabase
+            const { error } = await supabaseAdmin
                 .from('subcategories')
                 .insert([{ name, slug, parent_category: parentCategory }]);
             
@@ -41,7 +41,7 @@ if (Astro.request.method === 'POST') {
     if (action === 'delete') {
         const id = formData.get('id')?.toString();
         if (id) {
-            const { error } = await supabase.from('subcategories').delete().eq('id', id);
+            const { error } = await supabaseAdmin.from('subcategories').delete().eq('id', id);
             if (error) {
                 console.error('Error al eliminar subcategoría:', error);
                 statusMessage = `Error al eliminar: ${error.message}`;

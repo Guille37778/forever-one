@@ -22,7 +22,7 @@ if (Astro.request.method === 'POST') {
     const action = form.get('action')?.toString();
 
     if (action === 'delete') {
-        const { error } = await supabase.from('products').delete().eq('id', id);
+        const { error } = await supabaseAdmin.from('products').delete().eq('id', id);
         if (!error) return Astro.redirect('/admin/products');
         errorMessage = 'Error al eliminar: ' + error.message;
     } else {
@@ -57,7 +57,7 @@ if (Astro.request.method === 'POST') {
 
         const imageUrls = [...existingImageUrls, ...uploadedImageUrls];
 
-        const { error: pError } = await supabase
+        const { error: pError } = await supabaseAdmin
             .from('products')
             .update({ name, description, price, collection_id: collectionId, category, subcategory_id: subcategoryId, is_active: isActive, image_urls: imageUrls, updated_at: new Date() })
             .eq('id', id);
@@ -65,14 +65,14 @@ if (Astro.request.method === 'POST') {
         if (pError) {
             errorMessage = 'Error al actualizar: ' + pError.message;
         } else {
-            await supabase.from('variants').delete().eq('product_id', id);
+            await supabaseAdmin.from('variants').delete().eq('product_id', id);
             if (sizes.length > 0) {
                 const variants = sizes.map((size) => ({
                     product_id: id,
                     size,
                     stock_quantity: parseInt(form.get(`stock_${size}`)?.toString() || '0')
                 }));
-                await supabase.from('variants').insert(variants);
+                await supabaseAdmin.from('variants').insert(variants);
             }
             return Astro.redirect(`/admin/products/${id}?success=true`);
         }
