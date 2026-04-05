@@ -280,13 +280,15 @@ if (isSuccess) successMessage = '✦ Prenda actualizada correctamente.';
     <!-- Info General -->
     <div class="form-section">
       <p class="section-label">✦ Información General</p>
-      <div class="form-group">
-        <label>Nombre de la Prenda *</label>
-        <input type="text" name="name" value={product.name} required>
-      </div>
-      <div class="form-group">
-        <label>Precio (USD) *</label>
-        <input type="number" name="price" value={product.price} step="0.01" required>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Nombre de la Prenda *</label>
+          <input type="text" name="name" value={product.name} required>
+        </div>
+        <div class="form-group">
+          <label>Precio (USD) *</label>
+          <input type="number" name="price" value={product.price} step="0.01" required>
+        </div>
       </div>
       <div class="form-row">
         <div class="form-group">
