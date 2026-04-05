@@ -91,7 +91,7 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
 		
 		<ClientRouter />
 	</head>
-	<body class="bg-black text-white font-sans antialiased"
+	<body class="bg-black text-white font-sans antialiased uppercase tracking-widest"
 		x-data="{ mobileMenuOpen: false, atTop: true }"
 		:class="{ 'overflow-hidden': mobileMenuOpen }"
 		@scroll.window="atTop = (window.pageYOffset > 50 ? false : true)">
@@ -151,56 +151,5 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
 </html>
 
 <style is:global>
-	@reference "../styles/global.css";
 	[x-cloak] { display: none !important; }
-	
-	body, html { 
-		overflow-x: hidden; 
-		width: 100%;
-		margin: 0;
-		padding: 0;
-	}
-
-	.metal-gold-text {
-		background: linear-gradient(135deg, #8B6508 0%, #B8860B 25%, #f3cf7a 50%, #B8860B 75%, #8B6508 100%);
-		-webkit-background-clip: text;
-		background-clip: text;
-		-webkit-text-fill-color: transparent;
-		background-size: 200% auto;
-		animation: shine 6s linear infinite;
-	}
-
-	.metal-gold-bg {
-		background: linear-gradient(135deg, #8B6508 0%, #B8860B 25%, #f3cf7a 50%, #B8860B 75%, #8B6508 100%);
-		background-size: 200% auto;
-		animation: shine 6s linear infinite;
-	}
-
-	@keyframes shine { to { background-position: 200% center; } }
-
-	.glass-nav {
-		background: rgba(0, 0, 0, 0.98);
-		backdrop-filter: blur(20px);
-		-webkit-backdrop-filter: blur(20px);
-	}
-
-	.nav-link {
-		@apply uppercase tracking-[0.2em] text-white transition-all duration-300 relative;
-		font-family: 'Montserrat', sans-serif;
-		font-size: 8px;
-		font-weight: 400;
-	}
-	@media (min-width: 768px) {
-		.nav-link { font-size: 11px; }
-	}
-	.nav-link:hover {
-		color: #B8860B;
-	}
-	.nav-link::after {
-		content: '';
-		@apply absolute -bottom-1 left-0 w-0 h-px bg-gold transition-all duration-500;
-	}
-	.nav-link:hover::after { @apply w-full; }
-
-	.soft-shadow { box-shadow: 0 15px 40px -10px rgba(184, 134, 11, 0.4); }
 </style>
