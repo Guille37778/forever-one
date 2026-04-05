@@ -59,22 +59,30 @@ if (Astro.request.method === 'POST') {
       width: 100%;
       margin: 0;
       display: flex;
+      flex-direction: column;
       font-family: 'Montserrat', sans-serif;
       background: #0a0a0a;
       overflow-x: hidden;
     }
 
+    @media (min-width: 900px) {
+      body { flex-direction: row; }
+    }
+
     /* Left decorative panel */
     .panel-left {
-      flex: 1;
+      display: none;
       background: linear-gradient(135deg, #0a0a0a 0%, #1a1205 50%, #080501 100%);
-      display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
       padding: 4rem;
       position: relative;
       overflow: hidden;
+    }
+
+    @media (min-width: 900px) {
+      .panel-left { display: flex; flex: 1; }
     }
 
     .panel-left::before {
@@ -162,15 +170,19 @@ if (Astro.request.method === 'POST') {
 
     /* Right login panel */
     .panel-right {
-      width: 480px;
+      width: 100%;
       min-height: 100vh;
       background: white;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      padding: 4rem 3.5rem;
+      padding: 3rem 1.5rem;
       position: relative;
+    }
+
+    @media (min-width: 900px) {
+      .panel-right { width: 480px; padding: 4rem 3.5rem; }
     }
 
     .panel-right::before {
@@ -206,6 +218,28 @@ if (Astro.request.method === 'POST') {
       color: #bbb;
       letter-spacing: 0.15em;
       text-transform: uppercase;
+    }
+
+    .mobile-logo {
+      display: block;
+      width: 48px;
+      height: 48px;
+      margin: 0 auto 1.5rem;
+      background: linear-gradient(135deg, #8B6508 0%, #B8860B 30%, #f3cf7a 55%, #B8860B 80%, #8B6508 100%);
+      background-size: 200% auto;
+      animation: goldShine 4s linear infinite;
+      -webkit-mask-image: url('/logo_circular.png');
+      -webkit-mask-size: contain;
+      -webkit-mask-repeat: no-repeat;
+      -webkit-mask-position: center;
+      mask-image: url('/logo_circular.png');
+      mask-size: contain;
+      mask-repeat: no-repeat;
+      mask-position: center;
+    }
+
+    @media (min-width: 900px) {
+      .mobile-logo { display: none; }
     }
 
     /* Form */
@@ -378,6 +412,7 @@ if (Astro.request.method === 'POST') {
   <!-- Right login panel -->
   <div class="panel-right">
     <div class="login-header">
+      <div class="mobile-logo"></div>
       <p class="login-tag">✦ Acceso Privado</p>
       <h2 class="login-title">Bienvenido</h2>
       <p class="login-subtitle">Identifíquese para continuar</p>
