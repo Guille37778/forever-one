@@ -125,7 +125,12 @@ if (isSuccess) successMessage = '✦ Prenda actualizada correctamente.';
     .form-group { margin-bottom: 1.25rem; }
     .form-group:last-child { margin-bottom: 0; }
 
-    label { display: block; font-size: 8px; letter-spacing: 0.3em; text-transform: uppercase; color: #999; margin-bottom: 0.5rem; font-weight: 600; }
+    label { display: block; font-size: 8px; letter-spacing: 0.3em; text-transform: uppercase; color: #999; margin-bottom: 0.5rem; font-weight: 600; text-align: center; }
+
+    /* Target specific labels to NOT center them if needed */
+    .size-label { text-align: center; }
+    .stock-item label { text-align: center; }
+    .form-section:nth-of-type(2) label { text-align: center; }
 
     input[type="text"], input[type="number"], textarea, select {
       width: 100%; padding: 0.75rem 1rem; background: white;
@@ -133,7 +138,14 @@ if (isSuccess) successMessage = '✦ Prenda actualizada correctamente.';
       font-family: 'Montserrat', sans-serif; font-size: 13px; outline: none;
       transition: border-color 0.25s, box-shadow 0.25s;
       min-height: 44px; /* App target */
+      text-align: center; /* Center horizontally like target design */
     }
+
+    /* Target specifically selects to center their text on some browsers */
+    select {
+      text-align-last: center;
+    }
+
     input:focus, textarea:focus, select:focus {
       border-color: rgba(184,134,11,0.5);
       box-shadow: 0 0 0 3px rgba(184,134,11,0.07);

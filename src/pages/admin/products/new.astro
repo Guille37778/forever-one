@@ -179,7 +179,21 @@ if (Astro.request.method === 'POST') {
       color: #999;
       margin-bottom: 0.5rem;
       font-weight: 600;
+      text-align: center;
     }
+
+    /* Target specific labels to NOT center them if needed */
+    .size-label {
+      text-align: center;
+    }
+    .stock-item label {
+      text-align: center;
+    }
+    
+    /* Left align description label if preferred */
+   .form-section:nth-of-type(2) label {
+     text-align: center; 
+   }
 
     input[type="text"],
     input[type="number"],
@@ -196,6 +210,12 @@ if (Astro.request.method === 'POST') {
       transition: border-color 0.25s, box-shadow 0.25s;
       appearance: auto;
       min-height: 44px; /* App touch target */
+      text-align: center; /* Center horizontally like target design */
+    }
+
+    /* Target specifically selects to center their text on some browsers */
+    select {
+      text-align-last: center;
     }
 
     input:focus, textarea:focus, select:focus {
