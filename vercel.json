@@ -2,7 +2,7 @@
   "crons": [
     {
       "path": "/api/sync-bcv?secret=fo1-secret-bcv-192837",
-      "schedule": "*/30 * * * *"
+      "schedule": "0 0 * * *"
     }
   ]
 }
