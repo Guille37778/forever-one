@@ -1,0 +1,696 @@
+---
+interface Props {
+  title: string;
+  activeNav?: string;
+  user?: { email: string };
+}
+
+const { title, activeNav = '', user } = Astro.props;
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+---
+<!DOCTYPE html>
+<html lang="es" data-admin="true">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{title} — Atelier Forever One</title>
+  <link rel="icon" type="image/png" href="/logo_circular.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --gold: #B8860B;
+      --gold-light: #ffd700;
+      --gold-pale: #f3cf7a;
+      --black: #0a0a0a;
+      --dark: #111;
+      --sidebar-w: 260px;
+      --cream: #FAF9F6;
+    }
+
+    /* ─── RESET GLOBAL para la zona admin ──────── */
+    /* Sobreescribimos cualquier color blanco que Tailwind pueda heredar */
+    html {
+      width: 100%;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background: var(--cream) !important;
+      color: #1a1a1a !important;
+      font-family: 'Montserrat', sans-serif;
+      min-height: 100vh;
+      width: 100%;
+      margin: 0;
+      display: flex;
+    }
+
+    /* Zona de contenido principal: forzar texto oscuro */
+    .admin-main,
+    .admin-main *:not(.sidebar):not(.sidebar *):not(.topbar-badge) {
+      color: inherit;
+    }
+
+    .page-content, .page-content p, .page-content span,
+    .page-content h1, .page-content h2, .page-content h3,
+    .page-content h4, .page-content label, .page-content td,
+    .page-content th, .page-content input, .page-content select,
+    .page-content textarea, .page-content button,
+    .page-content div, .page-content a {
+      /* Evitar que Tailwind/global CSS fuerce white */
+      --tw-text-opacity: 1;
+    }
+
+    /* Inputs y selects dentro del admin: siempre texto oscuro */
+    .admin-main input,
+    .admin-main select,
+    .admin-main textarea {
+      color: #111 !important;
+      background: white !important;
+    }
+
+    /* Tablas: texto oscuro */
+    .admin-main table td,
+    .admin-main table th {
+      color: inherit !important;
+    }
+
+    body {
+      background: var(--cream);
+      color: #1a1a1a;
+      font-family: 'Montserrat', sans-serif;
+      min-height: 100vh;
+      display: flex;
+    }
+
+    /* ─── SIDEBAR ──────────────────────────────── */
+    .sidebar {
+      width: var(--sidebar-w);
+      min-height: 100vh;
+      background: var(--black);
+      border-right: 1px solid rgba(184,134,11,0.15);
+      padding: 0;
+      position: fixed;
+      top: 0; left: 0; bottom: 0;
+      display: flex;
+      flex-direction: column;
+      z-index: 100;
+      transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    
+    body.sidebar-hidden .sidebar {
+      transform: translateX(-100%);
+    }
+
+    /* Logo area */
+    .sidebar-logo {
+      padding: 2rem 1.75rem;
+      border-bottom: 1px solid rgba(184,134,11,0.12);
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    /* Gold mask logo - same as website nav */
+    .logo-icon {
+      width: 44px;
+      height: 44px;
+      flex-shrink: 0;
+      background: linear-gradient(135deg, #8B6508 0%, #B8860B 30%, #f3cf7a 55%, #B8860B 80%, #8B6508 100%);
+      background-size: 200% auto;
+      animation: logoShine 4s linear infinite;
+      -webkit-mask-image: url('/logo_circular.png');
+      -webkit-mask-size: contain;
+      -webkit-mask-repeat: no-repeat;
+      -webkit-mask-position: center;
+      mask-image: url('/logo_circular.png');
+      mask-size: contain;
+      mask-repeat: no-repeat;
+      mask-position: center;
+      filter: drop-shadow(0 0 12px rgba(184,134,11,0.5));
+    }
+
+    @keyframes logoShine {
+      to { background-position: 200% center; }
+    }
+
+    .logo-text {
+      display: flex;
+      flex-direction: column;
+      gap: 1px;
+    }
+
+    .logo-brand {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.3rem;
+      font-weight: 700;
+      font-style: italic;
+      letter-spacing: -0.02em;
+      line-height: 1;
+      color: white;
+    }
+
+    .logo-brand span {
+      background: linear-gradient(135deg, #B8860B, #f3cf7a, #B8860B);
+      background-size: 200% auto;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      animation: logoShine 4s linear infinite;
+    }
+
+    .logo-sub {
+      font-size: 7px;
+      letter-spacing: 0.4em;
+      text-transform: uppercase;
+      color: rgba(184,134,11,0.5);
+      font-weight: 500;
+    }
+
+    /* Nav items */
+    .nav-section {
+      padding: 1.5rem 0;
+      flex: 1;
+    }
+
+    .nav-label {
+      font-size: 7px;
+      letter-spacing: 0.5em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.18);
+      padding: 0 1.75rem;
+      margin-bottom: 0.5rem;
+      font-weight: 600;
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 0.875rem;
+      padding: 0.75rem 1.75rem;
+      font-size: 10px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.4);
+      text-decoration: none;
+      transition: all 0.25s;
+      border-left: 2px solid transparent;
+      font-weight: 500;
+      position: relative;
+    }
+
+    .nav-item:hover {
+      color: rgba(255,255,255,0.85);
+      background: rgba(184,134,11,0.05);
+    }
+
+    .nav-item.active {
+      color: var(--gold-light);
+      background: rgba(184,134,11,0.08);
+      border-left-color: var(--gold);
+    }
+
+    .nav-item .nav-icon {
+      font-size: 13px;
+      opacity: 0.7;
+      width: 18px;
+      text-align: center;
+    }
+
+    .nav-item.active .nav-icon { opacity: 1; }
+
+    /* Divider */
+    .nav-divider {
+      height: 1px;
+      background: rgba(255,255,255,0.05);
+      margin: 1rem 1.75rem;
+    }
+
+    /* Footer */
+    .sidebar-footer {
+      padding: 1.5rem 1.75rem;
+      border-top: 1px solid rgba(184,134,11,0.12);
+    }
+
+    .user-email {
+      font-size: 9px;
+      color: rgba(255,255,255,0.25);
+      margin-bottom: 0.875rem;
+      word-break: break-all;
+      letter-spacing: 0.05em;
+    }
+
+    .logout-btn {
+      font-size: 8px;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.3);
+      background: none;
+      border: 1px solid rgba(255,255,255,0.08);
+      padding: 0.625rem 1rem;
+      cursor: pointer;
+      width: 100%;
+      transition: all 0.3s;
+      font-family: 'Montserrat', sans-serif;
+    }
+    .logout-btn:hover { 
+      color: #ffd700; 
+      border-color: rgba(184,134,11,0.4);
+      background: rgba(184,134,11,0.05);
+    }
+
+    /* ─── MAIN ──────────────────────────────────── */
+    .admin-main {
+      margin-left: var(--sidebar-w);
+      flex: 1;
+      min-height: 100vh;
+      background: var(--cream);
+      transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      width: 100%;
+    }
+    
+    body.sidebar-hidden .admin-main {
+      margin-left: 0;
+    }
+
+    /* Overlay for mobile */
+    .sidebar-overlay {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 90;
+      backdrop-filter: blur(2px);
+      transition: opacity 0.3s;
+    }
+
+    @media (max-width: 1024px) {
+      .sidebar {
+        transform: translateX(-100%) !important;
+      }
+      body.sidebar-mobile-open .sidebar {
+        transform: translateX(0) !important;
+      }
+      body.sidebar-mobile-open .sidebar-overlay {
+        display: block !important;
+      }
+      .admin-main, body.sidebar-hidden .admin-main {
+        margin-left: 0 !important;
+      }
+      .topbar {
+        padding: 0 1.25rem;
+      }
+      .topbar-title {
+        font-size: 1.1rem;
+      }
+      .topbar-badge {
+        display: none; /* Hide badge on mobile to save space */
+      }
+      .page-content {
+        padding: 1.25rem;
+      }
+    }
+
+    /* Top bar */
+    .topbar {
+      background: white;
+      border-bottom: 1px solid rgba(0,0,0,0.07);
+      padding: 0 2.5rem;
+      height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+    }
+
+    .topbar-title {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.25rem;
+      font-weight: 400;
+      color: #1a1a1a;
+      font-style: italic;
+    }
+
+    .topbar-badge {
+      font-size: 8px;
+      letter-spacing: 0.35em;
+      text-transform: uppercase;
+      background: rgba(184,134,11,0.1);
+      color: var(--gold);
+      padding: 4px 12px;
+      border: 1px solid rgba(184,134,11,0.2);
+      font-weight: 600;
+    }
+
+    /* Content area */
+    .page-content {
+      padding: 2.5rem;
+      color: #1a1a1a;
+    }
+
+    /* ─── OVERRIDE GLOBAL: forzar texto oscuro en zona admin ── */
+    /* Tailwind global puede poner color: white; lo neutralizamos */
+    [data-admin="true"] .admin-main {
+      color: #1a1a1a !important;
+    }
+
+    [data-admin="true"] .admin-main p,
+    [data-admin="true"] .admin-main span:not(.nav-icon):not(.status-badge),
+    [data-admin="true"] .admin-main h1,
+    [data-admin="true"] .admin-main h2,
+    [data-admin="true"] .admin-main h3,
+    [data-admin="true"] .admin-main h4,
+    [data-admin="true"] .admin-main li,
+    [data-admin="true"] .admin-main dt,
+    [data-admin="true"] .admin-main dd {
+      color: inherit;
+    }
+
+    [data-admin="true"] .admin-main label {
+      color: #999 !important;
+    }
+
+    [data-admin="true"] .admin-main td {
+      color: #333 !important;
+    }
+
+    [data-admin="true"] .admin-main th {
+      color: #aaa !important;
+    }
+
+    [data-admin="true"] .admin-main input,
+    [data-admin="true"] .admin-main select,
+    [data-admin="true"] .admin-main textarea {
+      color: #111 !important;
+    }
+
+    [data-admin="true"] .topbar .topbar-title {
+      color: #1a1a1a !important;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- MOBILE OVERLAY -->
+  <div id="sidebar-overlay" class="sidebar-overlay" onclick="document.body.classList.remove('sidebar-mobile-open')"></div>
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <!-- Logo -->
+    <div class="sidebar-logo">
+      <div class="logo-icon" aria-label="Forever One Logo"></div>
+      <div class="logo-text">
+        <div class="logo-brand">Forever <span>One</span></div>
+        <div class="logo-sub">Atelier Privado</div>
+      </div>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="nav-section">
+      <p class="nav-label">Gestión</p>
+      <a href="/admin/dashboard" class={`nav-item ${activeNav === 'dashboard' ? 'active' : ''}`}>
+        <span class="nav-icon">◈</span> Panel Principal
+      </a>
+      <a href="/admin/products" class={`nav-item ${activeNav === 'products' ? 'active' : ''}`}>
+        <span class="nav-icon">◇</span> Inventario
+      </a>
+      <a href="/admin/subcategories" class={`nav-item ${activeNav === 'subcategories' ? 'active' : ''}`}>
+        <span class="nav-icon">◈</span> Subcategorías
+      </a>
+      <a href="/admin/orders" class={`nav-item ${activeNav === 'orders' ? 'active' : ''}`}>
+        <span class="nav-icon">◇</span> Pedidos
+      </a>
+      
+      <div class="nav-divider"></div>
+      <p class="nav-label">Reportes</p>
+      <a href="/admin/analytics" class={`nav-item ${activeNav === 'analytics' ? 'active' : ''}`}>
+        <span class="nav-icon">◈</span> Analíticas
+      </a>
+      
+      <div class="nav-divider"></div>
+      <a href="/" target="_blank" class="nav-item">
+        <span class="nav-icon">↗</span> Ver Sitio
+      </a>
+    </nav>
+
+    <!-- Footer -->
+    <div class="sidebar-footer">
+      {user && <p class="user-email">{user.email}</p>}
+      <form action="/admin/logout" method="POST">
+        <button type="submit" class="logout-btn">Cerrar Sesión</button>
+      </form>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="admin-main">
+    <!-- Top Bar -->
+    <div class="topbar">
+      <div style="display: flex; align-items: center; gap: 1.25rem;">
+        <button id="sidebar-toggle" onclick="toggleSidebar()" aria-label="Alternar menú lateral" style="background: none; border: none; cursor: pointer; color: #1a1a1a; display: flex; align-items: center; justify-content: center; padding: 0.5rem; margin-left: -0.5rem; transition: color 0.2s;">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="3" y1="12" x2="21" y2="12"></line>
+            <line x1="3" y1="6" x2="21" y2="6"></line>
+            <line x1="3" y1="18" x2="21" y2="18"></line>
+          </svg>
+        </button>
+        <h1 class="topbar-title">{title}</h1>
+      </div>
+      <span class="topbar-badge">✦ Área Restringida</span>
+    </div>
+
+    <!-- Page Content -->
+    <div class="page-content">
+      <slot />
+    </div>
+  </main>
+
+  <script is:inline>
+    // Ejecutar inmediatamente para evitar parpadeos
+    if (localStorage.getItem('sidebar-hidden') === 'true' && window.innerWidth > 1024) {
+      document.body.classList.add('sidebar-hidden');
+    }
+
+    function toggleSidebar() {
+      const body = document.body;
+      if (window.innerWidth <= 1024) {
+         body.classList.toggle('sidebar-mobile-open');
+      } else {
+         body.classList.toggle('sidebar-hidden');
+         localStorage.setItem('sidebar-hidden', body.classList.contains('sidebar-hidden').toString());
+      }
+      
+      const btn = document.getElementById('sidebar-toggle');
+      if (btn) {
+        const svg = btn.querySelector('svg');
+        if (svg) {
+          svg.style.opacity = '0.5';
+          setTimeout(() => svg.style.opacity = '1', 150);
+        }
+      }
+    }
+  </script>
+</body>
+</html>
+
+<!-- GLOBAL ADMIN STYLES: afectan al slot y a todos los hijos -->
+<style is:global>
+  /* ─── Base admin reset ─────────────────────────────────────── */
+  [data-admin="true"] body {
+    background: #FAF9F6 !important;
+    color: #1a1a1a !important;
+  }
+
+  /* ─── Zona de contenido blanca: texto siempre oscuro ──────── */
+  .admin-main {
+    color: #1a1a1a;
+  }
+
+  /* Topbar */
+  .topbar {
+    background: white;
+    border-bottom: 1px solid rgba(0,0,0,0.07);
+  }
+  .topbar-title {
+    color: #1a1a1a !important;
+    font-family: 'Playfair Display', serif;
+    font-style: italic;
+  }
+
+  /* Page content: todos los elementos de texto */
+  .page-content {
+    color: #1a1a1a;
+  }
+
+  .page-content h1,
+  .page-content h2,
+  .page-content h3,
+  .page-content h4,
+  .page-content h5,
+  .page-content p,
+  .page-content li,
+  .page-content div {
+    color: inherit;
+  }
+
+  /* Labels de formulario */
+  .page-content label,
+  .admin-main label {
+    color: #999;
+    font-size: 8px;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    font-weight: 600;
+  }
+
+  /* Inputs, selects y textareas: siempre texto oscuro */
+  .page-content input,
+  .page-content select,
+  .page-content textarea,
+  .admin-main input,
+  .admin-main select,
+  .admin-main textarea {
+    color: #111 !important;
+    background: white;
+  }
+
+  /* Tablas */
+  .page-content table td,
+  .admin-main table td {
+    color: #333;
+  }
+
+  .page-content table th,
+  .admin-main table th {
+    color: #aaa;
+    font-size: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.3em;
+  }
+
+  /* Cards blancas */
+  .page-content .kpi-card,
+  .page-content .stat-card,
+  .page-content .chart-card,
+  .page-content .form-card,
+  .page-content .table-card,
+  .page-content .order-card,
+  .page-content .group-card,
+  .page-content .action-card {
+    background: white;
+  }
+
+  /* KPI values */
+  .kpi-value,
+  .stat-value {
+    color: #111 !important;
+    font-family: 'Playfair Display', serif;
+  }
+
+  .kpi-label,
+  .stat-label,
+  .kpi-sub,
+  .stat-meta {
+    color: #999;
+  }
+
+  /* Badges que deben quedar con su color propio */
+  .badge-gold { color: #B8860B !important; }
+  .badge-green { color: #1a9e50 !important; }
+
+  /* Headings dentro de cards */
+  .card-heading,
+  .chart-heading,
+  .table-heading {
+    color: #111 !important;
+  }
+
+  .card-title,
+  .chart-title,
+  .table-title {
+    color: #999 !important;
+  }
+
+  /* Subcat names */
+  .subcat-name,
+  .product-name,
+  .product-name-cell {
+    color: #111 !important;
+  }
+
+  .subcat-slug,
+  .product-meta,
+  .product-id-cell {
+    color: #bbb !important;
+  }
+
+  /* Links de acción */
+  .action-link,
+  .cancel-link,
+  .back-link {
+    color: #888;
+  }
+
+  /* Precio */
+  .price {
+    color: #B8860B !important;
+  }
+
+  /* Botones de acción estándar */
+  .action-btn {
+    color: #555;
+  }
+
+  /* Welcome banner: texto blanco sobre fondo negro → SÍ blanco */
+  .welcome-banner,
+  .welcome-banner .welcome-title,
+  .welcome-banner .welcome-label,
+  .welcome-banner .welcome-sub {
+    color: inherit;
+  }
+
+  /* Status bar dorado */
+  .status-bar {
+    color: #B8860B;
+  }
+
+  /* Action cards: Negro */
+  .action-name { color: #111 !important; }
+  .action-desc { color: #aaa !important; }
+
+  /* Page headers */
+  .page-header h2 { color: #111 !important; }
+  .page-header p  { color: #B8860B !important; }
+  .page-header-left h2 { color: #111 !important; }
+  .page-header-left p  { color: #B8860B !important; }
+
+  /* Order cards */
+  .order-code { color: #B8860B !important; }
+  .order-date { color: #bbb; }
+  .info-row { color: #444; }
+  .info-row strong { color: #111 !important; }
+  .info-label { color: #bbb; }
+  .price-total { color: #111; }
+  .price-total span { color: #B8860B !important; }
+
+  /* Group headers */
+  .group-label { color: #B8860B !important; }
+  .group-count { color: #ccc; }
+
+  /* Section labels con línea */
+  .section-label { color: #B8860B !important; }
+
+  /* Footer de formulario */
+  .form-footer { background: rgba(0,0,0,0.02); }
+
+  /* Heat bar */
+  .heat-pct { color: #B8860B !important; }
+
+  /* Empty states */
+  .empty-state, .empty-group, .empty-msg { color: #ccc; }
+</style>

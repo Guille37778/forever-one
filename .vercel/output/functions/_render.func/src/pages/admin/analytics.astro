@@ -1,0 +1,548 @@
+---
+import AdminLayout from '../../layouts/AdminLayout.astro';
+import { supabase } from '../../lib/supabase';
+
+const accessToken = Astro.cookies.get('sb-access-token')?.value;
+if (!accessToken) return Astro.redirect('/admin/login');
+const { data: { user }, error } = await supabase.auth.getUser(accessToken);
+if (error || !user) return Astro.redirect('/admin/login');
+
+const { data: analyticsData } = await supabase
+  .from('product_stats')
+  .select('*, products(name, price)')
+  .order('views', { ascending: false });
+
+// Obtener datos de órdenes reales
+const { data: ordersData } = await supabase
+  .from('orders')
+  .select('total_usd');
+
+const { data: orderItemsData } = await supabase
+  .from('order_items')
+  .select('product_id, quantity');
+
+// Procesar KPIs
+const totalViews = analyticsData?.reduce((s, i) => s + (i.views || 0), 0) || 0;
+const totalWA    = analyticsData?.reduce((s, i) => s + (i.whatsapp_clicks || 0), 0) || 0;
+const totalRevenue = ordersData?.reduce((s, i) => s + Number(i.total_usd || 0), 0) || 0;
+const totalOrders = ordersData?.length || 0;
+
+// Mapear ventas por producto
+const salesMap = orderItemsData?.reduce((acc: any, item: any) => {
+  acc[item.product_id] = (acc[item.product_id] || 0) + (item.quantity || 0);
+  return acc;
+}, {}) || {};
+
+const processedData = analyticsData?.map(item => ({
+  ...item,
+  sales: salesMap[item.product_id] || 0
+})) || [];
+
+const avgTime = analyticsData?.length 
+  ? Math.round(analyticsData.reduce((s, i) => s + (i.avg_time_on_page_seconds || 0), 0) / analyticsData.length)
+  : 0;
+---
+
+<AdminLayout title="Analíticas" activeNav="analytics" user={{ email: user?.email || '' }}>
+
+  <style>
+    /* ── KPI Cards ──────────────────────────────── */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1.5rem;
+      margin-bottom: 2.5rem;
+    }
+
+    .kpi-card {
+      background: white;
+      border: 1px solid rgba(0,0,0,0.07);
+      padding: 1.75rem 2rem;
+      position: relative;
+      overflow: hidden;
+      transition: box-shadow 0.3s;
+    }
+
+    .kpi-card::after {
+      content: '';
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, #B8860B, #f3cf7a, #B8860B);
+      background-size: 200% auto;
+      animation: shimmer 3s linear infinite;
+    }
+
+    .kpi-card:hover { box-shadow: 0 8px 32px rgba(0,0,0,0.08); }
+
+    @keyframes shimmer { to { background-position: 200% center; } }
+
+    .kpi-label {
+      font-size: 8px;
+      letter-spacing: 0.4em;
+      text-transform: uppercase;
+      color: #999;
+      font-weight: 600;
+      margin-bottom: 0.75rem;
+    }
+
+    .kpi-value {
+      font-family: 'Playfair Display', serif;
+      font-size: 2.75rem;
+      font-weight: 700;
+      font-style: italic;
+      color: #111;
+      line-height: 1;
+      margin-bottom: 0.5rem;
+    }
+
+    .kpi-sub {
+      font-size: 10px;
+      color: #B8860B;
+      font-weight: 500;
+      letter-spacing: 0.05em;
+    }
+
+    .kpi-icon {
+      position: absolute;
+      top: 1.5rem;
+      right: 1.75rem;
+      font-size: 2rem;
+      opacity: 0.08;
+    }
+
+    /* ── Charts grid ─────────────────────────────── */
+    .charts-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+      margin-bottom: 2rem;
+    }
+
+    .chart-card {
+      background: white;
+      border: 1px solid rgba(0,0,0,0.07);
+      padding: 1.75rem;
+      position: relative;
+    }
+
+    .chart-card.full-width {
+      grid-column: 1 / -1;
+    }
+
+    .chart-title {
+      font-size: 8px;
+      letter-spacing: 0.4em;
+      text-transform: uppercase;
+      color: #999;
+      font-weight: 600;
+      margin-bottom: 0.35rem;
+    }
+
+    .chart-heading {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.1rem;
+      font-style: italic;
+      color: #111;
+      margin-bottom: 1.5rem;
+    }
+
+    .chart-wrap {
+      position: relative;
+      height: 260px;
+    }
+
+    /* ── Table below charts ──────────────────────── */
+    .table-card {
+      background: white;
+      border: 1px solid rgba(0,0,0,0.07);
+      overflow: hidden;
+      margin-bottom: 2rem;
+    }
+
+    .table-header {
+      padding: 1.5rem 2rem;
+      border-bottom: 1px solid rgba(0,0,0,0.06);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .table-header-left {}
+    .table-title { font-size: 8px; letter-spacing: 0.4em; text-transform: uppercase; color: #999; font-weight: 600; margin-bottom: 0.25rem; }
+    .table-heading { font-family: 'Playfair Display', serif; font-size: 1.1rem; font-style: italic; color: #111; }
+
+    table { width: 100%; border-collapse: collapse; }
+    th {
+      padding: 1rem 2rem;
+      font-size: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.3em;
+      color: #aaa;
+      border-bottom: 1px solid rgba(0,0,0,0.06);
+      text-align: left;
+      font-weight: 600;
+      background: rgba(0,0,0,0.015);
+    }
+    td {
+      padding: 1rem 2rem;
+      font-size: 12px;
+      border-bottom: 1px solid rgba(0,0,0,0.04);
+      color: #444;
+    }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: rgba(184,134,11,0.025); }
+
+    .product-name-cell { font-family: 'Playfair Display', serif; font-weight: 700; font-size: 14px; color: #111; font-style: italic; }
+    .product-id-cell { font-size: 9px; color: #bbb; margin-top: 2px; }
+
+    .badge {
+      display: inline-block;
+      padding: 4px 12px;
+      font-size: 10px;
+      font-weight: 700;
+      border-radius: 99px;
+    }
+    .badge-gold { background: rgba(184,134,11,0.1); color: #B8860B; border: 1px solid rgba(184,134,11,0.2); }
+    .badge-green { background: rgba(37,211,102,0.1); color: #1a9e50; border: 1px solid rgba(37,211,102,0.2); }
+
+    .heat-bar-wrap { display: flex; align-items: center; gap: 0.75rem; }
+    .heat-bar { flex: 1; height: 4px; background: rgba(0,0,0,0.06); border-radius: 99px; overflow: hidden; }
+    .heat-fill { height: 100%; border-radius: 99px; background: linear-gradient(90deg, #B8860B, #f3cf7a); }
+    .heat-pct { font-size: 10px; color: #B8860B; font-weight: 700; min-width: 36px; }
+
+    .empty-state {
+      text-align: center;
+      padding: 5rem 2rem;
+      color: #ccc;
+    }
+    .empty-state svg { margin: 0 auto 1.5rem; opacity: 0.3; }
+    .empty-state p { font-size: 10px; letter-spacing: 0.4em; text-transform: uppercase; }
+
+    @media (max-width: 1024px) {
+      .kpi-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+      .charts-grid {
+        grid-template-columns: 1fr;
+      }
+      .chart-card {
+        grid-column: 1 / -1;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .kpi-grid {
+        grid-template-columns: 1fr;
+      }
+      .table-card {
+        overflow-x: auto;
+      }
+      table {
+        min-width: 600px;
+      }
+      .table-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+      }
+    }
+  </style>
+
+  <!-- KPI Cards -->
+  <div class="kpi-grid">
+    <div class="kpi-card">
+      <span class="kpi-icon">💰</span>
+      <p class="kpi-label">Ingresos Totales</p>
+      <p class="kpi-value">${totalRevenue.toLocaleString('en-US', { minimumFractionDigits: 2 })}</p>
+      <p class="kpi-sub">Ventas confirmadas (USD)</p>
+    </div>
+    <div class="kpi-card">
+      <span class="kpi-icon">📦</span>
+      <p class="kpi-label">Pedidos</p>
+      <p class="kpi-value">{totalOrders}</p>
+      <p class="kpi-sub">Conversiones totales</p>
+    </div>
+    <div class="kpi-card">
+      <span class="kpi-icon">👁</span>
+      <p class="kpi-label">Vistas Totales</p>
+      <p class="kpi-value">{totalViews.toLocaleString()}</p>
+      <p class="kpi-sub">Alcance de marca</p>
+    </div>
+  </div>
+
+  <!-- Charts -->
+  <div class="charts-grid">
+    <div class="chart-card">
+      <p class="chart-title">Distribución de Vistas</p>
+      <p class="chart-heading">Prendas más Vista</p>
+      <div class="chart-wrap">
+        <canvas id="viewsBarChart"></canvas>
+      </div>
+    </div>
+
+    <div class="chart-card">
+      <p class="chart-title">Temperatura de Conversión</p>
+      <p class="chart-heading">WhatsApp vs Vistas</p>
+      <div class="chart-wrap">
+        <canvas id="heatDoughnutChart"></canvas>
+      </div>
+    </div>
+
+    <div class="chart-card full-width">
+      <p class="chart-title">Evolución de Interés</p>
+      <p class="chart-heading">Calentamiento por Prenda</p>
+      <div class="chart-wrap">
+        <canvas id="heatLineChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Data Table -->
+  <div class="table-card">
+    <div class="table-header">
+      <div class="table-header-left">
+        <p class="table-title">Registro Detallado</p>
+        <p class="table-heading">Métricas de Comportamiento</p>
+      </div>
+    </div>
+
+    {processedData && processedData.length > 0 ? (
+      <table>
+        <thead>
+          <tr>
+            <th>Prenda</th>
+            <th>Vistas</th>
+            <th>Ventas</th>
+            <th>WhatsApp</th>
+            <th>Calentamiento</th>
+          </tr>
+        </thead>
+        <tbody>
+          {processedData.map((item: any) => {
+            const time = item.avg_time_on_page_seconds || 0;
+            const mins = Math.floor(time / 60);
+            const secs = time % 60;
+            const timeStr = mins > 0 ? `${mins}m ${secs}s` : `${secs}s`;
+            // Heat index: Views (1) + WA Clicks (10) + Sales (50)
+            const heatScore = (item.views || 0) + ((item.whatsapp_clicks || 0) * 10) + ((item.sales || 0) * 50);
+            const heat = Math.min((heatScore / 200) * 100, 100);
+            return (
+              <tr>
+                <td>
+                  <div class="product-name-cell">{item.products?.name}</div>
+                  <div class="product-id-cell">ID: {item.product_id?.substring(0,8)}</div>
+                </td>
+                <td><span class="badge badge-gold">{item.views}</span></td>
+                <td><span class="badge badge-gold" style="background:rgba(0,0,0,0.8); color:#f3cf7a;">{item.sales} und</span></td>
+                <td><span class="badge badge-green">{item.whatsapp_clicks} clics</span></td>
+                <td>
+                  <div class="heat-bar-wrap">
+                    <div class="heat-bar"><div class="heat-fill" style={`width:${heat}%`}></div></div>
+                    <span class="heat-pct">{Math.round(heat)}%</span>
+                  </div>
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    ) : (
+      <div class="empty-state">
+        <svg width="48" height="48" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+        </svg>
+        <p>Sin datos de interacción aún</p>
+      </div>
+    )}
+  </div>
+
+</AdminLayout>
+
+<script define:vars={{ analyticsData: processedData }}>
+  // Chart.js via CDN
+  const script = document.createElement('script');
+  script.src = 'https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js';
+  script.onload = () => initCharts();
+  document.head.appendChild(script);
+
+  function initCharts() {
+    const data = analyticsData || [];
+    if (!data.length) return;
+
+    const gold = '#B8860B';
+    const goldLight = '#f3cf7a';
+    const goldPale = 'rgba(184,134,11,0.12)';
+
+    // Palette for multiple datasets
+    const palette = [
+      'rgba(184,134,11,0.85)',
+      'rgba(243,207,122,0.85)',
+      'rgba(139,101,8,0.85)',
+      'rgba(255,215,0,0.85)',
+      'rgba(205,163,51,0.85)',
+    ];
+
+    const labels = data.map(d => d.products?.name || 'Prenda');
+    const views  = data.map(d => d.views || 0);
+    const wa     = data.map(d => d.whatsapp_clicks || 0);
+    const heats  = data.map(d => Math.min(((d.views + (d.whatsapp_clicks * 10)) / 100) * 100, 100));
+
+    const defaultFontOpts = {
+      family: "'Montserrat', sans-serif",
+      size: 10,
+    };
+
+    // 1. Bar Chart — Vistas por prenda
+    const barCtx = document.getElementById('viewsBarChart')?.getContext('2d');
+    if (barCtx) {
+      new Chart(barCtx, {
+        type: 'bar',
+        data: {
+          labels,
+          datasets: [{
+            label: 'Vistas',
+            data: views,
+            backgroundColor: palette,
+            borderWidth: 0,
+            borderRadius: 4,
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              backgroundColor: '#111',
+              titleColor: goldLight,
+              bodyColor: '#ddd',
+              titleFont: defaultFontOpts,
+              bodyFont: defaultFontOpts,
+              padding: 12,
+              callbacks: {
+                label: ctx => `  ${ctx.parsed.y} vistas`
+              }
+            }
+          },
+          scales: {
+            x: {
+              grid: { display: false },
+              ticks: { color: '#aaa', font: defaultFontOpts }
+            },
+            y: {
+              grid: { color: 'rgba(0,0,0,0.05)' },
+              ticks: { color: '#aaa', font: defaultFontOpts }
+            }
+          }
+        }
+      });
+    }
+
+    // 2. Doughnut — WhatsApp heat distribution
+    const donutCtx = document.getElementById('heatDoughnutChart')?.getContext('2d');
+    if (donutCtx) {
+      new Chart(donutCtx, {
+        type: 'doughnut',
+        data: {
+          labels,
+          datasets: [{
+            data: wa.length && wa.some(v => v > 0) ? wa : views,
+            backgroundColor: palette,
+            borderWidth: 2,
+            borderColor: '#fff',
+            hoverOffset: 6,
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          cutout: '70%',
+          plugins: {
+            legend: {
+              position: 'bottom',
+              labels: {
+                color: '#555',
+                font: defaultFontOpts,
+                boxWidth: 10,
+                padding: 14,
+              }
+            },
+            tooltip: {
+              backgroundColor: '#111',
+              titleColor: goldLight,
+              bodyColor: '#ddd',
+              titleFont: defaultFontOpts,
+              bodyFont: defaultFontOpts,
+              padding: 12,
+            }
+          }
+        }
+      });
+    }
+
+    // 3. Line chart — heat index per product
+    const lineCtx = document.getElementById('heatLineChart')?.getContext('2d');
+    if (lineCtx) {
+      new Chart(lineCtx, {
+        type: 'line',
+        data: {
+          labels,
+          datasets: [
+            {
+              label: 'Índice de Calentamiento (%)',
+              data: heats,
+              borderColor: gold,
+              backgroundColor: goldPale,
+              fill: true,
+              tension: 0.4,
+              pointBackgroundColor: gold,
+              pointBorderColor: '#fff',
+              pointBorderWidth: 2,
+              pointRadius: 5,
+            },
+            {
+              label: 'Clics WhatsApp',
+              data: wa,
+              borderColor: '#25D366',
+              backgroundColor: 'rgba(37,211,102,0.08)',
+              fill: true,
+              tension: 0.4,
+              pointBackgroundColor: '#25D366',
+              pointBorderColor: '#fff',
+              pointBorderWidth: 2,
+              pointRadius: 5,
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              labels: { color: '#555', font: defaultFontOpts, boxWidth: 12, padding: 16 }
+            },
+            tooltip: {
+              backgroundColor: '#111',
+              titleColor: goldLight,
+              bodyColor: '#ddd',
+              titleFont: defaultFontOpts,
+              bodyFont: defaultFontOpts,
+              padding: 12,
+            }
+          },
+          scales: {
+            x: {
+              grid: { display: false },
+              ticks: { color: '#aaa', font: defaultFontOpts }
+            },
+            y: {
+              grid: { color: 'rgba(0,0,0,0.05)' },
+              ticks: { color: '#aaa', font: defaultFontOpts }
+            }
+          }
+        }
+      });
+    }
+  }
+</script>

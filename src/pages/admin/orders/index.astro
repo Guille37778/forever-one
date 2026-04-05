@@ -1,0 +1,208 @@
+---
+import AdminLayout from '../../../layouts/AdminLayout.astro';
+import { supabase } from '../../../lib/supabase';
+
+const accessToken = Astro.cookies.get('sb-access-token')?.value;
+if (!accessToken) return Astro.redirect('/admin/login');
+const { data: { user }, error } = await supabase.auth.getUser(accessToken);
+if (error || !user) return Astro.redirect('/admin/login');
+
+const { data: ordersData } = await supabase
+  .from('orders')
+  .select('*, order_items(*)')
+  .order('created_at', { ascending: false });
+
+const statusColors: Record<string, { bg: string; text: string; border: string }> = {
+  verificando: { bg: 'rgba(74,144,226,0.08)', text: '#4A90E2', border: 'rgba(74,144,226,0.2)' },
+  preparando:  { bg: 'rgba(245,166,35,0.08)',  text: '#E59B10', border: 'rgba(245,166,35,0.2)' },
+  enviado:     { bg: 'rgba(37,211,102,0.08)',  text: '#1a9e50', border: 'rgba(37,211,102,0.2)' },
+  entregado:   { bg: 'rgba(184,134,11,0.08)',  text: '#B8860B', border: 'rgba(184,134,11,0.2)' },
+  cancelado:   { bg: 'rgba(220,38,38,0.08)',   text: '#dc2626', border: 'rgba(220,38,38,0.2)' },
+};
+---
+
+<AdminLayout title="Pedidos" activeNav="orders" user={{ email: user.email || '' }}>
+
+<style>
+  .page-header { margin-bottom: 2rem; }
+  .page-header p { font-size: 8px; letter-spacing: 0.45em; text-transform: uppercase; color: #B8860B; font-weight: 600; margin-bottom: 0.35rem; }
+  .page-header h2 { font-family: 'Playfair Display', serif; font-size: 1.75rem; font-weight: 700; font-style: italic; color: #111; }
+
+  .order-card {
+    background: white;
+    border: 1px solid rgba(0,0,0,0.07);
+    margin-bottom: 1.5rem;
+    overflow: hidden;
+    transition: box-shadow 0.3s;
+  }
+  .order-card:hover { box-shadow: 0 8px 32px rgba(0,0,0,0.08); }
+
+  .order-header {
+    padding: 1.25rem 1.75rem;
+    background: rgba(0,0,0,0.02);
+    border-bottom: 1px solid rgba(0,0,0,0.06);
+    display: flex; justify-content: space-between; align-items: center;
+  }
+
+  .order-code {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.2rem; font-weight: 700; font-style: italic; color: #B8860B;
+    margin-right: 1rem;
+  }
+
+  .order-date { font-size: 10px; color: #bbb; }
+
+  .status-badge {
+    font-size: 8px; text-transform: uppercase; letter-spacing: 0.2em;
+    padding: 5px 14px; font-weight: 700;
+  }
+
+  .order-body {
+    padding: 1.75rem;
+    display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;
+  }
+
+  .info-label {
+    font-size: 8px; letter-spacing: 0.35em; text-transform: uppercase;
+    color: #bbb; font-weight: 600; margin-bottom: 1rem;
+  }
+
+  .info-row { font-size: 12px; color: #444; margin-bottom: 0.5rem; }
+  .info-row strong { color: #111; }
+
+  .items-list { list-style: none; }
+  .items-list li {
+    display: flex; justify-content: space-between; align-items: center;
+    font-size: 11px; padding: 0.5rem 0;
+    border-bottom: 1px solid rgba(0,0,0,0.04); color: #555;
+  }
+  .items-list li:last-child { border-bottom: none; }
+  .items-list li strong { color: #B8860B; font-family: 'Playfair Display', serif; font-style: italic; }
+
+  .price-total {
+    text-align: right; margin-top: 1rem;
+    font-family: 'Playfair Display', serif; font-size: 1.25rem;
+    font-style: italic; font-weight: 700; color: #111;
+  }
+  .price-total span { color: #B8860B; }
+
+  .order-actions {
+    padding: 1.25rem 1.75rem;
+    background: rgba(0,0,0,0.015);
+    border-top: 1px solid rgba(0,0,0,0.06);
+    display: flex; gap: 0.875rem;
+  }
+
+  .action-btn {
+    font-size: 8px; text-transform: uppercase; letter-spacing: 0.25em;
+    border: 1px solid rgba(0,0,0,0.1); padding: 8px 16px;
+    cursor: pointer; background: white; color: #555;
+    transition: all 0.25s; font-family: 'Montserrat', sans-serif; font-weight: 600;
+    text-decoration: none; display: inline-block;
+  }
+  .action-btn:hover { border-color: #B8860B; color: #B8860B; }
+  .action-btn.wa { border-color: rgba(37,211,102,0.3); color: #1a9e50; }
+  .action-btn.wa:hover { background: rgba(37,211,102,0.05); border-color: #25D366; }
+
+  .empty-state {
+    background: white; border: 1px solid rgba(0,0,0,0.07);
+    text-align: center; padding: 6rem 2rem; color: #ddd;
+  }
+  .empty-state p { font-size: 10px; letter-spacing: 0.4em; text-transform: uppercase; }
+
+  @media (max-width: 640px) {
+    .order-header {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 1rem;
+    }
+    .order-body {
+      grid-template-columns: 1fr;
+      gap: 1.5rem;
+      padding: 1.25rem;
+    }
+    .order-actions {
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+    .action-btn {
+      width: 100%;
+      text-align: center;
+    }
+  }
+</style>
+
+  <div class="page-header">
+    <p>Gestión Comercial</p>
+    <h2>Registro de Pedidos</h2>
+  </div>
+
+  {ordersData && ordersData.length > 0 ? ordersData.map((order) => {
+    const sc = statusColors[order.status] || statusColors.verificando;
+    return (
+      <div class="order-card">
+        <div class="order-header">
+          <div style="display:flex; align-items:center;">
+            <span class="order-code">{order.order_code}</span>
+            <span class="order-date">{new Date(order.created_at).toLocaleString('es-VE')}</span>
+          </div>
+          <span class="status-badge" style={`background:${sc.bg}; color:${sc.text}; border: 1px solid ${sc.border};`}>
+            {order.status}
+          </span>
+        </div>
+
+        <div class="order-body">
+          <div>
+            <p class="info-label">Datos del Cliente</p>
+            <p class="info-row"><strong>{order.customer_name}</strong></p>
+            <p class="info-row">{order.customer_email}</p>
+            <p class="info-row">{order.customer_phone}</p>
+            <p class="info-row">📍 {order.city} · {order.courier?.toUpperCase()}</p>
+          </div>
+          <div>
+            <p class="info-label">Prendas del Pedido</p>
+            <ul class="items-list">
+              {order.order_items?.map((item: any) => (
+                <li>
+                  <span>{item.product_name} (x{item.quantity}) — {item.size}</span>
+                  <strong>${item.price_usd}</strong>
+                </li>
+              ))}
+            </ul>
+            <p class="price-total">Total: <span>${order.total_usd}</span></p>
+          </div>
+        </div>
+
+        <div class="order-actions">
+          <button class="action-btn" onclick={`handleStatus('${order.id}', 'preparando')`}>Confirmar Pago</button>
+          <button class="action-btn" onclick={`handleStatus('${order.id}', 'enviado')`}>Marcar Enviado</button>
+          <a href={`https://wa.me/${order.customer_phone?.replace(/[ +]/g, '')}`} target="_blank" class="action-btn wa">
+            WhatsApp
+          </a>
+        </div>
+      </div>
+    );
+  }) : (
+    <div class="empty-state">
+      <p>No hay pedidos registrados aún</p>
+    </div>
+  )}
+
+</AdminLayout>
+
+<script is:inline>
+  async function handleStatus(orderId, newStatus) {
+    if (!confirm(`¿Cambiar estado a "${newStatus}"?`)) return;
+    try {
+      const res = await fetch(`/api/orders/${orderId}/status`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: newStatus })
+      });
+      if (res.ok) window.location.reload();
+      else alert('Error al actualizar el estado');
+    } catch (e) {
+      alert('Error de conexión');
+    }
+  }
+</script>

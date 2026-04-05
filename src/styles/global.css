@@ -7,3 +7,33 @@
   --font-serif: "Cinzel", serif;
   --font-sans: "Inter", sans-serif;
 }
+
+/* ─── Admin panel: neutralizar colores de Tailwind ─────────── */
+/* El panel admin usa data-admin="true" en el <html>            */
+[data-admin="true"],
+[data-admin="true"] body {
+  background: #FAF9F6 !important;
+  color: #1a1a1a !important;
+}
+
+[data-admin="true"] .admin-main {
+  color: #1a1a1a;
+}
+
+[data-admin="true"] .admin-main p,
+[data-admin="true"] .admin-main h1,
+[data-admin="true"] .admin-main h2,
+[data-admin="true"] .admin-main h3,
+[data-admin="true"] .admin-main h4,
+[data-admin="true"] .admin-main label,
+[data-admin="true"] .admin-main span:not(.nav-icon):not(.badge),
+[data-admin="true"] .admin-main td,
+[data-admin="true"] .admin-main th {
+  color: inherit;
+}
+
+[data-admin="true"] .admin-main input,
+[data-admin="true"] .admin-main select,
+[data-admin="true"] .admin-main textarea {
+  color: #111 !important;
+}

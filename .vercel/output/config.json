@@ -1,0 +1,116 @@
+{
+	"version": 3,
+	"routes": [
+		{
+			"handle": "filesystem"
+		},
+		{
+			"src": "^/_astro/(.*)$",
+			"headers": {
+				"cache-control": "public, max-age=31536000, immutable"
+			},
+			"continue": true
+		},
+		{
+			"src": "^/_server-islands/([^/]+?)/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/_image/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/404/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/admin/analytics/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/admin/dashboard/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/admin/login/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/admin/logout/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/admin/orders/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/admin/products/new/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/admin/products/([^/]+?)/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/admin/products/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/admin/register/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/admin/subcategories/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/admin/verify/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/api/orders/([^/]+?)/status/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/api/orders/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/api/stats/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/api/sync-bcv/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/ASESORIAS_RESTORATION/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/catalogos/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/colecciones/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/contacto/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/ropas/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/.*$",
+			"dest": "_render",
+			"status": 404
+		}
+	]
+}
