@@ -18,7 +18,7 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet">
   <style>
-    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box !important; }
 
     :root {
       --gold: #B8860B;
@@ -290,7 +290,8 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
       min-height: 100vh;
       background: var(--cream);
       transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-      width: 100%;
+      width: auto; /* Prevent overflow */
+      max-width: 100%;
     }
     
     body.sidebar-hidden .admin-main {

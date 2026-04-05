@@ -79,7 +79,8 @@ const accesoriosSubs = subcategories?.filter(s => s.parent_category === 'accesor
         position: static;
         margin-bottom: 2rem;
         width: 100%;
-        border: 1px solid rgba(0,0,0,0.05);
+        border: 1px solid rgba(184,134,11,0.1);
+        overflow: visible; /* Prevent shadow clipping */
       }
     }
     .form-card {
@@ -98,7 +99,7 @@ const accesoriosSubs = subcategories?.filter(s => s.parent_category === 'accesor
     .card-header p { font-size: 8px; letter-spacing: 0.4em; text-transform: uppercase; color: #B8860B; font-weight: 600; margin-bottom: 0.2rem; }
     .card-header h3 { font-family: 'Playfair Display', serif; font-size: 1rem; font-style: italic; color: #111; }
 
-    .card-body { padding: 1.5rem 1.75rem; }
+    .card-body { padding: 1.5rem; }
 
     .form-group { margin-bottom: 1.25rem; }
     label { display: block; font-size: 8px; letter-spacing: 0.3em; text-transform: uppercase; color: #999; margin-bottom: 0.5rem; font-weight: 600; }
