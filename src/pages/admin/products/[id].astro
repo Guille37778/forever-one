@@ -102,6 +102,15 @@ if (isSuccess) successMessage = '✦ Prenda actualizada correctamente.';
     .message.success { border-color: #B8860B; background: rgba(184,134,11,0.05); color: #8B6508; }
     .message.error { border-color: #dc2626; background: rgba(220,38,38,0.05); color: #dc2626; }
 
+    @media (max-width: 768px) {
+      .form-card {
+        border-radius: 20px;
+        margin-left: -1rem;
+        margin-right: -1rem;
+        width: calc(100% + 2rem);
+        border: none;
+      }
+    }
     .form-card { background: white; border: 1px solid rgba(0,0,0,0.07); padding: 0; max-width: 780px; overflow: hidden; }
     .form-section { padding: 2rem 2.5rem; border-bottom: 1px solid rgba(0,0,0,0.06); }
 
@@ -123,6 +132,7 @@ if (isSuccess) successMessage = '✦ Prenda actualizada correctamente.';
       border: 1px solid rgba(0,0,0,0.12); color: #111;
       font-family: 'Montserrat', sans-serif; font-size: 13px; outline: none;
       transition: border-color 0.25s, box-shadow 0.25s;
+      min-height: 44px; /* App target */
     }
     input:focus, textarea:focus, select:focus {
       border-color: rgba(184,134,11,0.5);
@@ -159,6 +169,7 @@ if (isSuccess) successMessage = '✦ Prenda actualizada correctamente.';
       color: #0a0a0a; border: none; font-family: 'Montserrat', sans-serif;
       font-size: 9px; letter-spacing: 0.4em; text-transform: uppercase; font-weight: 700;
       cursor: pointer; transition: opacity 0.3s;
+      min-height: 48px; /* App target */
     }
     .submit-btn:hover { opacity: 0.85; }
 
@@ -167,6 +178,7 @@ if (isSuccess) successMessage = '✦ Prenda actualizada correctamente.';
       border: 1px solid rgba(220,38,38,0.3); color: #dc2626;
       font-family: 'Montserrat', sans-serif; font-size: 9px; letter-spacing: 0.3em;
       text-transform: uppercase; cursor: pointer; transition: all 0.3s; font-weight: 600;
+      min-height: 48px; /* App target */
     }
     .delete-btn:hover { background: rgba(220,38,38,0.05); border-color: #dc2626; }
 

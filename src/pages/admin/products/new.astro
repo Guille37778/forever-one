@@ -116,6 +116,15 @@ if (Astro.request.method === 'POST') {
     .message.success { border-color: #B8860B; background: rgba(184,134,11,0.05); color: #8B6508; }
     .message.error { border-color: #dc2626; background: rgba(220,38,38,0.05); color: #dc2626; }
 
+    @media (max-width: 768px) {
+      .form-card {
+        border-radius: 20px;
+        margin-left: -1rem;
+        margin-right: -1rem;
+        width: calc(100% + 2rem);
+        border: none;
+      }
+    }
     .form-card {
       background: white;
       border: 1px solid rgba(0,0,0,0.07);
@@ -186,6 +195,7 @@ if (Astro.request.method === 'POST') {
       outline: none;
       transition: border-color 0.25s, box-shadow 0.25s;
       appearance: auto;
+      min-height: 44px; /* App touch target */
     }
 
     input:focus, textarea:focus, select:focus {
@@ -250,6 +260,7 @@ if (Astro.request.method === 'POST') {
       font-weight: 700;
       cursor: pointer;
       transition: opacity 0.3s;
+      min-height: 48px; /* App target */
     }
     .submit-btn:hover { opacity: 0.85; }
 

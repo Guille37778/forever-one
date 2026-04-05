@@ -25,111 +25,113 @@ const statusColors: Record<string, { bg: string; text: string; border: string }>
 
 <style>
   .page-header { margin-bottom: 2rem; }
-  .page-header p { font-size: 8px; letter-spacing: 0.45em; text-transform: uppercase; color: #B8860B; font-weight: 600; margin-bottom: 0.35rem; }
-  .page-header h2 { font-family: 'Playfair Display', serif; font-size: 1.75rem; font-weight: 700; font-style: italic; color: #111; }
+  .page-header p { font-size: 9px; letter-spacing: 0.35em; text-transform: uppercase; color: #B8860B; font-weight: 700; margin-bottom: 4px; }
+  .page-header h2 { font-family: 'Playfair Display', serif; font-size: 1.75rem; font-weight: 900; font-style: italic; color: #111; }
 
+    @media (max-width: 768px) {
+      .order-card {
+        border-radius: 20px;
+        box-shadow: 0 8px 32px rgba(0,0,0,0.04);
+      }
+      .info-row {
+        line-height: 1.6;
+      }
+    }
   .order-card {
     background: white;
-    border: 1px solid rgba(0,0,0,0.07);
+    border: 1px solid rgba(0,0,0,0.05);
+    border-radius: 12px;
     margin-bottom: 1.5rem;
     overflow: hidden;
-    transition: box-shadow 0.3s;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.02);
   }
-  .order-card:hover { box-shadow: 0 8px 32px rgba(0,0,0,0.08); }
+  .order-card:hover { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(0,0,0,0.08); }
 
   .order-header {
-    padding: 1.25rem 1.75rem;
-    background: rgba(0,0,0,0.02);
-    border-bottom: 1px solid rgba(0,0,0,0.06);
+    padding: 1.25rem 1.5rem;
+    background: #fafafa;
+    border-bottom: 1px solid #f0f0f0;
     display: flex; justify-content: space-between; align-items: center;
   }
 
   .order-code {
     font-family: 'Playfair Display', serif;
-    font-size: 1.2rem; font-weight: 700; font-style: italic; color: #B8860B;
-    margin-right: 1rem;
+    font-size: 1.25rem; font-weight: 900; font-style: italic; color: #B8860B;
+    margin-right: 0.75rem;
   }
 
-  .order-date { font-size: 10px; color: #bbb; }
+  .order-date { font-size: 9px; color: #aaa; text-transform: uppercase; font-weight: 600; }
 
   .status-badge {
-    font-size: 8px; text-transform: uppercase; letter-spacing: 0.2em;
-    padding: 5px 14px; font-weight: 700;
+    font-size: 7px; text-transform: uppercase; letter-spacing: 0.15em;
+    padding: 5px 12px; font-weight: 800; border-radius: 6px;
   }
 
   .order-body {
-    padding: 1.75rem;
-    display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;
+    padding: 1.5rem;
+    display: grid; grid-template-columns: 1fr; gap: 1.5rem;
   }
+  @media (min-width: 768px) { .order-body { grid-template-columns: 1fr 1fr; gap: 2.5rem; padding: 2rem; } }
 
   .info-label {
-    font-size: 8px; letter-spacing: 0.35em; text-transform: uppercase;
-    color: #bbb; font-weight: 600; margin-bottom: 1rem;
+    font-size: 8px; letter-spacing: 0.2em; text-transform: uppercase;
+    color: #bbb; font-weight: 700; margin-bottom: 0.75rem;
+    display: flex; align-items: center; gap: 0.5rem;
   }
+  .info-label::after { content: ''; flex: 1; height: 1px; background: #f0f0f0; }
 
-  .info-row { font-size: 12px; color: #444; margin-bottom: 0.5rem; }
-  .info-row strong { color: #111; }
+  .info-row { font-size: 13px; color: #444; margin-bottom: 0.35rem; }
+  .info-row strong { color: #111; font-weight: 700; }
 
-  .items-list { list-style: none; }
+  .items-list { list-style: none; background: #fafafa; border-radius: 8px; padding: 1rem; }
   .items-list li {
     display: flex; justify-content: space-between; align-items: center;
-    font-size: 11px; padding: 0.5rem 0;
-    border-bottom: 1px solid rgba(0,0,0,0.04); color: #555;
+    font-size: 11px; padding: 0.65rem 0;
+    border-bottom: 1px solid rgba(0,0,0,0.03); color: #555;
   }
   .items-list li:last-child { border-bottom: none; }
-  .items-list li strong { color: #B8860B; font-family: 'Playfair Display', serif; font-style: italic; }
+  .items-list li strong { color: #B8860B; font-family: 'Playfair Display', serif; font-style: italic; font-weight: 800; font-size: 12px; }
 
   .price-total {
-    text-align: right; margin-top: 1rem;
-    font-family: 'Playfair Display', serif; font-size: 1.25rem;
-    font-style: italic; font-weight: 700; color: #111;
+    text-align: right; margin-top: 1.25rem;
+    font-family: 'Playfair Display', serif; font-size: 1.5rem;
+    font-style: italic; font-weight: 900; color: #111;
   }
   .price-total span { color: #B8860B; }
 
   .order-actions {
-    padding: 1.25rem 1.75rem;
-    background: rgba(0,0,0,0.015);
-    border-top: 1px solid rgba(0,0,0,0.06);
-    display: flex; gap: 0.875rem;
+    padding: 1.25rem 1.5rem;
+    background: #fffdf5;
+    border-top: 1px solid rgba(184,134,11,0.1);
+    display: grid; grid-template-columns: 1fr; gap: 0.75rem;
   }
+  @media (min-width: 640px) { .order-actions { grid-template-columns: repeat(3, 1fr); padding: 1.5rem 2rem; } }
 
+    @media (max-width: 768px) {
+      .action-btn {
+        min-height: 48px;
+        border-radius: 12px;
+        font-size: 9px;
+      }
+    }
   .action-btn {
-    font-size: 8px; text-transform: uppercase; letter-spacing: 0.25em;
-    border: 1px solid rgba(0,0,0,0.1); padding: 8px 16px;
+    font-size: 8px; text-transform: uppercase; letter-spacing: 0.15em;
+    border: 1px solid #eee; padding: 0.875rem 1rem;
     cursor: pointer; background: white; color: #555;
-    transition: all 0.25s; font-family: 'Montserrat', sans-serif; font-weight: 600;
-    text-decoration: none; display: inline-block;
+    transition: all 0.3s; font-family: 'Montserrat', sans-serif; font-weight: 800;
+    text-decoration: none; display: flex; align-items: center; justify-content: center; gap: 0.5rem;
+    border-radius: 8px;
   }
-  .action-btn:hover { border-color: #B8860B; color: #B8860B; }
-  .action-btn.wa { border-color: rgba(37,211,102,0.3); color: #1a9e50; }
-  .action-btn.wa:hover { background: rgba(37,211,102,0.05); border-color: #25D366; }
+  .action-btn:hover { border-color: #B8860B; color: #B8860B; background: #fff; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(184,134,11,0.15); }
+  .action-btn.wa { background: #E8F7EE; border-color: #C2EAD0; color: #1a9e50; }
+  .action-btn.wa:hover { background: #25D366; border-color: #25D366; color: #fff; }
 
   .empty-state {
-    background: white; border: 1px solid rgba(0,0,0,0.07);
-    text-align: center; padding: 6rem 2rem; color: #ddd;
+    background: white; border: 1px solid rgba(0,0,0,0.05); border-radius: 12px;
+    text-align: center; padding: 6rem 2rem; color: #ccc;
   }
-  .empty-state p { font-size: 10px; letter-spacing: 0.4em; text-transform: uppercase; }
-
-  @media (max-width: 640px) {
-    .order-header {
-      flex-direction: column;
-      align-items: flex-start;
-      gap: 1rem;
-    }
-    .order-body {
-      grid-template-columns: 1fr;
-      gap: 1.5rem;
-      padding: 1.25rem;
-    }
-    .order-actions {
-      flex-direction: column;
-      gap: 0.5rem;
-    }
-    .action-btn {
-      width: 100%;
-      text-align: center;
-    }
-  }
+  .empty-state p { font-size: 10px; letter-spacing: 0.4em; text-transform: uppercase; font-weight: 700; }
 </style>
 
   <div class="page-header">
@@ -174,10 +176,14 @@ const statusColors: Record<string, { bg: string; text: string; border: string }>
         </div>
 
         <div class="order-actions">
-          <button class="action-btn" onclick={`handleStatus('${order.id}', 'preparando')`}>Confirmar Pago</button>
-          <button class="action-btn" onclick={`handleStatus('${order.id}', 'enviado')`}>Marcar Enviado</button>
+          <button class="action-btn" onclick={`handleStatus('${order.id}', 'preparando')`}>
+            <span>💳</span> Confirmar Pago
+          </button>
+          <button class="action-btn" onclick={`handleStatus('${order.id}', 'enviado')`}>
+            <span>🚚</span> Marcar Enviado
+          </button>
           <a href={`https://wa.me/${order.customer_phone?.replace(/[ +]/g, '')}`} target="_blank" class="action-btn wa">
-            WhatsApp
+            <span>💬</span> WhatsApp
           </a>
         </div>
       </div>

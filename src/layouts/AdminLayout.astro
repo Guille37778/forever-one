@@ -101,6 +101,12 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
       transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
     
+    @media (max-width: 768px) {
+      .sidebar {
+        padding-bottom: env(safe-area-inset-bottom);
+      }
+    }
+    
     body.sidebar-hidden .sidebar {
       transform: translateX(-100%);
     }
@@ -174,16 +180,22 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
     .nav-section {
       padding: 1.5rem 0;
       flex: 1;
+      overflow-y: auto;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(184,134,11,0.2) transparent;
     }
 
+    .nav-section::-webkit-scrollbar { width: 4px; }
+    .nav-section::-webkit-scrollbar-thumb { background: rgba(184,134,11,0.2); border-radius: 10px; }
+
     .nav-label {
-      font-size: 7px;
-      letter-spacing: 0.5em;
+      font-size: 8px;
+      letter-spacing: 0.35em;
       text-transform: uppercase;
-      color: rgba(255,255,255,0.18);
+      color: rgba(255,255,255,0.2);
       padding: 0 1.75rem;
-      margin-bottom: 0.5rem;
-      font-weight: 600;
+      margin-bottom: 0.75rem;
+      font-weight: 700;
     }
 
     .nav-item {
@@ -200,6 +212,7 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
       border-left: 2px solid transparent;
       font-weight: 500;
       position: relative;
+      min-height: 44px; /* Touch target for mobile app */
     }
 
     .nav-item:hover {
@@ -244,23 +257,31 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
     }
 
     .logout-btn {
-      font-size: 8px;
-      letter-spacing: 0.25em;
+      font-size: 9px;
+      letter-spacing: 0.15em;
       text-transform: uppercase;
-      color: rgba(255,255,255,0.3);
-      background: none;
-      border: 1px solid rgba(255,255,255,0.08);
-      padding: 0.625rem 1rem;
+      color: rgba(255,255,255,0.6);
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 8px;
+      padding: 0.75rem 1rem;
       cursor: pointer;
       width: 100%;
       transition: all 0.3s;
       font-family: 'Montserrat', sans-serif;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      min-height: 48px; /* App target */
     }
     .logout-btn:hover { 
-      color: #ffd700; 
-      border-color: rgba(184,134,11,0.4);
-      background: rgba(184,134,11,0.05);
+      color: white; 
+      border-color: var(--gold);
+      background: rgba(184,134,11,0.1);
     }
+    .logout-btn::before { content: '✕'; font-size: 11px; opacity: 0.6; }
 
     /* ─── MAIN ──────────────────────────────────── */
     .admin-main {
@@ -301,16 +322,18 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
         margin-left: 0 !important;
       }
       .topbar {
-        padding: 0 1.25rem;
+        padding: 0 1.5rem; /* Standardized 24px (1.5rem) side padding for mobile PWA */
+        height: 72px; /* Increased height for better ergonomics */
       }
       .topbar-title {
-        font-size: 1.1rem;
+        font-size: 1.15rem;
       }
       .topbar-badge {
         display: none; /* Hide badge on mobile to save space */
       }
       .page-content {
-        padding: 1.25rem;
+        padding: 1.5rem; /* Standardized 24px side padding for mobile content */
+        padding-bottom: calc(1.5rem + env(safe-area-inset-bottom));
       }
     }
 

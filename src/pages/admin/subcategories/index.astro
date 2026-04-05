@@ -73,6 +73,13 @@ const accesoriosSubs = subcategories?.filter(s => s.parent_category === 'accesor
     .layout { display: grid; grid-template-columns: 320px 1fr; gap: 2rem; align-items: start; }
 
     /* Form Card */
+    @media (max-width: 768px) {
+      .form-card {
+        border-radius: 20px;
+        position: static;
+        margin-bottom: 2rem;
+      }
+    }
     .form-card {
       background: white;
       border: 1px solid rgba(0,0,0,0.07);
@@ -99,6 +106,7 @@ const accesoriosSubs = subcategories?.filter(s => s.parent_category === 'accesor
       border: 1px solid rgba(0,0,0,0.12); color: #111;
       font-family: 'Montserrat', sans-serif; font-size: 13px; outline: none;
       transition: border-color 0.25s, box-shadow 0.25s;
+      min-height: 44px; /* App target */
     }
     .form-input:focus {
       border-color: rgba(184,134,11,0.5);
@@ -113,6 +121,12 @@ const accesoriosSubs = subcategories?.filter(s => s.parent_category === 'accesor
       color: #0a0a0a; border: none; font-family: 'Montserrat', sans-serif;
       font-size: 9px; letter-spacing: 0.4em; text-transform: uppercase; font-weight: 700;
       cursor: pointer; margin-top: 0.5rem; transition: opacity 0.3s;
+      min-height: 48px; /* App target */
+    }
+    @media (max-width: 768px) {
+      .submit-btn {
+        border-radius: 12px;
+      }
     }
     .submit-btn:hover { opacity: 0.85; }
     @keyframes shine { to { background-position: 200% center; } }
@@ -124,6 +138,11 @@ const accesoriosSubs = subcategories?.filter(s => s.parent_category === 'accesor
       background: white;
       border: 1px solid rgba(0,0,0,0.07);
       overflow: hidden;
+    }
+    @media (max-width: 768px) {
+      .group-card {
+        border-radius: 20px;
+      }
     }
 
     .group-header {
@@ -167,6 +186,14 @@ const accesoriosSubs = subcategories?.filter(s => s.parent_category === 'accesor
       font-size: 8px; letter-spacing: 0.2em; text-transform: uppercase;
       padding: 5px 12px; cursor: pointer; transition: all 0.25s; font-weight: 600;
       font-family: 'Montserrat', sans-serif;
+      min-height: 44px; /* App target */
+      display: flex; align-items: center; justify-content: center;
+    }
+    @media (max-width: 768px) {
+      .delete-btn {
+        border-radius: 8px;
+        padding: 0 1.5rem;
+      }
     }
     .delete-btn:hover { background: rgba(220,38,38,0.05); border-color: #dc2626; }
 
