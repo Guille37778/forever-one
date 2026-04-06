@@ -696,20 +696,20 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
         const WHATSAPP_NUMBER = '584244557693';
 
         // ── State ──────────────────────────────────────────────────────────────────
-        let products = JSON.parse(document.getElementById('shop-root')?.dataset.products || '[]');
+        let products = [];
         let cart = [];
-        let dollarRate = parseFloat(document.getElementById('shop-root')?.dataset.dollarRate || '0');
+        let dollarRate = 0;
         
         // Delivery Settings
-        const deliveryEnabled = document.getElementById('shop-root')?.dataset.delEnabled === 'true';
-        const deliveryZones = (document.getElementById('shop-root')?.dataset.delZones || '').split(',').map(z => z.trim()).filter(z => z);
+        let deliveryEnabled = false;
+        let deliveryZones = [];
 
         let selectedMethod = 'retiro'; // retiro, envio, delivery
         let selectedCourier = 'Zoom';
         let selectedZone = '';
         
-        let activeCategory = document.getElementById('shop-root')?.dataset.urlCat || 'Todos';
-        let activeSubcategory = document.getElementById('shop-root')?.dataset.urlSub || '';
+        let activeCategory = 'Todos';
+        let activeSubcategory = '';
         let searchQuery = '';
 
         // ── Analytics Loader ────────────────────────────────────────────────────────
@@ -1345,10 +1345,25 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
 
         // ── Init ───────────────────────────────────────────────────────────────────
         function init() {
+            const root = document.getElementById('shop-root');
+            if (!root) return;
+
+            // Refresh data from the current DOM (crucial for View Transitions)
+            products = JSON.parse(root.dataset.products || '[]');
+            dollarRate = parseFloat(root.dataset.dollarRate || '0');
+            deliveryEnabled = root.dataset.delEnabled === 'true';
+            deliveryZones = (root.dataset.delZones || '').split(',').map(z => z.trim()).filter(z => z);
+            
+            // Re-read URL parameters for the new route
+            activeCategory = root.dataset.urlCat || 'Todos';
+            activeSubcategory = root.dataset.urlSub || '';
+
             loadCart();
             bindEvents();
-            // Ya no usamos fetchProducts, los datos vienen de Supabase (SSR)
-            el('loading-spinner').style.display = 'none';
+            
+            const spinner = el('loading-spinner');
+            if (spinner) spinner.style.display = 'none';
+            
             renderCategories();
             renderGrid();
             updateDeliveryUI();

@@ -7,6 +7,18 @@ if (!accessToken) return Astro.redirect('/admin/login');
 const { data: { user }, error: authError } = await supabase.auth.getUser(accessToken);
 if (authError || !user) return Astro.redirect('/admin/login');
 
+// MANEJADOR DE ELIMINACIÓN DIRECTA
+if (Astro.request.method === 'POST') {
+    const formData = await Astro.request.formData();
+    const id = formData.get('id')?.toString();
+    const action = formData.get('action')?.toString();
+
+    if (action === 'delete' && id) {
+        const { error } = await supabase.from('products').delete().eq('id', id);
+        if (!error) return Astro.redirect('/admin/products');
+    }
+}
+
 const { data: products } = await supabase
     .from('products')
     .select('*, collections(name), subcategories(name, id, parent_category), variants(size, stock_quantity)')
@@ -69,7 +81,13 @@ const accesoriosSubcategories = allSubcategories?.filter(s => s.parent_category 
 
     .add-btn:hover { background: #B8860B; color: #fff; transform: translateY(-2px); box-shadow: 0 6px 20px rgba(184,134,11,0.3); }
 
-    /* ─── BOTÓN EDITAR ATELIER (COHERENTE CON EL SISTEMA) ─── */
+    /* ─── BOTONES DE ACCIÓN ATELIER ─── */
+    .actions-group {
+        display: flex;
+        gap: 0.5rem;
+        align-items: center;
+    }
+
     .edit-btn-pro {
       display: inline-flex;
       align-items: center;
@@ -92,6 +110,30 @@ const accesoriosSubcategories = allSubcategories?.filter(s => s.parent_category 
       border-color: #f3cf7a;
       transform: translateY(-2px);
       box-shadow: 0 5px 15px rgba(184, 134, 11, 0.3);
+    }
+
+    .delete-btn-pro {
+        display: inline-flex;
+        align-items: center;
+        background: #111;
+        border: 1px solid rgba(220, 38, 38, 0.3);
+        color: #f3cf7a;
+        padding: 6px 14px;
+        border-radius: 6px;
+        font-size: 8px;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.15em;
+        cursor: pointer;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .delete-btn-pro:hover {
+        background: #dc2626;
+        color: white;
+        border-color: #dc2626;
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(220, 38, 38, 0.3);
     }
 
     /* ── Tabs & Filters ──────────────────────────── */
@@ -312,7 +354,14 @@ const accesoriosSubcategories = allSubcategories?.filter(s => s.parent_category 
                 </div>
                 <div class="pmc-footer">
                   <span class="pmc-price">${product.price}</span>
-                  <a href={`/admin/products/${product.id}`} class="edit-btn-pro">✦ Editar</a>
+                  <div class="actions-group">
+                    <a href={`/admin/products/${product.id}`} class="edit-btn-pro">✦</a>
+                    <form method="POST" style="display:inline" onsubmit="return confirm('¿Seguro que deseas eliminar esta pieza permanentemente?')">
+                        <input type="hidden" name="id" value={product.id} />
+                        <input type="hidden" name="action" value="delete" />
+                        <button type="submit" class="delete-btn-pro">×</button>
+                    </form>
+                  </div>
                 </div>
               </div>
             ))}
@@ -352,7 +401,14 @@ const accesoriosSubcategories = allSubcategories?.filter(s => s.parent_category 
                       </span>
                     </td>
                     <td>
-                      <a href={`/admin/products/${product.id}`} class="edit-btn-pro">✦ Editar</a>
+                      <div class="actions-group">
+                        <a href={`/admin/products/${product.id}`} class="edit-btn-pro" title="Editar">✦ Editar</a>
+                        <form method="POST" style="display:inline" onsubmit="return confirm('¿Seguro que deseas eliminar esta pieza permanentemente?')">
+                            <input type="hidden" name="id" value={product.id} />
+                            <input type="hidden" name="action" value="delete" />
+                            <button type="submit" class="delete-btn-pro" title="Eliminar">× Eliminar</button>
+                        </form>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -386,7 +442,14 @@ const accesoriosSubcategories = allSubcategories?.filter(s => s.parent_category 
                 </div>
                 <div class="pmc-footer">
                   <span class="pmc-price">${product.price}</span>
-                  <a href={`/admin/products/${product.id}`} class="edit-btn-pro">✦ Editar</a>
+                  <div class="actions-group">
+                    <a href={`/admin/products/${product.id}`} class="edit-btn-pro">✦</a>
+                    <form method="POST" style="display:inline" onsubmit="return confirm('¿Seguro que deseas eliminar esta pieza permanentemente?')">
+                        <input type="hidden" name="id" value={product.id} />
+                        <input type="hidden" name="action" value="delete" />
+                        <button type="submit" class="delete-btn-pro">×</button>
+                    </form>
+                  </div>
                 </div>
               </div>
             ))}
@@ -426,7 +489,14 @@ const accesoriosSubcategories = allSubcategories?.filter(s => s.parent_category 
                       </span>
                     </td>
                     <td>
-                      <a href={`/admin/products/${product.id}`} class="edit-btn-pro">✦ Editar</a>
+                      <div class="actions-group">
+                        <a href={`/admin/products/${product.id}`} class="edit-btn-pro" title="Editar">✦ Editar</a>
+                        <form method="POST" style="display:inline" onsubmit="return confirm('¿Seguro que deseas eliminar esta pieza permanentemente?')">
+                            <input type="hidden" name="id" value={product.id} />
+                            <input type="hidden" name="action" value="delete" />
+                            <button type="submit" class="delete-btn-pro" title="Eliminar">× Eliminar</button>
+                        </form>
+                      </div>
                     </td>
                   </tr>
                 ))}

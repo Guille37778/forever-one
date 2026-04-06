@@ -449,20 +449,32 @@ if (Astro.request.method === 'POST') {
   categorySelect?.addEventListener('change', (e) => {
     const cat = (e.target as HTMLSelectElement).value;
     filterSubcategories(cat);
-    if (sizeSection) {
-      if (cat === 'accesorios') {
-        const unicoCb = document.getElementById('size-UNICO') as HTMLInputElement;
-        if (unicoCb && !unicoCb.checked) {
-          unicoCb.checked = true;
-          const uniStock = document.getElementById('stock-UNICO');
-          if (uniStock) uniStock.style.display = 'block';
+    
+    // Manage size section based on category
+    const sizes = ['XS','S','M','L','XL','XXL','UNICO'];
+    if (cat === 'accesorios') {
+      sizes.forEach(s => {
+        const cb = document.getElementById(`size-${s}`) as HTMLInputElement;
+        const cbLabel = document.querySelector(`label[for="size-${s}"]`) as HTMLElement;
+        const stockEl = document.getElementById(`stock-${s}`);
+        
+        if (s === 'UNICO') {
+          if (cb) { cb.checked = true; cb.disabled = false; }
+          if (cbLabel) cbLabel.style.opacity = '1';
+          if (stockEl) stockEl.style.display = 'block';
+        } else {
+          if (cb) { cb.checked = false; cb.disabled = true; }
+          if (cbLabel) cbLabel.style.opacity = '0.3';
+          if (stockEl) stockEl.style.display = 'none';
         }
-        sizeSection.style.opacity = '0.4';
-        sizeSection.style.pointerEvents = 'none';
-      } else {
-        sizeSection.style.opacity = '1';
-        sizeSection.style.pointerEvents = 'all';
-      }
+      });
+    } else {
+      sizes.forEach(s => {
+        const cb = document.getElementById(`size-${s}`) as HTMLInputElement;
+        const cbLabel = document.querySelector(`label[for="size-${s}"]`) as HTMLElement;
+        if (cb) cb.disabled = false;
+        if (cbLabel) cbLabel.style.opacity = '1';
+      });
     }
   });
 </script>

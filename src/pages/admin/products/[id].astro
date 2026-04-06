@@ -86,139 +86,54 @@ if (isSuccess) successMessage = '✦ Prenda actualizada correctamente.';
 <AdminLayout title={`Editar — ${product.name}`} activeNav="products" user={{ email: user?.email || '' }}>
 
   <style>
-    /* TITULO SUPERIOR - REDUCCIÓN DE TAMAÑO SOLICITADA */
-    :global(.topbar-title) {
-        font-size: 1rem !important;
-        opacity: 0.9;
-        letter-spacing: 0.05em;
-    }
-
-    .back-link {
-      display: inline-flex; align-items: center; gap: 0.5rem;
-      font-size: 9px; letter-spacing: 0.3em; text-transform: uppercase;
-      color: #aaa; text-decoration: none; margin-bottom: 1.75rem;
-      transition: color 0.25s; font-weight: 600;
-    }
+    :global(.topbar-title) { font-size: 1rem !important; opacity: 0.9; letter-spacing: 0.05em; }
+    .back-link { display: inline-flex; align-items: center; gap: 0.5rem; font-size: 9px; letter-spacing: 0.3em; text-transform: uppercase; color: #aaa; text-decoration: none; margin-bottom: 1.75rem; transition: color 0.25s; font-weight: 600; }
     .back-link:hover { color: #B8860B; }
-
     .page-header { margin-bottom: 2rem; }
     .page-header p { font-size: 8px; letter-spacing: 0.45em; text-transform: uppercase; color: #B8860B; font-weight: 600; margin-bottom: 0.35rem; }
     .page-header h2 { font-family: 'Playfair Display', serif; font-size: 1.5rem; font-weight: 700; font-style: italic; color: #111; }
-
     .message { padding: 1rem 1.25rem; font-size: 12px; margin-bottom: 1.75rem; border-left: 3px solid; font-weight: 500; }
     .message.success { border-color: #B8860B; background: rgba(184,134,11,0.05); color: #8B6508; }
     .message.error { border-color: #dc2626; background: rgba(220,38,38,0.05); color: #dc2626; }
-
     .form-card { background: white; border: 1px solid rgba(0,0,0,0.07); padding: 0; max-width: 820px; overflow: hidden; }
     .form-section { padding: 2.25rem 2.5rem; border-bottom: 1px solid rgba(0,0,0,0.06); }
-
-    .section-label {
-      font-size: 8px; letter-spacing: 0.45em; text-transform: uppercase;
-      color: #B8860B; font-weight: 700; margin-bottom: 1.75rem;
-      display: flex; align-items: center; gap: 0.5rem;
-    }
+    .section-label { font-size: 8px; letter-spacing: 0.45em; text-transform: uppercase; color: #B8860B; font-weight: 700; margin-bottom: 1.75rem; display: flex; align-items: center; gap: 0.5rem; }
     .section-label::after { content: ''; flex: 1; height: 1px; background: rgba(184,134,11,0.15); }
-
-    /* ─── GRID ESCRITORIO (SIN CAMBIOS) ─── */
     .form-grid-main { display: grid; grid-template-columns: 2.5fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem; }
     .form-grid-three { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem; }
-    
     .form-group { width: 100%; display: flex; flex-direction: column; }
-
     label { display: block; font-size: 8px; letter-spacing: 0.3em; text-transform: uppercase; color: #999; margin-bottom: 0.65rem; font-weight: 600; text-align: center; }
-
-    input[type="text"], input[type="number"], textarea, select {
-      width: 100%; box-sizing: border-box; padding: 0.75rem 1rem; background: white;
-      border: 1px solid rgba(0,0,0,0.1); color: #111;
-      font-family: 'Montserrat', sans-serif; font-size: 13px; outline: none;
-      transition: border-color 0.25s, box-shadow 0.25s;
-      min-height: 46px; text-align: center;
-    }
-
+    input[type="text"], input[type="number"], textarea, select { width: 100%; box-sizing: border-box; padding: 0.75rem 1rem; background: white; border: 1px solid rgba(0,0,0,0.1); color: #111; font-family: 'Montserrat', sans-serif; font-size: 13px; outline: none; transition: border-color 0.25s, box-shadow 0.25s; min-height: 46px; text-align: center; }
     select { text-align-last: center; }
-
-    input:focus, textarea:focus, select:focus {
-      border-color: rgba(184,134,11,0.5);
-      box-shadow: 0 0 0 3px rgba(184,134,11,0.05);
-    }
+    input:focus, textarea:focus, select:focus { border-color: rgba(184,134,11,0.5); box-shadow: 0 0 0 3px rgba(184,134,11,0.05); }
     textarea { resize: vertical; min-height: 110px; }
-
-    /* Size checkboxes */
     .sizes-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 0.5rem; margin-bottom: 1.25rem; }
     .size-item { text-align: center; }
     .size-item input[type="checkbox"] { display: none; }
-    .size-label {
-      display: block; padding: 0.625rem 0.25rem; border: 1px solid rgba(0,0,0,0.1);
-      font-size: 9px; letter-spacing: 0.1em; cursor: pointer; transition: all 0.25s;
-      text-align: center; color: #999; font-weight: 600;
-    }
+    .size-label { display: block; padding: 0.625rem 0.25rem; border: 1px solid rgba(0,0,0,0.1); font-size: 9px; letter-spacing: 0.1em; cursor: pointer; transition: all 0.25s; text-align: center; color: #999; font-weight: 600; }
     .size-label:hover { border-color: rgba(184,134,11,0.3); color: #B8860B; }
     .size-item input[type="checkbox"]:checked + .size-label { border-color: #B8860B; background: rgba(184,134,11,0.08); color: #B8860B; }
     .stock-inputs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.75rem; }
     .stock-item label { font-size: 8px; color: #aaa; }
-
-    /* Form footer */
-    .form-footer {
-      padding: 1.75rem 2.5rem; background: rgba(0,0,0,0.02);
-      border-top: 1px solid rgba(0,0,0,0.06);
-      display: flex; align-items: center; justify-content: space-between;
-    }
+    .form-footer { padding: 1.75rem 2.5rem; background: rgba(0,0,0,0.02); border-top: 1px solid rgba(0,0,0,0.06); display: flex; align-items: center; justify-content: space-between; }
     .footer-actions { display: flex; gap: 1rem; align-items: center; }
-
-    .submit-btn {
-      padding: 0.875rem 2.5rem;
-      background: linear-gradient(135deg, #8B6508, #B8860B, #f3cf7a, #B8860B, #8B6508);
-      background-size: 200% auto; animation: shine 4s linear infinite;
-      color: #0a0a0a; border: none; font-family: 'Montserrat', sans-serif;
-      font-size: 9px; letter-spacing: 0.4em; text-transform: uppercase; font-weight: 700;
-      cursor: pointer; transition: opacity 0.3s; min-height: 48px;
-    }
+    .submit-btn { padding: 0.875rem 2.5rem; background: linear-gradient(135deg, #8B6508, #B8860B, #f3cf7a, #B8860B, #8B6508); background-size: 200% auto; animation: shine 4s linear infinite; color: #0a0a0a; border: none; font-family: 'Montserrat', sans-serif; font-size: 9px; letter-spacing: 0.4em; text-transform: uppercase; font-weight: 700; cursor: pointer; transition: opacity 0.3s; min-height: 48px; }
     .submit-btn:hover { opacity: 0.85; }
-
-    .delete-btn {
-      padding: 0.875rem 1.5rem; background: transparent;
-      border: 1px solid rgba(220,38,38,0.2); color: #dc2626;
-      font-family: 'Montserrat', sans-serif; font-size: 9px; letter-spacing: 0.3em;
-      text-transform: uppercase; cursor: pointer; transition: all 0.3s; font-weight: 600;
-      min-height: 48px;
-    }
+    .delete-btn { padding: 0.875rem 1.5rem; background: transparent; border: 1px solid rgba(220,38,38,0.2); color: #dc2626; font-family: 'Montserrat', sans-serif; font-size: 9px; letter-spacing: 0.3em; text-transform: uppercase; cursor: pointer; transition: all 0.3s; font-weight: 600; min-height: 48px; }
     .delete-btn:hover { background: rgba(220,38,38,0.05); border-color: #dc2626; }
-
-    /* Image management */
     .current-images { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
     .image-thumb { position: relative; aspect-ratio: 1/1; border: 1px solid rgba(0,0,0,0.1); overflow: hidden; background: #f9f9f9; }
     .image-thumb img { width: 100%; height: 100%; object-fit: cover; }
     .remove-img-btn { position: absolute; top: 2px; right: 2px; width: 22px; height: 22px; background: #dc2626; color: white; border: none; border-radius: 50%; font-size: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center; opacity: 0.9; }
-
     .cancel-link { font-size: 9px; letter-spacing: 0.25em; text-transform: uppercase; color: #bbb; text-decoration: none; font-weight: 600; transition: color 0.25s; }
     .cancel-link:hover { color: #666; }
-
     @keyframes shine { to { background-position: 200% center; } }
 
-    /* ─── CORRECCIÓN QUIRÚRGICA MÓVIL ─── */
     @media (max-width: 768px) {
       .form-section { padding: 1.25rem 1rem; }
-      
-      /* Forzar ancho 100% real sin gaps laterales */
-      .form-grid-main, .form-grid-three { 
-          display: block; 
-          width: 100%; 
-          margin-bottom: 0; 
-      }
-      
-      .form-group { 
-          margin-bottom: 1.25rem; 
-          width: 100%; 
-      }
-      
-      /* Reducción de escala en inputs para que no desborden */
-      input[type="text"], input[type="number"], select { 
-          width: 100% !important; 
-          font-size: 12px; 
-          padding: 0.6rem 0.75rem; 
-          min-height: 40px; 
-      }
-
+      .form-grid-main, .form-grid-three { display: block; width: 100%; margin-bottom: 0; }
+      .form-group { margin-bottom: 1.25rem; width: 100%; }
+      input[type="text"], input[type="number"], select { width: 100% !important; font-size: 12px; padding: 0.6rem 0.75rem; min-height: 40px; }
       .sizes-grid { grid-template-columns: repeat(4, 1fr); }
       .stock-inputs { grid-template-columns: repeat(2, 1fr); }
       .form-footer { flex-direction: column-reverse; gap: 1rem; padding: 1.5rem 1.25rem; }
@@ -238,21 +153,12 @@ if (isSuccess) successMessage = '✦ Prenda actualizada correctamente.';
   {errorMessage && <div class="message error">{errorMessage}</div>}
 
   <form method="POST" class="form-card" enctype="multipart/form-data">
-    <!-- Info General -->
     <div class="form-section">
       <p class="section-label">✦ Información General</p>
-      
       <div class="form-grid-main">
-        <div class="form-group">
-          <label>Nombre de la Prenda *</label>
-          <input type="text" name="name" value={product.name} required>
-        </div>
-        <div class="form-group">
-          <label>Precio (USD) *</label>
-          <input type="number" name="price" value={product.price} step="0.01" required>
-        </div>
+        <div class="form-group"><label>Nombre de la Prenda *</label><input type="text" name="name" value={product.name} required></div>
+        <div class="form-group"><label>Precio (USD) *</label><input type="number" name="price" value={product.price} step="0.01" required></div>
       </div>
-
       <div class="form-grid-three">
         <div class="form-group">
           <label>Categoría Principal</label>
@@ -266,9 +172,7 @@ if (isSuccess) successMessage = '✦ Prenda actualizada correctamente.';
           <select name="subcategory_id" id="subcategory_id">
             <option value="">Sin subcategoría</option>
             {allSubcategories?.map(s => (
-              <option value={s.id} data-parent={s.parent_category} selected={product.subcategory_id === s.id}>
-                {s.name}
-              </option>
+              <option value={s.id} data-parent={s.parent_category} selected={product.subcategory_id === s.id}>{s.name}</option>
             ))}
           </select>
         </div>
@@ -282,22 +186,14 @@ if (isSuccess) successMessage = '✦ Prenda actualizada correctamente.';
           </select>
         </div>
       </div>
-
-      <div class="form-row">
-        <div class="form-group">
-          <label>Estado Visibilidad</label>
-          <select name="is_active">
-            <option value="true" selected={product.is_active}>● Público en Tienda</option>
-            <option value="false" selected={!product.is_active}>○ Oculto del Catálogo</option>
-          </select>
-        </div>
-      </div>
-
       <div class="form-group">
-        <label>Descripción de Lujo</label>
-        <textarea name="description">{product.description}</textarea>
+        <label>Estado Visibilidad</label>
+        <select name="is_active">
+          <option value="true" selected={product.is_active}>● Público en Tienda</option>
+          <option value="false" selected={!product.is_active}>○ Oculto del Catálogo</option>
+        </select>
       </div>
-
+      <div class="form-group"><label>Descripción de Lujo</label><textarea name="description">{product.description}</textarea></div>
       <div class="form-group">
         <label>Medios Actuales</label>
         <div class="current-images">
@@ -305,26 +201,23 @@ if (isSuccess) successMessage = '✦ Prenda actualizada correctamente.';
             <div class="image-thumb">
               <img src={url} alt={`Imagen ${index}`} />
               <input type="hidden" name="existing_image_urls[]" value={url} />
-              <button type="button" class="remove-img-btn" title="Eliminar" onclick="this.parentElement.remove()">×</button>
+              <button type="button" class="remove-img-btn" onclick="this.parentElement.remove()">×</button>
             </div>
           ))}
         </div>
-        <div class="new-upload">
-          <label style="font-size: 7px; color: #B8860B; margin-bottom: 0.5rem; display:block">Añadir Nuevas Fotos</label>
-          <input type="file" name="new_image_files" accept="image/*" multiple>
-        </div>
+        <div class="new-upload"><label style="font-size: 7px; color: #B8860B; margin-bottom: 0.5rem; display:block">Añadir Nuevas Fotos</label><input type="file" name="new_image_files" accept="image/*" multiple></div>
       </div>
     </div>
 
     <!-- Stock -->
-    <div class="form-section" id="sizeSelection" style={product.category === 'accesorios' ? 'opacity:0.5; pointer-events:none;' : ''}>
+    <div class="form-section" id="sizeSelection">
       <p class="section-label">◈ Stock por Talla</p>
       <div class="sizes-grid">
         {['XS','S','M','L','XL','XXL','UNICO'].map(size => {
           const variant = product.variants.find((v:any) => v.size === size);
           return (
             <div class="size-item">
-              <input type="checkbox" name="sizes[]" value={size} id={`size-${size}`} checked={!!variant} style="display:none">
+              <input type="checkbox" name="sizes[]" value={size} id={`size-${size}`} checked={!!variant}>
               <label class="size-label" for={`size-${size}`}>{size}</label>
             </div>
           );
@@ -343,14 +236,10 @@ if (isSuccess) successMessage = '✦ Prenda actualizada correctamente.';
       </div>
     </div>
 
-    <!-- Footer -->
     <div class="form-footer">
       <a href="/admin/products" class="cancel-link">Cancelar</a>
       <div class="footer-actions">
-        <button type="submit" name="action" value="delete" class="delete-btn"
-          onclick="return confirm('¿Seguro que deseas eliminar esta prenda permanentemente?')">
-          Eliminar Prenda
-        </button>
+        <button type="submit" name="action" value="delete" class="delete-btn" onclick="return confirm('¿Seguro que deseas eliminar esta pieza permanentemente?')">Eliminar Prenda</button>
         <button type="submit" class="submit-btn">✦ Guardar Cambios</button>
       </div>
     </div>
@@ -369,7 +258,6 @@ if (isSuccess) successMessage = '✦ Prenda actualizada correctamente.';
 
   const categorySelect = document.getElementById('category') as HTMLSelectElement;
   const subcategorySelect = document.getElementById('subcategory_id') as HTMLSelectElement;
-  const sizeSection = document.getElementById('sizeSelection');
 
   function filterSubcategories(cat: string, initial = false) {
     if (!subcategorySelect) return;
@@ -390,25 +278,44 @@ if (isSuccess) successMessage = '✦ Prenda actualizada correctamente.';
     }
   }
 
-  filterSubcategories(categorySelect?.value || 'ropa', true);
-
-  categorySelect?.addEventListener('change', (e) => {
-    const cat = (e.target as HTMLSelectElement).value;
-    filterSubcategories(cat);
-    if (sizeSection) {
-      if (cat === 'accesorios') {
-        sizeSection.style.opacity = '0.5';
-        sizeSection.style.pointerEvents = 'none';
-        const unicoCb = document.getElementById('size-UNICO') as HTMLInputElement;
-        if (unicoCb && !unicoCb.checked) {
-          unicoCb.checked = true;
-          const stockUnico = document.getElementById('stock-UNICO');
-          if (stockUnico) stockUnico.style.display = 'block';
+  function manageSizeSection(cat: string) {
+    const sizes = ['XS','S','M','L','XL','XXL','UNICO'];
+    if (cat === 'accesorios') {
+      sizes.forEach(s => {
+        const cb = document.getElementById(`size-${s}`) as HTMLInputElement;
+        const cbLabel = document.querySelector(`label[for="size-${s}"]`) as HTMLElement;
+        const stockEl = document.getElementById(`stock-${s}`);
+        if (s === 'UNICO') {
+          if (cb) { cb.checked = true; cb.disabled = false; }
+          if (cbLabel) cbLabel.style.opacity = '1';
+          if (stockEl) stockEl.style.display = 'block';
+        } else {
+          if (cb) { cb.checked = false; cb.disabled = true; }
+          if (cbLabel) cbLabel.style.opacity = '0.3';
+          if (stockEl) stockEl.style.display = 'none';
         }
-      } else {
-        sizeSection.style.opacity = '1';
-        sizeSection.style.pointerEvents = 'all';
-      }
+      });
+    } else {
+      sizes.forEach(s => {
+        const cb = document.getElementById(`size-${s}`) as HTMLInputElement;
+        const cbLabel = document.querySelector(`label[for="size-${s}"]`) as HTMLElement;
+        if (cb) {
+             cb.disabled = false;
+             const stockEl = document.getElementById(`stock-${s}`);
+             if (stockEl) stockEl.style.display = cb.checked ? 'block' : 'none';
+        }
+        if (cbLabel) cbLabel.style.opacity = '1';
+      });
     }
-  });
+  }
+
+  if (categorySelect) {
+    filterSubcategories(categorySelect.value, true);
+    manageSizeSection(categorySelect.value);
+    categorySelect.addEventListener('change', (e) => {
+      const cat = (e.target as HTMLSelectElement).value;
+      filterSubcategories(cat);
+      manageSizeSection(cat);
+    });
+  }
 </script>
