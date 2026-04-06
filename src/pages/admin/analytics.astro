@@ -46,204 +46,66 @@ const avgTime = analyticsData?.length
 <AdminLayout title="Analíticas" activeNav="analytics" user={{ email: user?.email || '' }}>
 
   <style>
-    /* ── App-style KPI Cards ─────────────────────── */
-    .kpi-grid {
-      display: grid;
-      grid-template-columns: 1fr;
-      gap: 1rem;
-      margin-bottom: 2rem;
+    .analytics-header {
+      display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 2.5rem;
     }
-    @media (min-width: 640px) {
-      .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+    @media (max-width: 640px) {
+      .analytics-header { flex-direction: column; align-items: flex-start; gap: 1rem; }
+      .reset-btn { width: 100%; text-align: center; }
     }
-    @media (min-width: 1024px) {
-      .kpi-grid { grid-template-columns: repeat(3, 1fr); gap: 1.5rem; margin-bottom: 2.5rem; }
+    
+    .reset-btn {
+      font-size: 8px; letter-spacing: 0.2em; text-transform: uppercase;
+      color: #dc2626; background: transparent; border: 1px solid rgba(220,38,38,0.2);
+      padding: 0.75rem 1.25rem; border-radius: 8px; font-weight: 800; cursor: pointer;
+      transition: all 0.3s; font-family: 'Montserrat', sans-serif;
     }
+    .reset-btn:hover { background: rgba(220,38,38,0.05); border-color: #dc2626; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(220,38,38,0.1); }
 
-    .kpi-card {
-      background: white;
-      @media (max-width: 768px) {
-      .stat-mobile-card {
-        border-radius: 20px;
-        padding: 1.5rem;
-        border: 1px solid rgba(0,0,0,0.04);
-      }
-      .stat-header h4 {
-        line-height: 1.6;
-      }
-    }
-      border: 1px solid rgba(184,134,11,0.08);
-      border-radius: 12px;
-      padding: 1.25rem;
-      position: relative;
-      display: flex;
-      @media (max-width: 768px) {
-      .chart-card {
-        border-radius: 20px;
-        padding: 1.5rem;
-        margin-bottom: 1rem;
-      }
-      .chart-wrap {
-        height: 240px;
-      }
-    }
-      flex-direction: column;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.03);
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-    @media (max-width: 768px) {
-      .kpi-card {
-        border-radius: 20px;
-        padding: 1.5rem;
-      }
-      .kpi-value {
-        font-size: 1.75rem;
-        line-height: 1.6;
-      }
-    }
+    .kpi-grid { display: grid; grid-template-columns: 1fr; gap: 1rem; margin-bottom: 2rem; }
+    @media (min-width: 640px) { .kpi-grid { grid-template-columns: repeat(2, 1fr); } }
+    @media (min-width: 1024px) { .kpi-grid { grid-template-columns: repeat(3, 1fr); gap: 1.5rem; margin-bottom: 2.5rem; } }
 
-    @media (max-width: 768px) {
-      .metric-pill {
-        min-height: 44px;
-        border-radius: 12px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        padding: 0.5rem 1rem;
-      }
-    }
-
-    .kpi-label {
-      font-size: 9px;
-      letter-spacing: 0.25em;
-      text-transform: uppercase;
-      color: #999;
-      font-weight: 700;
-      margin-bottom: 4px;
-    }
-
-    .kpi-value {
-      font-family: 'Playfair Display', serif;
-      font-size: 1.75rem;
-      font-weight: 900;
-      font-style: italic;
-      color: #111;
-      line-height: 1.2;
-    }
+    .kpi-card { background: white; border: 1px solid rgba(184,134,11,0.08); border-radius: 12px; padding: 1.25rem; position: relative; display: flex; flex-direction: column; box-shadow: 0 4px 12px rgba(0,0,0,0.03); transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+    .kpi-label { font-size: 9px; letter-spacing: 0.25em; text-transform: uppercase; color: #999; font-weight: 700; margin-bottom: 4px; }
+    .kpi-value { font-family: 'Playfair Display', serif; font-size: 1.75rem; font-weight: 900; font-style: italic; color: #111; line-height: 1.2; }
     @media (min-width: 768px) { .kpi-value { font-size: 2.5rem; } }
+    .kpi-sub { font-size: 10px; color: #B8860B; font-weight: 600; margin-top: 4px; }
+    .kpi-icon-box { width: 32px; height: 32px; background: rgba(184,134,11,0.06); border-radius: 8px; display: flex; align-items: center; justify-content: center; margin-bottom: 12px; font-size: 16px; }
 
-    .kpi-sub {
-      font-size: 10px;
-      color: #B8860B;
-      font-weight: 600;
-      margin-top: 4px;
-    }
-
-    .kpi-icon-box {
-      width: 32px; height: 32px;
-      background: rgba(184,134,11,0.06);
-      border-radius: 8px;
-      display: flex; align-items: center; justify-content: center;
-      margin-bottom: 12px;
-      font-size: 16px;
-    }
-
-    /* ── Charts ──────────────────────────────────── */
-    .charts-grid {
-      display: grid;
-      grid-template-columns: 1fr;
-      gap: 1rem;
-      margin-bottom: 2rem;
-    }
-    @media (min-width: 1024px) {
-      .charts-grid { grid-template-columns: 1fr 1fr; gap: 1.5rem; }
-    }
-
-    .chart-card {
-      background: white;
-      border: 1px solid rgba(0,0,0,0.05);
-      border-radius: 12px;
-      padding: 1.5rem;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.02);
-    }
+    .charts-grid { display: grid; grid-template-columns: 1fr; gap: 1rem; margin-bottom: 2rem; }
+    @media (min-width: 1024px) { .charts-grid { grid-template-columns: 1fr 1fr; gap: 1.5rem; } }
+    .chart-card { background: white; border: 1px solid rgba(0,0,0,0.05); border-radius: 12px; padding: 1.5rem; box-shadow: 0 2px 8px rgba(0,0,0,0.02); }
     .chart-card.full-width { grid-column: 1 / -1; }
-
-    .chart-heading {
-      font-family: 'Playfair Display', serif;
-      font-size: 1.1rem;
-      font-style: italic;
-      color: #111;
-      margin-bottom: 1.5rem;
-    }
-
+    .chart-heading { font-family: 'Playfair Display', serif; font-size: 1.1rem; font-style: italic; color: #111; margin-bottom: 1.5rem; }
     .chart-wrap { position: relative; height: 220px; }
     @media (min-width: 768px) { .chart-wrap { height: 260px; } }
 
-    /* ── Mobile Statistic Cards (Replacing Table) ── */
     .stats-container { margin-bottom: 3rem; }
-    
-    .stats-list { display: flex; flex-direction: column; gap: 1rem; }
-    
-    .product-stat-card {
-      background: white;
-      border-radius: 12px;
-      border: 1px solid rgba(0,0,0,0.05);
-      padding: 1.25rem;
-      display: flex;
-      flex-direction: column;
-      gap: 1rem;
-    }
-
-    .stat-card-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      border-bottom: 1px solid #f8f8f8;
-      padding-bottom: 0.75rem;
-    }
-
-    .stat-card-name { font-family: 'Playfair Display', serif; font-weight: 800; font-size: 14px; font-style: italic; color: #111; }
-    .stat-card-id { font-size: 9px; color: #bbb; letter-spacing: 0.05em; }
-
-    .stat-card-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 0.75rem;
-    }
-
-    .stat-item { text-align: center; }
-    .stat-item-val { font-weight: 800; font-size: 14px; color: #111; margin-bottom: 2px; }
-    .stat-item-lbl { font-size: 8px; text-transform: uppercase; letter-spacing: 0.1em; color: #aaa; }
-
-    .stat-card-footer { margin-top: 0.5rem; }
-
-    /* Desktop Table (Hidden on mobile) */
+    .product-stat-card { background: white; border-radius: 12px; border: 1px solid rgba(0,0,0,0.05); padding: 1.25rem; display: flex; flex-direction: column; gap: 1rem; }
     .desktop-table-card { display: none; }
-
     @media (min-width: 768px) {
-      .stats-list { display: none; }
-      .desktop-table-card {
-        display: block;
-        background: white;
-        border-radius: 12px;
-        border: 1px solid rgba(0,0,0,0.05);
-        overflow: hidden;
-      }
+      .desktop-table-card { display: block; background: white; border-radius: 12px; border: 1px solid rgba(0,0,0,0.05); overflow: hidden; }
       table { width: 100%; border-collapse: collapse; }
       th { padding: 1.25rem 2rem; font-size: 8px; text-transform: uppercase; letter-spacing: 0.3em; color: #aaa; border-bottom: 1px solid #f5f5f5; text-align: left; background: #fafafa; }
       td { padding: 1.25rem 2rem; font-size: 13px; border-bottom: 1px solid #f8f8f8; color: #444; }
-      tr:hover td { background: #fffcf5; }
     }
-
     .heat-minimal { width: 100%; height: 4px; background: #eee; border-radius: 4px; overflow: hidden; margin-top: 4px; }
     .heat-minimal-fill { height: 100%; background: linear-gradient(90deg, #B8860B, #f3cf7a); border-radius: 4px; }
-
-    .badge {
-      .table-heading { font-size: 1rem; }
-    }
+    .badge { font-size: 10px; font-weight: 700; padding: 4px 8px; border-radius: 4px; background: rgba(184,134,11,0.1); color: #B8860B; }
+    .badge-green { background: rgba(37,211,102,0.1); color: #1a9e50; }
   </style>
 
-  <!-- KPI Cards -->
+  <div class="analytics-header">
+    <div>
+      <p style="font-size: 8px; letter-spacing: 0.4em; text-transform: uppercase; color: #B8860B; font-weight: 700; margin-bottom: 4px;">Información General</p>
+      <h2 style="font-family: 'Playfair Display', serif; font-size: 1.75rem; font-weight: 900; font-style: italic; color: #111;">Métricas de Rendimiento</h2>
+    </div>
+    <button id="resetAnalyticsBtn" class="reset-btn">
+      Reiniciar Análisis ✦
+    </button>
+  </div>
+
   <div class="kpi-grid">
     <div class="kpi-card">
       <div class="kpi-icon-box">💰</div>
@@ -265,34 +127,17 @@ const avgTime = analyticsData?.length
     </div>
   </div>
 
-  <!-- Charts -->
   <div class="charts-grid">
     <div class="chart-card">
-      <p class="chart-title">Distribución de Vistas</p>
-      <p class="chart-heading">Prendas más Vista</p>
-      <div class="chart-wrap">
-        <canvas id="viewsBarChart"></canvas>
-      </div>
+      <p class="chart-heading">Distribución de Vistas</p>
+      <div class="chart-wrap"><canvas id="viewsBarChart"></canvas></div>
     </div>
-
     <div class="chart-card">
-      <p class="chart-title">Temperatura de Conversión</p>
       <p class="chart-heading">WhatsApp vs Vistas</p>
-      <div class="chart-wrap">
-        <canvas id="heatDoughnutChart"></canvas>
-      </div>
-    </div>
-
-    <div class="chart-card full-width">
-      <p class="chart-title">Evolución de Interés</p>
-      <p class="chart-heading">Calentamiento por Prenda</p>
-      <div class="chart-wrap">
-        <canvas id="heatLineChart"></canvas>
-      </div>
+      <div class="chart-wrap"><canvas id="heatDoughnutChart"></canvas></div>
     </div>
   </div>
 
-  <!-- Detail Statistics -->
   <div class="stats-container">
     <div style="margin-bottom:1.5rem;">
         <p style="font-size:8px; letter-spacing:0.4em; text-transform:uppercase; color:#999; font-weight:700; margin-bottom:2px;">Detalle por</p>
@@ -300,89 +145,45 @@ const avgTime = analyticsData?.length
     </div>
 
     {processedData && processedData.length > 0 ? (
-      <>
-        <!-- Mobile View: Cards -->
-        <div class="stats-list">
-          {processedData.map((item: any) => {
-            const heatScore = (item.views || 0) + ((item.whatsapp_clicks || 0) * 10) + ((item.sales || 0) * 50);
-            const heat = Math.min((heatScore / 200) * 100, 100);
-            return (
-              <div class="product-stat-card">
-                <div class="stat-card-header">
-                  <div>
-                    <p class="stat-card-name">{item.products?.name}</p>
-                    <p class="stat-card-id">ID: {item.product_id?.substring(0,8)}</p>
-                  </div>
-                  <div>
-                    <span class="badge badge-gold">{item.sales} und</span>
-                  </div>
-                </div>
-                <div class="stat-card-grid">
-                  <div class="stat-item">
-                    <p class="stat-item-val">{item.views}</p>
-                    <p class="stat-item-lbl">Vistas</p>
-                  </div>
-                  <div class="stat-item">
-                    <p class="stat-item-val" style="color:#1a9e50;">{item.whatsapp_clicks}</p>
-                    <p class="stat-item-lbl">WhatsApp</p>
-                  </div>
-                  <div class="stat-item">
-                    <p class="stat-item-val">{Math.round(heat)}%</p>
-                    <p class="stat-item-lbl">Calor</p>
-                  </div>
-                </div>
-                <div class="stat-card-footer">
-                   <div class="heat-minimal"><div class="heat-minimal-fill" style={`width:${heat}%`}></div></div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-
-        <!-- Desktop View: Table -->
-        <div class="desktop-table-card">
-          <table>
-            <thead>
-              <tr>
-                <th>Prenda</th>
-                <th>Vistas</th>
-                <th>Ventas</th>
-                <th>WhatsApp</th>
-                <th>Temperatura</th>
-              </tr>
-            </thead>
-            <tbody>
-              {processedData.map((item: any) => {
-                const heatScore = (item.views || 0) + ((item.whatsapp_clicks || 0) * 10) + ((item.sales || 0) * 50);
-                const heat = Math.min((heatScore / 200) * 100, 100);
-                return (
-                  <tr>
-                    <td>
-                      <div style="font-weight:800; color:#111;">{item.products?.name}</div>
-                      <div style="font-size:9px; color:#bbb;">ID: {item.product_id?.substring(0,8)}</div>
-                    </td>
-                    <td><span class="badge badge-gold">{item.views}</span></td>
-                    <td><span class="badge badge-gold" style="background:#111; color:#f3cf7a;">{item.sales} und</span></td>
-                    <td><span class="badge badge-green">{item.whatsapp_clicks} clics</span></td>
-                    <td style="min-width:120px;">
-                      <div style="display:flex; align-items:center; gap:8px;">
-                        <div class="heat-minimal" style="flex:1;"><div class="heat-minimal-fill" style={`width:${heat}%`}></div></div>
-                        <span style="font-size:10px; font-weight:800; color:#B8860B;">{Math.round(heat)}%</span>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      </>
+      <div class="desktop-table-card">
+        <table>
+          <thead>
+            <tr>
+              <th>Prenda</th>
+              <th>Vistas</th>
+              <th>Ventas</th>
+              <th>WhatsApp</th>
+              <th>Temperatura</th>
+            </tr>
+          </thead>
+          <tbody>
+            {processedData.map((item: any) => {
+              const heatScore = (item.views || 0) + ((item.whatsapp_clicks || 0) * 10) + ((item.sales || 0) * 50);
+              const heat = Math.min((heatScore / 200) * 100, 100);
+              return (
+                <tr>
+                  <td>
+                    <div style="font-weight:800; color:#111;">{item.products?.name}</div>
+                    <div style="font-size:9px; color:#bbb;">ID: {item.product_id?.substring(0,8)}</div>
+                  </td>
+                  <td><span class="badge">{item.views} vistas</span></td>
+                  <td><span class="badge" style="background:#111; color:#f3cf7a;">{item.sales} und</span></td>
+                  <td><span class="badge badge-green">{item.whatsapp_clicks} clics</span></td>
+                  <td style="min-width:120px;">
+                    <div style="display:flex; align-items:center; gap:8px;">
+                      <div class="heat-minimal" style="flex:1;"><div class="heat-minimal-fill" style={`width:${heat}%`}></div></div>
+                      <span style="font-size:10px; font-weight:800; color:#B8860B;">{Math.round(heat)}%</span>
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
     ) : (
-      <div class="empty-state">
-        <svg width="48" height="48" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
-        </svg>
-        <p>Sin datos de interacción aún</p>
+      <div class="kpi-card" style="text-align:center; padding:4rem;">
+        <p class="kpi-label">Sin datos de interacción aún</p>
       </div>
     )}
   </div>
@@ -390,189 +191,54 @@ const avgTime = analyticsData?.length
 </AdminLayout>
 
 <script define:vars={{ analyticsData: processedData }}>
+  // Reset Analytics Logic
+  document.getElementById('resetAnalyticsBtn')?.addEventListener('click', async () => {
+    if (confirm('¿Estás seguro de que quieres borrar la analítica y el análisis de estadísticas?')) {
+      try {
+        const res = await fetch('/api/stats/reset', { method: 'POST' });
+        if (res.ok) window.location.reload();
+        else alert('Error al reiniciar analíticas');
+      } catch (e) {
+        alert('Error de conexión');
+      }
+    }
+  });
+
   // Chart.js via CDN
   const script = document.createElement('script');
   script.src = 'https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js';
-  script.onload = () => initCharts();
-  document.head.appendChild(script);
-
-  function initCharts() {
+  script.onload = () => {
     const data = analyticsData || [];
     if (!data.length) return;
 
-    const gold = '#B8860B';
-    const goldLight = '#f3cf7a';
-    const goldPale = 'rgba(184,134,11,0.12)';
-
-    // Palette for multiple datasets
-    const palette = [
-      'rgba(184,134,11,0.85)',
-      'rgba(243,207,122,0.85)',
-      'rgba(139,101,8,0.85)',
-      'rgba(255,215,0,0.85)',
-      'rgba(205,163,51,0.85)',
-    ];
-
+    const palette = ['#B8860B','#f3cf7a','#8B6508','#FFD700','#CDA333'];
     const labels = data.map(d => d.products?.name || 'Prenda');
     const views  = data.map(d => d.views || 0);
     const wa     = data.map(d => d.whatsapp_clicks || 0);
-    const heats  = data.map(d => Math.min(((d.views + (d.whatsapp_clicks * 10)) / 100) * 100, 100));
 
-    const defaultFontOpts = {
-      family: "'Montserrat', sans-serif",
-      size: 10,
-    };
-
-    // 1. Bar Chart — Vistas por prenda
     const barCtx = document.getElementById('viewsBarChart')?.getContext('2d');
     if (barCtx) {
       new Chart(barCtx, {
         type: 'bar',
         data: {
           labels,
-          datasets: [{
-            label: 'Vistas',
-            data: views,
-            backgroundColor: palette,
-            borderWidth: 0,
-            borderRadius: 4,
-          }]
+          datasets: [{ label: 'Vistas', data: views, backgroundColor: palette }]
         },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: {
-            legend: { display: false },
-            tooltip: {
-              backgroundColor: '#111',
-              titleColor: goldLight,
-              bodyColor: '#ddd',
-              titleFont: defaultFontOpts,
-              bodyFont: defaultFontOpts,
-              padding: 12,
-              callbacks: {
-                label: ctx => `  ${ctx.parsed.y} vistas`
-              }
-            }
-          },
-          scales: {
-            x: {
-              grid: { display: false },
-              ticks: { color: '#aaa', font: defaultFontOpts }
-            },
-            y: {
-              grid: { color: 'rgba(0,0,0,0.05)' },
-              ticks: { color: '#aaa', font: defaultFontOpts }
-            }
-          }
-        }
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
       });
     }
 
-    // 2. Doughnut — WhatsApp heat distribution
     const donutCtx = document.getElementById('heatDoughnutChart')?.getContext('2d');
     if (donutCtx) {
       new Chart(donutCtx, {
         type: 'doughnut',
         data: {
           labels,
-          datasets: [{
-            data: wa.length && wa.some(v => v > 0) ? wa : views,
-            backgroundColor: palette,
-            borderWidth: 2,
-            borderColor: '#fff',
-            hoverOffset: 6,
-          }]
+          datasets: [{ data: wa.length && wa.some(v => v > 0) ? wa : views, backgroundColor: palette }]
         },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          cutout: '70%',
-          plugins: {
-            legend: {
-              position: 'bottom',
-              labels: {
-                color: '#555',
-                font: defaultFontOpts,
-                boxWidth: 10,
-                padding: 14,
-              }
-            },
-            tooltip: {
-              backgroundColor: '#111',
-              titleColor: goldLight,
-              bodyColor: '#ddd',
-              titleFont: defaultFontOpts,
-              bodyFont: defaultFontOpts,
-              padding: 12,
-            }
-          }
-        }
+        options: { responsive: true, maintainAspectRatio: false, cutout: '70%' }
       });
     }
-
-    // 3. Line chart — heat index per product
-    const lineCtx = document.getElementById('heatLineChart')?.getContext('2d');
-    if (lineCtx) {
-      new Chart(lineCtx, {
-        type: 'line',
-        data: {
-          labels,
-          datasets: [
-            {
-              label: 'Índice de Calentamiento (%)',
-              data: heats,
-              borderColor: gold,
-              backgroundColor: goldPale,
-              fill: true,
-              tension: 0.4,
-              pointBackgroundColor: gold,
-              pointBorderColor: '#fff',
-              pointBorderWidth: 2,
-              pointRadius: 5,
-            },
-            {
-              label: 'Clics WhatsApp',
-              data: wa,
-              borderColor: '#25D366',
-              backgroundColor: 'rgba(37,211,102,0.08)',
-              fill: true,
-              tension: 0.4,
-              pointBackgroundColor: '#25D366',
-              pointBorderColor: '#fff',
-              pointBorderWidth: 2,
-              pointRadius: 5,
-            }
-          ]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: {
-            legend: {
-              labels: { color: '#555', font: defaultFontOpts, boxWidth: 12, padding: 16 }
-            },
-            tooltip: {
-              backgroundColor: '#111',
-              titleColor: goldLight,
-              bodyColor: '#ddd',
-              titleFont: defaultFontOpts,
-              bodyFont: defaultFontOpts,
-              padding: 12,
-            }
-          },
-          scales: {
-            x: {
-              grid: { display: false },
-              ticks: { color: '#aaa', font: defaultFontOpts }
-            },
-            y: {
-              grid: { color: 'rgba(0,0,0,0.05)' },
-              ticks: { color: '#aaa', font: defaultFontOpts }
-            }
-          }
-        }
-      });
-    }
-  }
+  };
+  document.head.appendChild(script);
 </script>

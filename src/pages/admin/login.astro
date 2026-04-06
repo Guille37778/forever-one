@@ -494,21 +494,25 @@ if (Astro.request.method === 'POST') {
           overlay.classList.remove('fade-out');
           overlay.classList.add('active');
           
+          // Aumentamos el margen de seguridad a 15 segundos para dar tiempo al audio
           const redirectSafety = setTimeout(() => {
             window.location.href = '/admin/dashboard';
-          }, 6000);
+          }, 15000); 
 
           audio.onended = () => {
             clearTimeout(redirectSafety);
+            // Pequeño margen para que el overlay termine de verse elegante
             setTimeout(() => {
                window.location.href = '/admin/dashboard';
-            }, 400);
+            }, 600);
           };
 
           try {
             audio.play();
           } catch(e) {
             console.log("Audio play blocked by browser policy");
+            // Si el navegador bloquea el audio, entramos de inmediato
+            window.location.href = '/admin/dashboard';
           }
 
           setTimeout(() => {
