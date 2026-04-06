@@ -1,6 +1,7 @@
 ---
 import { supabase } from '../lib/supabase';
 const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+const homeUrl = base || '/';
 
 // Cargar subcategorías para el menú dinámico
 const { data: subcategories } = await supabase
@@ -17,7 +18,7 @@ const accesoriosSub = subcategories?.filter(s => s.parent_category === 'accesori
     
     <div class="max-w-7xl mx-auto px-6 flex items-center justify-between">
         
-        <a href={`${base}`} class="group relative z-[1100] flex items-center gap-4">
+        <a href={homeUrl} class="group relative z-[1100] flex items-center gap-4">
             <!-- Dynamic Logo Container using CSS Mask - Permanently Gold -->
             <div class="metal-gold-bg shadow-[0_0_20px_rgba(184,134,11,0.3)] h-10 md:h-14 w-10 md:w-14 transition-all duration-500 group-hover:scale-110"
                  style={`-webkit-mask-image: url(${base}/logo_circular.png); -webkit-mask-size: contain; -webkit-mask-repeat: no-repeat; -webkit-mask-position: center; mask-image: url(${base}/logo_circular.png); mask-size: contain; mask-repeat: no-repeat; mask-position: center;`}
@@ -29,7 +30,7 @@ const accesoriosSub = subcategories?.filter(s => s.parent_category === 'accesori
         </a>
 
         <div class="hidden lg:flex items-center gap-8">
-            <a href={`${base}`} class="nav-link">Inicio</a>
+            <a href={homeUrl} class="nav-link">Inicio</a>
             <a href={`${base}/catalogos`} class="nav-link">Catálogos</a>
             
             <!-- Dropdown Prendas -->
@@ -111,10 +112,10 @@ const accesoriosSub = subcategories?.filter(s => s.parent_category === 'accesori
      x-transition:leave-start="opacity-100"
      x-transition:leave-end="opacity-0"
      x-cloak
-     class="fixed inset-0 bg-black z-[900] flex flex-col justify-center items-center">
+     class="fixed inset-0 bg-black z-[900] overflow-y-auto py-20 flex flex-col items-center">
     
     <div class="flex flex-col gap-8 text-center px-6">
-        <a @click="mobileMenuOpen = false" href={`${base}`} 
+        <a @click="mobileMenuOpen = false" href={homeUrl} 
            class="text-[11px] uppercase tracking-[0.3em] text-white/90 hover:text-gold transition-colors font-medium">Inicio</a>
         
         <a @click="mobileMenuOpen = false" href={`${base}/catalogos`} 
@@ -128,14 +129,28 @@ const accesoriosSub = subcategories?.filter(s => s.parent_category === 'accesori
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
                 </svg>
             </button>
-            <div x-show="expanded" x-collapse x-cloak class="mt-4 space-y-3 bg-white/5 p-4">
-                <a @click="mobileMenuOpen = false" href={`${base}/ropas`} class="block text-[9px] text-gold/80 hover:text-gold uppercase tracking-widest">Ver Todas las Prendas</a>
-                <p class="text-[8px] text-white/30 uppercase tracking-[0.4em] pt-2 border-t border-white/5">Categorías</p>
-                {subcategories?.map(sub => (
-                    <a @click="mobileMenuOpen = false" href={`${base}/ropas?sub=${sub.slug}`} class="block text-[10px] text-white/60 hover:text-gold uppercase tracking-widest italic">
-                        {sub.name}
-                    </a>
-                ))}
+            <div x-show="expanded" x-collapse x-cloak class="mt-4 space-y-4 bg-white/5 p-5 text-left border-t border-white/5">
+                <a @click="mobileMenuOpen = false" href={`${base}/ropas`} class="block text-[9px] text-gold hover:text-gold/80 uppercase tracking-[0.3em] font-bold mb-2">Ver Todo</a>
+                
+                <!-- Ropa Section -->
+                <div class="space-y-2 pt-2">
+                    <p class="text-[8px] text-white/30 uppercase tracking-[0.4em] font-bold border-b border-white/10 pb-1">Ropa</p>
+                    {ropaSub.map(sub => (
+                        <a @click="mobileMenuOpen = false" href={`${base}/ropas?sub=${sub.slug}`} class="block text-[10px] text-white/70 hover:text-gold uppercase tracking-widest italic py-1">
+                            {sub.name}
+                        </a>
+                    ))}
+                </div>
+
+                <!-- Accesorios Section -->
+                <div class="space-y-2 pt-2">
+                    <p class="text-[8px] text-white/30 uppercase tracking-[0.4em] font-bold border-b border-white/10 pb-1">Accesorios</p>
+                    {accesoriosSub.map(sub => (
+                        <a @click="mobileMenuOpen = false" href={`${base}/ropas?sub=${sub.slug}`} class="block text-[10px] text-white/70 hover:text-gold uppercase tracking-widest italic py-1">
+                            {sub.name}
+                        </a>
+                    ))}
+                </div>
             </div>
         </div>
         
