@@ -1,25 +1,25 @@
 ---
 import AdminLayout from '../../layouts/AdminLayout.astro';
-import { supabase } from '../../lib/supabase';
+import { supabase, supabaseAdmin } from '../../lib/supabase';
 
 const accessToken = Astro.cookies.get('sb-access-token')?.value;
 if (!accessToken) return Astro.redirect('/admin/login');
 const { data: { user }, error } = await supabase.auth.getUser(accessToken);
 if (error || !user) return Astro.redirect('/admin/login');
 
-const { data: analyticsData } = await supabase
+const { data: analyticsData } = await supabaseAdmin
   .from('product_stats')
   .select('*, products(name, price)')
   .order('views', { ascending: false });
 
 // Obtener datos de órdenes reales
-const { data: ordersData } = await supabase
+const { data: ordersData } = await supabaseAdmin
   .from('orders')
   .select('total_usd');
 
-const { data: orderItemsData } = await supabase
+const { data: orderItemsData } = await supabaseAdmin
   .from('order_items')
-  .select('product_id, quantity');
+  .select('product_id, product_name, quantity');
 
 // Procesar KPIs
 const totalViews = analyticsData?.reduce((s, i) => s + (i.views || 0), 0) || 0;
@@ -27,20 +27,41 @@ const totalWA    = analyticsData?.reduce((s, i) => s + (i.whatsapp_clicks || 0),
 const totalRevenue = ordersData?.reduce((s, i) => s + Number(i.total_usd || 0), 0) || 0;
 const totalOrders = ordersData?.length || 0;
 
-// Mapear ventas por producto
-const salesMap = orderItemsData?.reduce((acc: any, item: any) => {
-  acc[item.product_id] = (acc[item.product_id] || 0) + (item.quantity || 0);
-  return acc;
-}, {}) || {};
+// Agrupar ventas y estadísticas
+const salesMap: any = {};
+const namesMap: any = {};
+orderItemsData?.forEach((item: any) => {
+  salesMap[item.product_id] = (salesMap[item.product_id] || 0) + (item.quantity || 0);
+  namesMap[item.product_id] = item.product_name;
+});
 
-const processedData = analyticsData?.map(item => ({
-  ...item,
-  sales: salesMap[item.product_id] || 0
-})) || [];
+const statsMap: any = {};
+analyticsData?.forEach((item: any) => {
+  statsMap[item.product_id] = item;
+  namesMap[item.product_id] = item.products?.name || namesMap[item.product_id] || 'Prenda Desconocida';
+});
 
-const avgTime = analyticsData?.length 
-  ? Math.round(analyticsData.reduce((s, i) => s + (i.avg_time_on_page_seconds || 0), 0) / analyticsData.length)
-  : 0;
+// Combinar IDs para asegurar que todos los productos (con vistas O con compras) se reflejen
+const allProductIds = Array.from(new Set([
+  ...(analyticsData?.map(i => i.product_id) || []),
+  ...(orderItemsData?.map(i => i.product_id) || [])
+]));
+
+const processedData = allProductIds.map(id => {
+  const stat = statsMap[id] || {};
+  const sales = salesMap[id] || 0;
+  return {
+    product_id: id,
+    products: { name: namesMap[id] },
+    views: stat.views || 0,
+    whatsapp_clicks: stat.whatsapp_clicks || 0,
+    sales: sales
+  };
+}).sort((a: any, b: any) => {
+  const scoreA = (a.views) + (a.whatsapp_clicks * 10) + (a.sales * 50);
+  const scoreB = (b.views) + (b.whatsapp_clicks * 10) + (b.sales * 50);
+  return scoreB - scoreA;
+});
 ---
 
 <AdminLayout title="Analíticas" activeNav="analytics" user={{ email: user?.email || '' }}>
@@ -108,19 +129,36 @@ const avgTime = analyticsData?.length
 
   <div class="kpi-grid">
     <div class="kpi-card">
-      <div class="kpi-icon-box">💰</div>
+      <div class="kpi-icon-box">
+        <svg width="18" height="18" fill="none" stroke="#B8860B" stroke-width="1.5" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="2" y="6" width="20" height="12" rx="2"></rect>
+          <circle cx="12" cy="12" r="2"></circle>
+          <path d="M6 12h.01M18 12h.01"></path>
+        </svg>
+      </div>
       <p class="kpi-label">Ingresos Totales</p>
       <p class="kpi-value">${totalRevenue.toLocaleString('en-US', { minimumFractionDigits: 2 })}</p>
       <p class="kpi-sub">Ventas confirmadas (USD)</p>
     </div>
     <div class="kpi-card">
-      <div class="kpi-icon-box">📦</div>
+      <div class="kpi-icon-box">
+        <svg width="18" height="18" fill="none" stroke="#B8860B" stroke-width="1.5" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path>
+          <line x1="3" y1="6" x2="21" y2="6"></line>
+          <path d="M16 10a4 4 0 0 1-8 0"></path>
+        </svg>
+      </div>
       <p class="kpi-label">Pedidos</p>
       <p class="kpi-value">{totalOrders}</p>
       <p class="kpi-sub">Conversiones totales</p>
     </div>
     <div class="kpi-card">
-      <div class="kpi-icon-box">👁</div>
+      <div class="kpi-icon-box">
+        <svg width="18" height="18" fill="none" stroke="#B8860B" stroke-width="1.5" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+          <circle cx="12" cy="12" r="3"></circle>
+        </svg>
+      </div>
       <p class="kpi-label">Vistas Totales</p>
       <p class="kpi-value">{totalViews.toLocaleString()}</p>
       <p class="kpi-sub">Alcance de marca</p>

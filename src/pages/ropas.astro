@@ -12,9 +12,9 @@ const { data: settingsData } = await supabase
   .select('*')
   .in('key', ['bcv_usd_rate', 'delivery_enabled', 'delivery_zones']);
 
-const dollarRate = parseFloat(settingsData?.find(s => s.key === 'bcv_usd_rate')?.value || '0');
-const deliveryEnabled = settingsData?.find(s => s.key === 'delivery_enabled')?.value === 'true';
-const deliveryZones = settingsData?.find(s => s.key === 'delivery_zones')?.value || '';
+const dollarRate = parseFloat(settingsData?.find((s: any) => s.key === 'bcv_usd_rate')?.value || '0');
+const deliveryEnabled = settingsData?.find((s: any) => s.key === 'delivery_enabled')?.value === 'true';
+const deliveryZones = settingsData?.find((s: any) => s.key === 'delivery_zones')?.value || '';
 
 // Obtenemos los productos iniciales desde Supabase (SSR)
 const { data: initialProducts } = await supabase
@@ -28,7 +28,7 @@ const { data: initialProducts } = await supabase
   .eq('is_active', true);
 
 // Mapeamos al formato que espera el frontend actual
-const products = initialProducts?.map(p => ({
+const products = initialProducts?.map((p: any) => ({
   id: p.id,
   nombre: p.name,
   precio: p.price,
@@ -75,13 +75,16 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
                 <div class="max-w-7xl mx-auto px-6">
                     
                     <!-- Búsqueda Premium -->
-                    <div class="max-w-xl mx-auto mb-12" data-aos="fade-up">
+                    <div class="max-w-xl mx-auto mb-12 relative z-50" data-aos="fade-up">
                         <div class="relative group">
                             <input 
                                 type="text" 
                                 id="search-input"
+                                autocomplete="off"
                                 placeholder="Buscar su próxima prenda..." 
-                                oninput="window.__setSearch(this.value)"
+                                oninput="window.__setSearch(this.value); window.__showSuggestions(this.value)"
+                                onfocus="window.__showSuggestions(this.value)"
+                                onblur="setTimeout(() => window.__hideSuggestions(), 200)"
                                 class="w-full bg-white text-black border border-gold/20 py-5 pl-14 pr-6 text-xs uppercase tracking-[0.3em] font-black italic outline-none transition-all duration-500 focus:border-gold focus:shadow-[0_0_20px_rgba(184,134,11,0.1)] placeholder:text-slate-300"
                             />
                             <div class="absolute left-6 top-1/2 -translate-y-1/2 text-gold/40 group-focus-within:text-gold transition-colors duration-500">
@@ -89,6 +92,10 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
                                 </svg>
                             </div>
+                        </div>
+                        
+                        <!-- Dropdown Sugerencias -->
+                        <div id="search-suggestions" class="absolute z-50 w-full mt-2 bg-white border border-gold/20 shadow-[0_15px_40px_rgba(0,0,0,0.08)] rounded-b-xl overflow-hidden hidden flex-col max-h-[350px] overflow-y-auto">
                         </div>
                     </div>
 
@@ -329,7 +336,7 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
                         <!-- Delivery Local -->
                         <div id="delivery-local-fields" class="hidden" style="display:none; flex-direction:column; gap:0.875rem;">
                             <p class="cart-field-label">Selecciona tu zona de reparto</p>
-                            <select id="delivery-zone-select" class="cart-input" style="cursor:pointer; appearance:none; background-image:url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23B8860B' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E\"); background-repeat:no-repeat; background-position:calc(100% - 16px) center;">
+                            <select id="delivery-zone-select" class="cart-input" style="cursor:pointer; appearance:none; background-image:url('data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'12\' height=\'12\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'%23B8860B\' stroke-width=\'2\'%3E%3Cpath d=\'M6 9l6 6 6-6\'/%3E%3C/svg%3E'); background-repeat:no-repeat; background-position:calc(100% - 16px) center;">
                                 <option value="">— Selecciona tu zona —</option>
                             </select>
                             <textarea id="delivery-address" rows="2"
@@ -899,6 +906,91 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
             renderGrid();
         };
 
+        window.__showSuggestions = function(val) {
+            const query = val.toLowerCase().trim();
+            const box = el('search-suggestions');
+            if(!box) return;
+            if(!query) {
+                box.style.display = 'none';
+                return;
+            }
+
+            // Excluir categoría "general" si existe
+            const validProducts = products.filter(p => p.category && p.category.toLowerCase() !== 'general');
+
+            // Sacar categorías que matcheen
+            const subcats = Array.from(new Set(validProducts.map(p => p.subcategory_name))).filter(Boolean);
+            const matchedCats = subcats.filter(c => c.toLowerCase().includes(query)).slice(0, 3);
+
+            // Sacar productos que matcheen
+            const matchedProds = validProducts.filter(p => p.nombre.toLowerCase().includes(query)).slice(0, 5);
+
+            if(matchedCats.length === 0 && matchedProds.length === 0) {
+                box.style.display = 'none';
+                return;
+            }
+
+            let html = '';
+            if(matchedCats.length > 0) {
+                html += `<div class="px-5 py-2 bg-[#f9f9f9] border-b border-gold/10 flex items-center gap-2 text-[8px] uppercase tracking-[0.2em] font-black text-[#B8860B]/70">Sugerencias de Categorías</div>`;
+                html += matchedCats.map(c => `
+                    <button onclick="window.__setSubcatByName('${c}')" class="w-full text-left px-5 py-3 hover:bg-gold/5 border-b border-gold/10 flex items-center gap-3 transition-colors cursor-pointer group">
+                        <svg class="w-3.5 h-3.5 text-gold/60 group-hover:text-gold transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path></svg>
+                        <span class="text-xs font-black uppercase italic tracking-widest text-slate-600 group-hover:text-black transition-colors">${c}</span>
+                    </button>
+                `).join('');
+            }
+            if(matchedProds.length > 0) {
+                html += `<div class="px-5 py-2 bg-[#f9f9f9] border-b border-gold/10 flex items-center gap-2 text-[8px] uppercase tracking-[0.2em] font-black text-[#B8860B]/70">Prendas Encontradas</div>`;
+                html += matchedProds.map(p => `
+                    <button onclick="window.__selectProduct('${p.id}')" class="w-full text-left px-5 py-3 hover:bg-gold/5 flex items-center gap-4 transition-colors border-b border-gold/10 cursor-pointer group">
+                        <img src="${p.imagen}" class="w-10 h-10 object-cover rounded-sm border border-gold/20 flex-shrink-0" onerror="this.src='https://images.unsplash.com/photo-1441984904996-e0b6ba687e04?q=80&w=100'">
+                        <div class="flex-1 min-w-0">
+                            <h4 class="text-[11px] font-black italic uppercase tracking-wider text-black truncate">${p.nombre}</h4>
+                            <p class="text-[9px] uppercase tracking-widest text-gold font-bold mt-1">$${p.precio}</p>
+                        </div>
+                    </button>
+                `).join('');
+            }
+
+            box.innerHTML = html;
+            box.style.display = 'flex';
+        };
+
+        window.__hideSuggestions = function() {
+            const box = el('search-suggestions');
+            if(box) box.style.display = 'none';
+        };
+
+        window.__setSubcatByName = function(name) {
+            const prod = products.find(p => p.subcategory_name === name);
+            if(prod) {
+                window.__clearFilters(); // Clear previous filters explicitly
+                window.__setSubcategory(prod.subcategory_slug);
+            }
+            const input = el('search-input');
+            if(input) input.value = ''; // We used a category filter, so clear search text
+            window.__hideSuggestions();
+            el('product-grid').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        };
+
+        window.__selectProduct = function(id) {
+            const prod = products.find(p => p.id === id);
+            if(prod) {
+                // Si elimos un producto, llenamos el input con el nombre exacto
+                const input = el('search-input');
+                if(input) input.value = prod.nombre;
+                
+                // Limpiamos subcategorias para asegurar que el producto se vea
+                activeCategory = 'Todos';
+                activeSubcategory = '';
+                
+                window.__setSearch(prod.nombre);
+            }
+            window.__hideSuggestions();
+            el('product-grid').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        };
+
         window.__clearFilters = function() {
             activeCategory = 'Todos';
             activeSubcategory = '';
@@ -973,12 +1065,12 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
                 return `
                 <article data-product-id="${p.id}"
                          style="background:#fff; display:flex; flex-direction:column; overflow:hidden;
-                                box-shadow:0 4px 24px rgba(0,0,0,0.07); transition:all 0.4s ease;"
-                         onmouseenter="this.style.boxShadow='0 12px 48px rgba(0,0,0,0.14)'; this.style.transform='translateY(-4px)';"
-                         onmouseleave="this.style.boxShadow='0 4px 24px rgba(0,0,0,0.07)'; this.style.transform='translateY(0)';">
+                                box-shadow:0 20px 60px rgba(184,134,11,0.2), 0 0 30px rgba(184,134,11,0.08); border:1px solid rgba(184,134,11,0.1); transition:all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);"
+                         onmouseenter="this.style.boxShadow='0 30px 80px rgba(184,134,11,0.35), 0 0 40px rgba(184,134,11,0.15)'; this.style.transform='translateY(-10px)';"
+                         onmouseleave="this.style.boxShadow='0 20px 60px rgba(184,134,11,0.2), 0 0 30px rgba(184,134,11,0.08)'; this.style.transform='translateY(0)';">
 
                     <!-- IMAGE BLOCK -->
-                    <div style="position:relative; aspect-ratio:3/4; overflow:hidden; background:#f0ede8; flex-shrink:0;">
+                    <div style="position:relative; aspect-ratio:4/5; overflow:hidden; background:#f0ede8; flex-shrink:0;">
                         <img src="${p.imagen}" alt="${p.nombre}" loading="lazy"
                              style="width:100%; height:100%; object-fit:cover; display:block; transition:transform 0.9s ease;"
                              onmouseenter="this.style.transform='scale(1.07)'"
@@ -1008,15 +1100,15 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
                     </div>
 
                     <!-- TEXT BLOCK -->
-                    <div style="padding:20px 18px 4px; display:flex; flex-direction:column; gap:6px; flex:1;">
+                    <div style="padding:16px 14px 4px; display:flex; flex-direction:column; gap:6px; flex:1;">
                         
                         <h3 style="margin:0; font-family:'Cinzel',serif; font-weight:900; font-style:italic;
-                                   text-transform:uppercase; font-size:0.85rem; line-height:1.2; color:#111;
+                                   text-transform:uppercase; font-size:0.75rem; line-height:1.2; color:#111;
                                    letter-spacing:0.02em;">
                             ${p.nombre}
                         </h3>
 
-                        <p style="margin:4px 0 0; font-size:10.5px; color:#666; font-style:italic;
+                        <p style="margin:4px 0 0; font-size:10px; color:#666; font-style:italic;
                                   line-height:1.5; font-weight:400;
                                   display:-webkit-box; -webkit-line-clamp:3;
                                   -webkit-box-orient:vertical; overflow:hidden;">
@@ -1029,7 +1121,7 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
                         ${showPrice ? `
                         <div style="border-top:1px solid rgba(184,134,11,0.1); padding-top:12px;
                                     display:flex; align-items:baseline; flex-wrap:wrap; gap:4px;">
-                            <span style="font-size:1.4rem; font-weight:900; font-style:italic;
+                            <span style="font-size:1.25rem; font-weight:900; font-style:italic;
                                          color:#B8860B; line-height:1;">
                                 ${priceDisplay}
                             </span>
@@ -1038,7 +1130,7 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
                     </div>
 
                     <!-- BUTTON -->
-                    <div style="padding:12px 18px 18px;">
+                    <div style="padding:10px 14px 14px;">
                         <button onclick="window.__addToCart('${p.id}')"
                                 ${!inStock ? 'disabled' : ''}
                                 style="width:100%; padding:14px 8px; border:none; font-size:8.5px;

@@ -15,16 +15,25 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     }
 
     // 2. Realizar el reset de las estadísticas
-    // Eliminamos todos los registros de la tabla product_stats
-    // Usamos el filtro 'neq' para asegurar que el comando se ejecute (algunos clientes requieren un filtro para DELETE)
-    const { error: resetError } = await supabase
+    const { error: resetStatsError } = await supabase
       .from('product_stats')
       .delete()
       .neq('id', '00000000-0000-0000-0000-000000000000');
 
-    if (resetError) {
-      console.error('Error reseteando analíticas:', resetError);
-      return new Response(JSON.stringify({ error: resetError.message }), { status: 500 });
+    // 3. Eliminar items de órdenes y órdenes para restablecer ventas
+    const { error: resetItemsError } = await supabase
+      .from('order_items')
+      .delete()
+      .neq('id', '00000000-0000-0000-0000-000000000000');
+
+    const { error: resetOrdersError } = await supabase
+      .from('orders')
+      .delete()
+      .neq('id', '00000000-0000-0000-0000-000000000000');
+
+    if (resetStatsError || resetItemsError || resetOrdersError) {
+      console.error('Error reseteando analíticas u órdenes:', resetStatsError || resetItemsError || resetOrdersError);
+      return new Response(JSON.stringify({ error: 'Error al limpiar base de datos' }), { status: 500 });
     }
 
     return new Response(JSON.stringify({ success: true, message: 'Analíticas reiniciadas correctamente' }), { status: 200 });
