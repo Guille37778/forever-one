@@ -1,5 +1,5 @@
-# build output
-dist/
+# build output committed for Deno Deploy (pre-built)
+# dist/
 # generated types
 .astro/
 
