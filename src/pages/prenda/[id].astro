@@ -66,20 +66,10 @@ const productInfo = {
 
 <Layout title={`${productInfo.nombre} | Forever One`}>
     <Header isBlack={true} />
-    <main class="bg-[#F9F8F6] pt-24 pb-20 overflow-x-hidden">
+    <main class="bg-[#F9F8F6] pt-16 md:pt-24 pb-12 md:pb-20 overflow-x-hidden">
         <div class="max-w-7xl mx-auto px-6">
             
-            <!-- Breadcrumbs -->
-            <nav class="flex items-center gap-2 mb-8 text-[9px] uppercase tracking-[0.3em] font-bold text-slate-400">
-                <a href="/" class="hover:text-gold transition-colors">Inicio</a>
-                <span>/</span>
-                <a href="/ropas" class="hover:text-gold transition-colors">Colección</a>
-                <span>/</span>
-                <a href={`/ropas?sub=${productInfo.subcategory_slug}`} class="hover:text-gold transition-colors">{productInfo.subcategory_name}</a>
-                <span>/</span>
-                <span class="text-black">{productInfo.nombre}</span>
-            </nav>
-
+            
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 items-start">
                 
                 <!-- ── LEFT: Gallery ─────────────────────────────── -->
@@ -95,7 +85,7 @@ const productInfo = {
                         <div class="absolute inset-0 pointer-events-none border-[12px] border-white/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
                         
                         <!-- Additional Info Icons Inside Sticky Area -->
-                        <div class="border-t border-gold/10 pt-4 mt-2 pb-2 px-8">
+                        <div class="border-t border-gold/10 pt-4 mt-2 pb-2 px-4 md:px-8">
                             <div class="grid grid-cols-3 gap-4">
                                 <div class="flex flex-col items-center text-center">
                                     <div class="text-gold mb-1.5">
@@ -137,7 +127,7 @@ const productInfo = {
                         <span class="text-[9px] uppercase tracking-[0.5em] font-black text-[#B8860B] mb-2 block animate-fade-in">
                             {productInfo.categoria_label} · {productInfo.coleccion || 'Exclusiva'}
                         </span>
-                        <h1 class="text-3xl md:text-4xl lg:text-5xl font-black italic uppercase tracking-tight text-black leading-[0.95] mb-6 font-primary">
+                        <h1 class="text-2xl md:text-4xl lg:text-5xl font-black italic uppercase tracking-tight text-black leading-[0.95] mb-6 font-primary">
                             {productInfo.nombre}
                         </h1>
                     </div>
@@ -200,7 +190,7 @@ const productInfo = {
 
             <!-- ── BOTTOM: Tabs Section ────────────────────────── -->
             <section class="mt-16 pb-20" x-data="{ tab: 'reviews' }">
-                <div class="flex justify-center gap-12 border-b border-gold/10 mb-16">
+                <div class="flex justify-center gap-6 md:gap-12 border-b border-gold/10 mb-10 md:mb-16">
                     <button @click="tab = 'reviews'" 
                             :class="tab === 'reviews' ? 'border-gold text-black' : 'border-transparent text-slate-400 hover:text-black'"
                             class="pb-6 text-[10px] uppercase tracking-[0.5em] font-black border-b-2 transition-all">Reseñas</button>
@@ -227,7 +217,7 @@ const productInfo = {
                         <div class="flex flex-col gap-8 mb-12">
                             {reviews && reviews.length > 0 ? (
                                 reviews.map((r: any) => (
-                                    <div class="bg-white p-8 border border-gold/5 shadow-sm">
+                                    <div class="bg-white p-5 md:p-8 border border-gold/5 shadow-sm">
                                         <div class="flex justify-between mb-4">
                                             <span class="text-[10px] font-black uppercase tracking-widest text-black">{r.reviewer_name}</span>
                                             <div class="flex text-gold">
@@ -301,8 +291,8 @@ const productInfo = {
 
                     <!-- Recommendations Column -->
                     <div>
-                        <h2 class="text-xl font-black italic uppercase italic text-black mb-10">Productos similares</h2>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <h2 class="text-xl font-black uppercase italic text-black mb-10">Productos similares</h2>
+                        <div class="grid grid-cols-2 gap-4 md:gap-8">
                             {recommendations && recommendations.map((p: any) => (
                                 <a href={`/prenda/${p.id}`} class="group group bg-white shadow-sm border border-gold/5 overflow-hidden transition-all hover:shadow-2xl hover:-translate-y-2">
                                     <div class="aspect-[4/5] bg-slate-100 overflow-hidden">
@@ -320,7 +310,7 @@ const productInfo = {
 
                 <!-- ── TABS: Specs Content ──────────────────────── -->
                 <div x-show="tab === 'specs'" x-cloak class="max-w-4xl mx-auto animate-fade-in">
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-x-20 gap-y-12 bg-white p-12 shadow-sm border border-gold/5">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-x-20 gap-y-12 bg-white p-6 md:p-12 shadow-sm border border-gold/5">
                         <div>
                             <h4 class="text-[10px] uppercase tracking-[0.4em] font-black text-black mb-6 border-b border-gold/10 pb-2">Materiales y Cuidado</h4>
                             <ul class="space-y-4 text-xs text-slate-600 italic leading-relaxed">
