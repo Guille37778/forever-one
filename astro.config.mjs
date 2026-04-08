@@ -1,24 +1,14 @@
 import { defineConfig, passthroughImageService } from 'astro/config';
 import tailwindcss from '@tailwindcss/vite';
 import alpinejs from '@astrojs/alpinejs';
-import cloudflare from '@astrojs/cloudflare';
-
-const isProduction = process.env.CF_PAGES === 'true';
 
 // https://astro.build/config
 export default defineConfig({
-  output: 'server',
+  // Cambiamos a static para asegurar que la página sea visible inmediatamente
+  output: 'static',
   
-  // Usamos el adaptador de Cloudflare para el despliegue.
-  adapter: cloudflare({
-    platformProxy: {
-      enabled: true,
-    },
-  }),
-
   security: {
-    // Deshabilitamos el chequeo de origen localmente para evitar errores 403 Forbidden
-    checkOrigin: !isProduction ? false : true
+    checkOrigin: false
   },
 
   image: {
