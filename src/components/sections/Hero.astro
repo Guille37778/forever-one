@@ -27,7 +27,7 @@ const cleanLink = buttonLink.startsWith('/') ? buttonLink : `/${buttonLink}`;
 const fullButtonLink = buttonLink.startsWith('http') ? buttonLink : `${cleanBase}${cleanLink}`;
 ---
 
-<section class="relative min-h-[85vh] md:min-h-screen flex items-center justify-center bg-black overflow-hidden">
+<section class="relative min-h-[90vh] md:min-h-screen flex items-center justify-center bg-black overflow-hidden">
     <div class="absolute inset-0 z-0">
         <img src={image} 
              alt="Luxury Fashion Hero" 
@@ -35,7 +35,7 @@ const fullButtonLink = buttonLink.startsWith('http') ? buttonLink : `${cleanBase
         <div class="absolute inset-0 bg-gradient-to-b from-black/20 via-black/50 to-black"></div>
     </div>
 
-    <div class="container mx-auto px-6 relative z-10 text-center mt-20">
+    <div class="container mx-auto px-6 py-20 relative z-10 text-center">
         <div class="mb-6 opacity-0 animate-heroUp" style="animation-delay: 0.2s; animation-fill-mode: forwards;">
             <span class="text-gold font-bold tracking-[0.5em] uppercase text-[9px] md:text-[11px] border-b border-gold/30 pb-2">{tagline}</span>
         </div>

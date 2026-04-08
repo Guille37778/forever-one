@@ -13,7 +13,7 @@ try {
     console.error("Error cargando catálogos:", error);
 }
 
-const base = import.meta.env.BASE_URL;
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
 ---
 
 <Layout title="Forever One | Catálogos Exclusivos">
@@ -77,7 +77,7 @@ const base = import.meta.env.BASE_URL;
                                 <div class="mt-4 text-center">
                                     <h5 class="text-lg font-serif font-black italic text-[#1A1A1A] mb-3">{catalog.nombre}</h5>
                                     <a 
-                                        href={`${base}/catalogo_de_ejmplo.pdf`} 
+                                        href={`${base}/catalogo_de_ejemplo.pdf`} 
                                         download={`ForeverOne_Catalogo_${catalog.nombre.replace(/\s+/g, '_')}.pdf`}
                                         class="btn-metal-gold block py-3 text-[9px] uppercase tracking-[0.4em] font-black text-white shadow-lg"
                                     >
@@ -104,7 +104,7 @@ const base = import.meta.env.BASE_URL;
                                     <h5 class="text-2xl font-serif font-black italic text-[#1A1A1A] mb-4">Catálogo de Ejemplo</h5>
                                     <p class="text-slate-500 text-xs font-light italic mb-8 px-4">Esta es una muestra de cómo se verán sus colecciones. Puede descargarla mientras sincroniza su Google Sheet.</p>
                                     <a 
-                                        href={`${base}/catalogo_de_ejmplo.pdf`} 
+                                        href={`${base}/catalogo_de_ejemplo.pdf`} 
                                         download="ForeverOne_Catalogo.pdf"
                                         class="btn-metal-gold block py-4 text-[10px] uppercase tracking-[0.5em] font-black text-white shadow-2xl hover:scale-105 transition-all duration-300"
                                     >

@@ -1,5 +1,6 @@
 ---
 import { ClientRouter } from 'astro:transitions';
+import CartDrawer from '../components/CartDrawer.astro';
 import '../styles/global.css';
 
 interface Props {
@@ -106,6 +107,7 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
 		<div class="cursor-outline hidden md:block" id="cursor-outline"></div>
 
 		<slot />
+		<CartDrawer />
 		
 		<script is:inline src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
 		<script is:inline>

@@ -11,9 +11,10 @@ const { data: subcategories } = await supabase
 
 const ropaSub = subcategories?.filter(s => s.parent_category === 'ropa') || [];
 const accesoriosSub = subcategories?.filter(s => s.parent_category === 'accesorios') || [];
+const { isBlack = false } = Astro.props;
 ---
 
-<nav :class="{ 'py-4 glass-nav border-b border-gold/20': !atTop || mobileMenuOpen, 'py-8 bg-transparent': atTop && !mobileMenuOpen }"
+<nav :class={isBlack ? "'py-4 glass-nav border-b border-gold/20'" : "{ 'py-4 glass-nav border-b border-gold/20': !atTop || mobileMenuOpen, 'py-8 bg-transparent': atTop && !mobileMenuOpen }"}
      class="fixed top-0 w-full z-[1000] transition-all duration-500">
     
     <div class="max-w-7xl mx-auto px-6 flex items-center justify-between">
