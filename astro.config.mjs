@@ -1,14 +1,18 @@
 import { defineConfig, passthroughImageService } from 'astro/config';
 import tailwindcss from '@tailwindcss/vite';
 import alpinejs from '@astrojs/alpinejs';
+import cloudflare from '@astrojs/cloudflare';
 
 // https://astro.build/config
 export default defineConfig({
-  // Cambiamos a static para asegurar que la página sea visible inmediatamente
-  output: 'static',
+  // Volvemos a modo servidor (SSR) para que funcionen las rutas dinámicas y Supabase
+  output: 'server',
   
+  // Usamos el adaptador estable de Cloudflare
+  adapter: cloudflare(),
+
   security: {
-    checkOrigin: false
+    checkOrigin: true
   },
 
   image: {
