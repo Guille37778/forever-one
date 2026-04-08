@@ -1,7 +1,7 @@
 import { defineConfig, passthroughImageService } from 'astro/config';
 import tailwindcss from '@tailwindcss/vite';
 import alpinejs from '@astrojs/alpinejs';
-import deno from '@deno/astro-adapter';
+import deno from '@astrojs/deno';
 
 // https://astro.build/config
 export default defineConfig({
