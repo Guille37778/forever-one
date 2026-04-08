@@ -21,6 +21,7 @@
     "astro": "^5.4.2",
     "drizzle-kit": "^0.31.10",
     "drizzle-orm": "^0.45.2",
+    "es-module-lexer": "^2.0.0",
     "postgres": "^3.4.8",
     "resend": "^6.10.0",
     "tailwindcss": "^4.2.2"
