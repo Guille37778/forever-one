@@ -1,15 +1,15 @@
 import { defineConfig, passthroughImageService } from 'astro/config';
 import tailwindcss from '@tailwindcss/vite';
 import alpinejs from '@astrojs/alpinejs';
-import cloudflare from '@astrojs/cloudflare';
+import deno from '@astrojs/deno';
 
 // https://astro.build/config
 export default defineConfig({
   // Volvemos a modo servidor (SSR) para que funcionen las rutas dinámicas y Supabase
   output: 'server',
   
-  // Usamos el adaptador estable de Cloudflare
-  adapter: cloudflare(),
+  // Adaptador para Deno Deploy
+  adapter: deno(),
 
   security: {
     checkOrigin: true
