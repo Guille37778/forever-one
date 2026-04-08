@@ -1,1 +1,3 @@
-import "./dist/server/entry.mjs";
+import { handle } from "./dist/server/entry.mjs";
+
+Deno.serve(handle);
