@@ -33706,9 +33706,8 @@ var handle = _exports["handle"];
 var start2 = _exports["start"];
 var running = _exports["running"];
 var _start = "start";
-{
-  serverEntrypointModule[_start](_manifest, _args);
-}
+// Auto-start disabled: using Deno.serve() in main.ts instead (Deno 2 compatible)
+// { serverEntrypointModule[_start](_manifest, _args); }
 export {
   handle,
   pageMap,
