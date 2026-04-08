@@ -10,7 +10,7 @@ export default defineConfig({
   output: 'server',
   
   // Usamos el adaptador de Cloudflare para el despliegue.
-  adapter: cloudflare({ mode: 'advanced' }),
+  adapter: cloudflare({ mode: 'directory' }),
 
   security: {
     // Deshabilitamos el chequeo de origen localmente para evitar errores 403 Forbidden
