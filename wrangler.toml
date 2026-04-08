@@ -1,0 +1,7 @@
+#:schema node_modules/wrangler/config-schema.json
+name = "forever-one"
+pages_build_output_dir = "dist"
+
+[assets]
+directory = "dist/client"
+not_found_handling = "404-page"
