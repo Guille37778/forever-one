@@ -8,16 +8,15 @@ const supabaseServiceKey = import.meta.env.SUPABASE_SERVICE_ROLE_KEY;
 export const supabase = (supabaseUrl && supabaseAnonKey)
   ? createClient(supabaseUrl, supabaseAnonKey)
   : new Proxy({}, {
-      get: () => ({
-        from: () => ({
-          select: () => ({
-            order: () => Promise.resolve({ data: [], error: new Error('Supabase not initialized') }),
-            eq: () => ({ single: () => Promise.resolve({ data: null, error: new Error('Supabase not initialized') }) }),
-            single: () => Promise.resolve({ data: null, error: new Error('Supabase not initialized') })
-          }),
-          eq: () => ({ single: () => Promise.resolve({ data: null, error: new Error('Supabase not initialized') }) })
-        })
-      })
+      get: function(target, prop) {
+        if (prop === 'then') return undefined;
+        const noop = () => Promise.resolve({ data: [], error: new Error('Supabase not initialized') });
+        const proxy: any = new Proxy(noop, {
+          get: (t, p) => (p === 'then' ? undefined : proxy),
+          apply: () => proxy
+        });
+        return proxy;
+      }
     }) as any;
 
 if (!supabaseUrl || !supabaseAnonKey) {

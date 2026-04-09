@@ -120,6 +120,14 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
 				if (preloader) preloader.classList.add('fade-out');
 			});
 
+			// Seguridad: Forzar desaparición del preloader tras 5 segundos
+			setTimeout(() => {
+				const preloader = document.getElementById('preloader');
+				if (preloader && !preloader.classList.contains('fade-out')) {
+					preloader.classList.add('fade-out');
+				}
+			}, 5000);
+
 			// Lógica del Cursor Personalizado
 			document.addEventListener('mousemove', (e) => {
 				const dot = document.getElementById('cursor-dot');
