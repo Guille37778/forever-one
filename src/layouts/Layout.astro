@@ -39,14 +39,14 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
 				requestAnimationFrame(raf);
 			});
 
-			// Seguridad: Forzar desaparición del preloader tras 5 segundos
+			// Seguridad: Forzar desaparición del preloader tras 3 segundos
 			// Se pone en el HEAD para que se cargue antes que cualquier posible error en el BODY
 			setTimeout(() => {
 				const preloader = document.getElementById('preloader');
 				if (preloader && !preloader.classList.contains('fade-out')) {
 					preloader.classList.add('fade-out');
 				}
-			}, 5000);
+			}, 3000);
 		</script>
 
 		<style>
