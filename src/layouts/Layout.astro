@@ -121,13 +121,32 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
 		
 		<script is:inline src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
 		<script is:inline>
-			// Inicializar AOS
-			AOS.init({ once: true, duration: 1000 });
-
+			// Lógica del Preloader
 			window.addEventListener('load', () => {
 				const preloader = document.getElementById('preloader');
 				if (preloader) preloader.classList.add('fade-out');
+				
+				// Inicializar AOS después de que el preloader empiece a irse
+				setTimeout(() => {
+					AOS.init({ 
+						once: true, 
+						duration: 1000,
+						offset: 100,
+						easing: 'ease-out-cubic'
+					});
+				}, 500);
 			});
+
+			// Seguridad: Forzar visibilidad si AOS falla
+			setTimeout(() => {
+				const animatedElements = document.querySelectorAll('[data-aos]');
+				animatedElements.forEach(el => {
+					if (window.getComputedStyle(el).opacity === '0') {
+						el.style.opacity = '1';
+						el.style.transform = 'none';
+					}
+				});
+			}, 6000);
 
 			// Lógica del Cursor Personalizado
 			document.addEventListener('mousemove', (e) => {
@@ -151,7 +170,7 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
 				if (outline) outline.style.transform = 'scale(1)';
 			});
 
-			// Re-inicializar AOS y Cursor al navegar con View Transitions
+			// Re-inicializar AOS al navegar con View Transitions
 			document.addEventListener('astro:after-swap', () => {
 				AOS.init({ once: true, duration: 1000 });
 				const preloader = document.getElementById('preloader');

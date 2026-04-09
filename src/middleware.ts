@@ -1,29 +1,12 @@
-import type { MiddlewareHandler } from 'astro';
-import { supabase } from './lib/supabase';
+import { defineMiddleware } from 'astro:middleware';
+import { initSupabase } from './lib/supabase';
 
-export const onRequest: MiddlewareHandler = async ({ request, cookies, redirect }, next) => {
-  const url = new URL(request.url);
-
-  // Solo proteger rutas /admin (excepto login y verify)
-  const isAdminRoute = url.pathname.startsWith('/admin');
-  const isPublicAdminRoute = url.pathname === '/admin/login' || url.pathname.startsWith('/admin/verify') || url.pathname === '/admin/login/';
-
-  if (!isAdminRoute || isPublicAdminRoute) {
+export const onRequest = defineMiddleware(async (context, next) => {
+    // Capturar variables de entorno desde el runtime de Cloudflare
+    const env = (context.locals as any).runtime?.env || {};
+    
+    // Inicializar el cliente de Supabase con las llaves vivas del panel
+    initSupabase(env);
+    
     return next();
-  }
-
-  // Verificar sesión
-  const accessToken = cookies.get('sb-access-token')?.value;
-
-  if (!accessToken) {
-    return redirect('/admin/login');
-  }
-
-  const { data: { user }, error } = await supabase.auth.getUser(accessToken);
-
-  if (error || !user) {
-    return redirect('/admin/login');
-  }
-
-  return next();
-};
+});
