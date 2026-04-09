@@ -82,8 +82,9 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
 				transition: opacity 1s ease-in-out, visibility 1s;
 			}
 			#preloader.fade-out {
-				opacity: 0;
-				visibility: hidden;
+				opacity: 0 !important;
+				visibility: hidden !important;
+				display: none !important;
 			}
 			.loader-logo {
 				width: 180px;
@@ -106,7 +107,7 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
 		:class="{ 'overflow-hidden': mobileMenuOpen }"
 		@scroll.window="atTop = (window.pageYOffset > 50 ? false : true)">
 
-		<div id="preloader">
+		<div id="preloader" onclick="this.classList.add('fade-out')">
 			<div class="loader-logo metal-gold-bg shadow-[0_0_40px_rgba(184,134,11,0.2)]"
 				 style={`-webkit-mask-image: url(${base}/logo_circular.png); -webkit-mask-size: contain; -webkit-mask-repeat: no-repeat; -webkit-mask-position: center; mask-image: url(${base}/logo_circular.png); mask-size: contain; mask-repeat: no-repeat; mask-position: center;`}>
 			</div>
