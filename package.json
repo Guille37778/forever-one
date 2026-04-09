@@ -13,8 +13,7 @@
   },
   "dependencies": {
     "@astrojs/alpinejs": "^0.5.0",
-    "@astrojs/deno": "^5.0.1",
-    "@deno/astro-adapter": "^0.4.0",
+    "@astrojs/cloudflare": "^12.0.0",
     "@supabase/supabase-js": "^2.101.1",
     "@tailwindcss/vite": "^4.2.2",
     "@types/alpinejs": "^3.13.11",
@@ -22,12 +21,9 @@
     "astro": "^5.4.2",
     "drizzle-kit": "^0.31.10",
     "drizzle-orm": "^0.45.2",
-    "es-module-lexer": "^2.0.0",
     "postgres": "^3.4.8",
     "resend": "^6.10.0",
     "tailwindcss": "^4.2.2"
   },
-  "devDependencies": {
-    "vite": "^5.4.15"
-  }
+  "devDependencies": {}
 }
