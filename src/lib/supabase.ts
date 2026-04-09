@@ -1,34 +1,34 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = import.meta.env.SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.SUPABASE_ANON_KEY;
-const supabaseServiceKey = import.meta.env.SUPABASE_SERVICE_ROLE_KEY;
+// Determinar las variables en un entorno de Cloudflare / Astro
+const supabaseUrl = import.meta.env.SUPABASE_URL || (typeof process !== 'undefined' ? process.env.SUPABASE_URL : '');
+const supabaseAnonKey = import.meta.env.SUPABASE_ANON_KEY || (typeof process !== 'undefined' ? process.env.SUPABASE_ANON_KEY : '');
+const supabaseServiceKey = import.meta.env.SUPABASE_SERVICE_ROLE_KEY || (typeof process !== 'undefined' ? process.env.SUPABASE_SERVICE_ROLE_KEY : '');
 
-// Cliente estándar con ANON_KEY (sujeto a RLS)
-export const supabase = (supabaseUrl && supabaseAnonKey)
+// Cliente estándar con ANON_KEY
+// Usamos un objeto mock muy simple si no hay variables
+const mockClient = {
+  from: () => ({
+    select: () => ({
+      order: () => Promise.resolve({ data: [], error: null }),
+      eq: () => ({ 
+        single: () => Promise.resolve({ data: null, error: null }),
+        order: () => Promise.resolve({ data: [], error: null })
+      }),
+      single: () => Promise.resolve({ data: null, error: null })
+    })
+  }),
+  auth: { getSession: () => Promise.resolve({ data: { session: null } }) }
+} as any;
+
+export const supabase = (supabaseUrl && supabaseAnonKey && supabaseUrl.startsWith('http'))
   ? createClient(supabaseUrl, supabaseAnonKey)
-  : new Proxy({}, {
-      get: function(target, prop) {
-        if (prop === 'then') return undefined;
-        const noop = () => Promise.resolve({ data: [], error: new Error('Supabase not initialized') });
-        const proxy: any = new Proxy(noop, {
-          get: (t, p) => (p === 'then' ? undefined : proxy),
-          apply: () => proxy
-        });
-        return proxy;
-      }
-    }) as any;
+  : mockClient;
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  console.error('❌ Supabase environment variables are MISSING in this environment.');
-}
-
-// Cliente administrativo con SERVICE_ROLE_KEY (salta RLS)
-// Solo debe usarse en API Routes (servidor)
-export const supabaseAdmin = (supabaseUrl && supabaseServiceKey)
+export const supabaseAdmin = (supabaseUrl && supabaseServiceKey && supabaseUrl.startsWith('http'))
   ? createClient(supabaseUrl, supabaseServiceKey)
   : supabase;
 
-if (!supabaseAdmin) {
-  console.warn('⚠️ Supabase Admin client could not be initialized. Check your environment variables.');
+if (!supabaseUrl || !supabaseAnonKey) {
+  console.warn('⚠️ Supabase credentials not found. Using mock client.');
 }

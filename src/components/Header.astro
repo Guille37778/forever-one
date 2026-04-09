@@ -1,22 +1,26 @@
 ---
 import { supabase } from '../lib/supabase';
-const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+const baseEnv = import.meta.env.BASE_URL || '/';
+const base = baseEnv.replace(/\/$/, '');
 const homeUrl = base || '/';
 
 // Cargar subcategorías para el menú dinámico
 let subcategories: any[] = [];
 try {
-    const { data } = await supabase
+    const { data, error } = await supabase
         .from('subcategories')
         .select('*')
         .order('name', { ascending: true });
-    subcategories = data || [];
+    
+    if (!error && data) {
+        subcategories = data;
+    }
 } catch (e) {
-    console.error('Error loading subcategories in Header:', e);
+    console.error('Error fatal en Header (Supabase):', e);
 }
 
-const ropaSub = subcategories.filter(s => s.parent_category === 'ropa');
-const accesoriosSub = subcategories.filter(s => s.parent_category === 'accesorios');
+const ropaSub = Array.isArray(subcategories) ? subcategories.filter(s => s.parent_category === 'ropa') : [];
+const accesoriosSub = Array.isArray(subcategories) ? subcategories.filter(s => s.parent_category === 'accesorios') : [];
 const { isBlack = false } = Astro.props;
 ---
 
