@@ -6,33 +6,44 @@ import Hero from '../components/sections/Hero.astro';
 import { supabase } from '../lib/supabase';
 
 // Fetch products from Supabase
-const { data: productsData } = await supabase
-  .from('products')
-  .select('*, subcategories(name, slug), collections(name), variants(stock_quantity)')
-  .order('created_at', { ascending: false });
+let products = [];
+let dollarRate = 0;
 
-const products = productsData?.map((p: any) => ({
-  id: p.id,
-  nombre: p.name,
-  descripcion: p.description,
-  precio: p.price,
-  imagen: p.image_urls?.[0] || '',
-  stock: p.variants?.reduce((sum: number, v: any) => sum + (v.stock_quantity || 0), 0) || 0,
-  category: p.category,
-  subcategory_name: p.subcategories?.name,
-  subcategory_slug: p.subcategories?.slug,
-  coleccion: p.collections?.name,
-  categoria_label: p.category === 'ropa' ? 'Prenda' : 'Accesorio'
-})) || [];
+try {
+  const { data: productsData, error: productsError } = await supabase
+    .from('products')
+    .select('*, subcategories(name, slug), collections(name), variants(stock_quantity)')
+    .order('created_at', { ascending: false });
 
-// Get dollar rate
-const { data: settings } = await supabase
-  .from('site_settings')
-  .select('value')
-  .eq('key', 'bcv_usd_rate')
-  .single();
+  if (productsError) throw productsError;
 
-const dollarRate = parseFloat(settings?.value || '0');
+  products = productsData?.map((p: any) => ({
+    id: p.id,
+    nombre: p.name,
+    descripcion: p.description,
+    precio: p.price,
+    imagen: p.image_urls?.[0] || '',
+    stock: p.variants?.reduce((sum: number, v: any) => sum + (v.stock_quantity || 0), 0) || 0,
+    category: p.category,
+    subcategory_name: p.subcategories?.name,
+    subcategory_slug: p.subcategories?.slug,
+    coleccion: p.collections?.name,
+    categoria_label: p.category === 'ropa' ? 'Prenda' : 'Accesorio'
+  })) || [];
+
+  // Get dollar rate
+  const { data: settings, error: settingsError } = await supabase
+    .from('site_settings')
+    .select('value')
+    .eq('key', 'bcv_usd_rate')
+    .single();
+
+  if (!settingsError) {
+    dollarRate = parseFloat(settings?.value || '0');
+  }
+} catch (e) {
+  console.error('Failed to fetch data from Supabase:', e);
+}
 
 // URL params for filtering
 const cat = Astro.url.searchParams.get('cat') || 'Todos';
