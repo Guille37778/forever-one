@@ -4,19 +4,26 @@ const baseEnv = import.meta.env.BASE_URL || '/';
 const base = baseEnv.replace(/\/$/, '');
 const homeUrl = base || '/';
 
-// Cargar subcategorías para el menú dinámico
+// Cargar subcategorías para el menú dinámico con timeout de seguridad
 let subcategories: any[] = [];
 try {
-    const { data, error } = await supabase
+    const queryPromise = supabase
         .from('subcategories')
         .select('*')
         .order('name', { ascending: true });
+    
+    // Timeout de 1.5 segundos para no bloquear el renderizado
+    const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Timeout en Supabase')), 1500)
+    );
+
+    const { data, error } = await Promise.race([queryPromise, timeoutPromise]) as any;
     
     if (!error && data) {
         subcategories = data;
     }
 } catch (e) {
-    console.error('Error fatal en Header (Supabase):', e);
+    console.error('Error en Header (Supabase):', e);
 }
 
 const ropaSub = Array.isArray(subcategories) ? subcategories.filter(s => s.parent_category === 'ropa') : [];
