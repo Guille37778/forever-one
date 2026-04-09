@@ -9,13 +9,34 @@ export function initSupabase(env: any = {}) {
     const isMock = !_supabase || _supabase === mockClient;
     if (!isMock && Object.keys(env).length === 0) return;
 
-    const supabaseUrl = env.SUPABASE_URL || env.PUBLIC_SUPABASE_URL || import.meta.env.SUPABASE_URL || import.meta.env.PUBLIC_SUPABASE_URL || '';
-    const supabaseAnonKey = env.SUPABASE_ANON_KEY || env.PUBLIC_SUPABASE_ANON_KEY || import.meta.env.SUPABASE_ANON_KEY || import.meta.env.PUBLIC_SUPABASE_ANON_KEY || '';
-    const supabaseServiceKey = env.SUPABASE_SERVICE_ROLE_KEY || import.meta.env.SUPABASE_SERVICE_ROLE_KEY || '';
+    // Buscamos en todas las fuentes posibles (Cloudflare bindings, Astro locals, Process, Global)
+    const g = (typeof globalThis !== 'undefined' ? globalThis : {}) as any;
+    
+    const supabaseUrl = 
+        env.SUPABASE_URL || 
+        env.PUBLIC_SUPABASE_URL || 
+        import.meta.env.SUPABASE_URL || 
+        import.meta.env.PUBLIC_SUPABASE_URL || 
+        (typeof process !== 'undefined' ? (process.env.SUPABASE_URL || process.env.PUBLIC_SUPABASE_URL) : '') ||
+        (g.SUPABASE_URL || g.PUBLIC_SUPABASE_URL || '');
+
+    const supabaseAnonKey = 
+        env.SUPABASE_ANON_KEY || 
+        env.PUBLIC_SUPABASE_ANON_KEY || 
+        import.meta.env.SUPABASE_ANON_KEY || 
+        import.meta.env.PUBLIC_SUPABASE_ANON_KEY || 
+        (typeof process !== 'undefined' ? (process.env.SUPABASE_ANON_KEY || process.env.PUBLIC_SUPABASE_ANON_KEY) : '') ||
+        (g.SUPABASE_ANON_KEY || g.PUBLIC_SUPABASE_ANON_KEY || '');
+
+    const supabaseServiceKey = 
+        env.SUPABASE_SERVICE_ROLE_KEY || 
+        import.meta.env.SUPABASE_SERVICE_ROLE_KEY || 
+        (typeof process !== 'undefined' ? process.env.SUPABASE_SERVICE_ROLE_KEY : '') ||
+        (g.SUPABASE_SERVICE_ROLE_KEY || '');
 
     if (supabaseUrl && supabaseUrl.startsWith('http') && supabaseAnonKey && supabaseAnonKey.length > 20) {
         _supabase = createClient(supabaseUrl, supabaseAnonKey);
-        console.log('✅ Supabase Client Initialized');
+        console.log('✅ Supabase Client Initialized (Production Bridge)');
     }
 
     if (supabaseUrl && supabaseUrl.startsWith('http') && supabaseServiceKey && supabaseServiceKey.length > 20) {
