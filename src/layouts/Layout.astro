@@ -25,34 +25,7 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
 		<!-- Google Fonts -->
 		<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Inter:wght@300;400;700&family=Montserrat:wght@300;400;700;900&display=swap" rel="stylesheet">
 		
-		<!-- AOS (Animaciones) -->
-		<link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
-
-		<script is:inline src="https://unpkg.com/lenis@1.1.20/dist/lenis.min.js"></script>
-		<script is:inline>
-			window.addEventListener('DOMContentLoaded', () => {
-				const lenis = new Lenis();
-				function raf(time) {
-					lenis.raf(time);
-					requestAnimationFrame(raf);
-				}
-				requestAnimationFrame(raf);
-
-				// Vincular Lenis con AOS
-				lenis.on('scroll', () => {
-					if (window.AOS) AOS.refresh();
-				});
-			});
-
-			// Seguridad: Forzar desaparición del preloader tras 3 segundos
-			// Se pone en el HEAD para que se cargue antes que cualquier posible error en el BODY
-			setTimeout(() => {
-				const preloader = document.getElementById('preloader');
-				if (preloader && !preloader.classList.contains('fade-out')) {
-					preloader.classList.add('fade-out');
-				}
-			}, 3000);
-		</script>
+		<!-- Animaciones nativas: no dependemos de CDN externo -->
 
 		<style>
 			.cursor-dot {
@@ -104,16 +77,11 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
 				100% { transform: scale(1); opacity: 0.8; }
 			}
 
-			/* VISIBILITY FALLBACK - Ensures content is visible if JS fails */
+			/* ── FORZAR VISIBILIDAD TOTAL ─────────────────────── */
 			[data-aos] {
 				opacity: 1 !important;
-				transform: none !important;
 				visibility: visible !important;
-			}
-			
-			/* Permite que AOS tome el control una vez inicializado */
-			.aos-init [data-aos], .aos-animate [data-aos] {
-				opacity: 0;
+				transform: none !important;
 			}
 		</style>
 		
@@ -130,73 +98,27 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
 			</div>
 		</div>
 
-		<div class="cursor-dot hidden md:block" id="cursor-dot"></div>
-		<div class="cursor-outline hidden md:block" id="cursor-outline"></div>
 
 		<slot />
 		<CartDrawer />
 		
-		<script is:inline src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
 		<script is:inline>
-			// Lógica del Preloader
-			window.addEventListener('load', () => {
-				const preloader = document.getElementById('preloader');
-				if (preloader) preloader.classList.add('fade-out');
-				
-				// Inicializar AOS después de que el preloader empiece a irse
-				setTimeout(() => {
-					AOS.init({ 
-						once: true, 
-						duration: 1000,
-						offset: 100,
-						easing: 'ease-out-cubic'
-					});
-				}, 500);
-			});
-
-			// Seguridad: Forzar visibilidad si AOS falla o tarda demasiado
-			setTimeout(() => {
-				const animatedElements = document.querySelectorAll('[data-aos]');
-				animatedElements.forEach(el => {
-					if (window.getComputedStyle(el).opacity === '0') {
-						el.style.opacity = '1';
-						el.style.transform = 'none';
-						el.style.visibility = 'visible';
-					}
-				});
-				// También forzar el preloader por si acaso
-				const preloader = document.getElementById('preloader');
-				if (preloader) preloader.classList.add('fade-out');
-			}, 4000);
-
-			// Lógica del Cursor Personalizado
-			document.addEventListener('mousemove', (e) => {
-				const dot = document.getElementById('cursor-dot');
-				const outline = document.getElementById('cursor-outline');
-				if (dot && outline) {
-					dot.style.left = e.clientX + 'px';
-					dot.style.top = e.clientY + 'px';
-					outline.style.left = (e.clientX - 12) + 'px';
-					outline.style.top = (e.clientY - 12) + 'px';
+			(function() {
+				// ─── PRELOADER ───────────────────────────────────────────
+				function hidePreloader() {
+					const preloader = document.getElementById('preloader');
+					if (preloader) preloader.classList.add('fade-out');
 				}
-			});
 
-			document.addEventListener('mousedown', () => {
-				const outline = document.getElementById('cursor-outline');
-				if (outline) outline.style.transform = 'scale(0.8)';
-			});
+				window.addEventListener('load', hidePreloader);
+				// Failsafe: quitar preloader aunque sea forzosamente después de 2s
+				setTimeout(hidePreloader, 2000);
 
-			document.addEventListener('mouseup', () => {
-				const outline = document.getElementById('cursor-outline');
-				if (outline) outline.style.transform = 'scale(1)';
-			});
-
-			// Re-inicializar AOS al navegar con View Transitions
-			document.addEventListener('astro:after-swap', () => {
-				AOS.init({ once: true, duration: 1000 });
-				const preloader = document.getElementById('preloader');
-				if (preloader) preloader.classList.add('fade-out');
-			});
+				// Re-inicializar en navegación con View Transitions
+				document.addEventListener('astro:after-swap', () => {
+					hidePreloader();
+				});
+			})();
 		</script>
 	</body>
 </html>
