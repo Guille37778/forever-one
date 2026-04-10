@@ -25,58 +25,7 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
 		<!-- Google Fonts -->
 		<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Inter:wght@300;400;700&family=Montserrat:wght@300;400;700;900&display=swap" rel="stylesheet">
 		
-		<!-- Animaciones nativas: no dependemos de CDN externo -->
-
 		<style>
-			.cursor-dot {
-				width: 6px;
-				height: 6px;
-				background-color: #B8860B;
-				border-radius: 50%;
-				position: fixed;
-				pointer-events: none;
-				z-index: 9999;
-				transition: transform 0.1s;
-			}
-			.cursor-outline {
-				width: 30px;
-				height: 30px;
-				border: 1px solid rgba(184, 134, 11, 0.5);
-				border-radius: 50%;
-				position: fixed;
-				pointer-events: none;
-				z-index: 9998;
-				transition: transform 0.15s cubic-bezier(0.25, 1, 0.5, 1);
-			}
-
-			#preloader {
-				position: fixed;
-				inset: 0;
-				background: white;
-				z-index: 10000;
-				display: flex;
-				justify-content: center;
-				align-items: center;
-				transition: opacity 1s ease-in-out, visibility 1s;
-			}
-			#preloader.fade-out {
-				opacity: 0 !important;
-				visibility: hidden !important;
-				display: none !important;
-			}
-			.loader-logo {
-				width: 180px;
-				height: 180px;
-				animation: heartPulse 3s infinite ease-in-out;
-			}
-			@keyframes heartPulse {
-				0% { transform: scale(1); opacity: 0.8; }
-				15% { transform: scale(1.1); opacity: 1; }
-				30% { transform: scale(1); opacity: 0.8; }
-				45% { transform: scale(1.1); opacity: 1; }
-				100% { transform: scale(1); opacity: 0.8; }
-			}
-
 			/* ── FORZAR VISIBILIDAD TOTAL ─────────────────────── */
 			[data-aos] {
 				opacity: 1 !important;
@@ -92,34 +41,11 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
 		:class="{ 'overflow-hidden': mobileMenuOpen }"
 		@scroll.window="atTop = (window.pageYOffset > 50 ? false : true)">
 
-		<div id="preloader" onclick="this.classList.add('fade-out')">
-			<div class="loader-logo metal-gold-bg shadow-[0_0_40px_rgba(184,134,11,0.2)]"
-				 style={`-webkit-mask-image: url(${base}/logo_circular.png); -webkit-mask-size: contain; -webkit-mask-repeat: no-repeat; -webkit-mask-position: center; mask-image: url(${base}/logo_circular.png); mask-size: contain; mask-repeat: no-repeat; mask-position: center;`}>
-			</div>
-		</div>
-
-
 		<slot />
 		<CartDrawer />
 		
-		<script is:inline>
-			(function() {
-				// ─── PRELOADER ───────────────────────────────────────────
-				function hidePreloader() {
-					const preloader = document.getElementById('preloader');
-					if (preloader) preloader.classList.add('fade-out');
-				}
-
-				window.addEventListener('load', hidePreloader);
-				// Failsafe: quitar preloader aunque sea forzosamente después de 2s
-				setTimeout(hidePreloader, 2000);
-
-				// Re-inicializar en navegación con View Transitions
-				document.addEventListener('astro:after-swap', () => {
-					hidePreloader();
-				});
-			})();
-		</script>
+		<!-- Marcador de diagnóstico para confirmar renderizado completo -->
+		<div style="display:none">FO1</div>
 	</body>
 </html>
 
