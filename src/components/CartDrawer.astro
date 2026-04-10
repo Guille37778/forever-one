@@ -504,6 +504,8 @@ const deliveryZones = settingsData?.find((s: any) => s.key === 'delivery_zones')
     window.__checkout = async function() {
         if(cart.length === 0) return;
         const btn = el('checkout-btn');
+        
+        // Recopilar datos básicos
         const vals = {
             name: el('cust-name').value.trim(),
             id: el('cust-id').value.trim(),
@@ -512,31 +514,108 @@ const deliveryZones = settingsData?.find((s: any) => s.key === 'delivery_zones')
             payRef: el('pay-reference').value.trim()
         };
 
+        // Validación de campos obligatorios
         if(!vals.name || !vals.id || !vals.phone || !vals.email || !vals.payRef) {
-            alert('❌ COMPLETE TODOS LOS CAMPOS'); return;
+            alert('❌ POR FAVOR, COMPLETE TODOS LOS CAMPOS OBLIGATORIOS');
+            return;
         }
 
+        let orderCode = 'PENDIENTE';
+        btn.disabled = true; 
+        btn.textContent = '⏱ PROCESANDO...';
+
         try {
-            btn.disabled = true; btn.textContent = '⏱ PROCESANDO...';
             const total = cartTotal();
             const orderData = {
-                customer: { name: vals.name, email: vals.email, phone: vals.phone, city: selectedMethod === 'delivery' ? el('delivery-zone-select').value : (selectedMethod === 'envio' ? el('ship-address').value : 'Tienda'), paymentReference: vals.payRef },
-                items: cart.map(i => ({ productId: i.id, variantId: i.variantId || null, name: i.nombre, size: i.size || 'UNICO', price: i.precio, qty: i.qty })),
-                total: total, courier: selectedMethod === 'envio' ? selectedCourier : 'otro'
+                customer: { 
+                    name: vals.name, 
+                    email: vals.email, 
+                    phone: vals.phone, 
+                    id: vals.id,
+                    city: selectedMethod === 'delivery' ? el('delivery-zone-select').value : (selectedMethod === 'envio' ? el('ship-address').value : 'Tienda'), 
+                    paymentReference: vals.payRef 
+                },
+                items: cart.map(i => ({ 
+                    productId: i.id, 
+                    variantId: i.variantId || null, 
+                    name: i.nombre, 
+                    size: i.size || 'ÚNICO', 
+                    price: i.precio, 
+                    qty: i.qty 
+                })),
+                total: total, 
+                courier: selectedMethod === 'envio' ? selectedCourier : (selectedMethod === 'delivery' ? 'Delivery Local' : 'Retiro en Tienda')
             };
 
-            const res = await fetch('/api/orders', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(orderData)});
-            if(!res.ok) throw new Error('Error al procesar pedido');
-            const { orderCode } = await res.json();
+            // Intentar registrar en base de datos
+            const res = await fetch('/api/orders', { 
+                method: 'POST', 
+                headers: { 'Content-Type': 'application/json' }, 
+                body: JSON.stringify(orderData)
+            });
             
-            let msg = `✦ ATELIER FOREVER ONE ✦\nID: ${orderCode}\n\nCliente: ${vals.name}\nCI: ${vals.id}\nItems:\n`;
-            cart.forEach(i => msg += `▪️ ${i.nombre} (x${i.qty})\n`);
-            msg += `\nTotal: $${total.toFixed(2)}\nBs: ${(total*dollarRate).toLocaleString()}\nRef: ${vals.payRef}`;
-            
-            window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(msg)}`, '_blank');
-            cart = []; saveCart(); window.__renderCart(); window.__closeCart();
-        } catch(e) { alert('❌ ERROR AL PROCESAR'); }
-        finally { btn.disabled = false; btn.textContent = '✦ FINALIZAR POR WHATSAPP'; }
+            if(res.ok) {
+                const data = await res.json();
+                orderCode = data.orderCode || 'REGISTRADA';
+            }
+        } catch(e) {
+            console.warn('Registro interno fallido, procediendo solo con WhatsApp:', e);
+        }
+
+        // GENERACIÓN DEL REPORTE DETALLADO PARA WHATSAPP
+        const totalUSD = cartTotal();
+        const totalBS = totalUSD * dollarRate;
+        
+        let deliveryDetail = '';
+        if (selectedMethod === 'retiro') {
+            deliveryDetail = '📍 RETIRO EN TIENDA';
+        } else if (selectedMethod === 'envio') {
+            deliveryDetail = `📦 ENVÍO NACIONAL\n   Empresa: ${selectedCourier}\n   Destino: ${el('ship-address').value}\n   Agencia: ${el('ship-agency-code').value || 'S/N'}`;
+        } else if (selectedMethod === 'delivery') {
+            deliveryDetail = `🛵 DELIVERY LOCAL\n   Zona: ${el('delivery-zone-select').value}\n   Dirección: ${el('delivery-address').value}`;
+        }
+
+        let msg = `✦ *FOREVER ONE - ATELIER EXCLUSIVO* ✦\n`;
+        msg += `✨ *ORDEN DE COMPRA: #${orderCode}*\n`;
+        msg += `────────────────────────\n\n`;
+        
+        msg += `👤 *DATOS DEL CLIENTE*\n`;
+        msg += `   Nombre: ${vals.name}\n`;
+        msg += `   Cédula: ${vals.id}\n`;
+        msg += `   Teléfono: ${vals.phone}\n`;
+        msg += `   Email: ${vals.email}\n\n`;
+        
+        msg += `🛍️ *DETALLE DEL PEDIDO*\n`;
+        cart.forEach(i => {
+            msg += `▪️ ${i.nombre}\n`;
+            msg += `   Talla: ${i.size || 'ÚNICO'} | Cant: ${i.qty}\n`;
+            msg += `   Precio: $${i.precio.toFixed(2)} c/u\n`;
+        });
+        msg += `\n`;
+        
+        msg += `🚚 *MÉTODO DE ENTREGA*\n`;
+        msg += `   ${deliveryDetail}\n\n`;
+        
+        msg += `💳 *INFORMACIÓN DE PAGO*\n`;
+        msg += `   Referencia: ${vals.payRef}\n`;
+        msg += `   Monto USD: $${totalUSD.toFixed(2)}\n`;
+        msg += `   Monto Bs: ${totalBS.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}\n`;
+        msg += `   (Tasa: Bs. ${dollarRate.toFixed(2)})\n\n`;
+        
+        msg += `────────────────────────\n`;
+        msg += `_Gracias por elegir la elegancia de Forever One._`;
+
+        // Abrir WhatsApp siempre
+        window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(msg)}`, '_blank');
+        
+        // Limpiar carrito y cerrar
+        cart = []; 
+        saveCart(); 
+        window.__renderCart(); 
+        window.__closeCart();
+        
+        btn.disabled = false; 
+        btn.textContent = '✦ FINALIZAR POR WHATSAPP';
     };
 
     loadCart();

@@ -13,11 +13,15 @@ export const POST: APIRoute = async ({ request }) => {
       return new Response(JSON.stringify({ error: 'Faltan datos de la orden' }), { status: 400 });
     }
 
-    // 1. Crear el registro de la orden principal
-    // lowercase courier because Postgres enum is case-sensitive ('zoom', 'tealca', 'mrw', 'dhl', 'otro')
-    const finalCourier = (courier || 'otro').toLowerCase();
+    // 1. Preparar datos de la orden
+    const validCouriers = ['zoom', 'tealca', 'mrw', 'dhl'];
+    const lowerCourier = (courier || 'otro').toLowerCase();
+    const finalCourier = validCouriers.includes(lowerCourier) ? lowerCourier : 'otro';
 
-    // Nota: order_code se genera automáticamente via trigger en la DB (migration.sql)
+    // Guardamos la cédula y detalle extra en el campo 'notes' si es necesario
+    const orderNotes = `CI: ${customer.id || 'N/A'} | Método: ${courier || 'No especificado'}`;
+
+    // 2. Crear el registro de la orden principal
     const { data: order, error: orderError } = await supabase
       .from('orders')
       .insert({
@@ -28,56 +32,44 @@ export const POST: APIRoute = async ({ request }) => {
         courier: finalCourier,
         total_usd: parseFloat(total) || 0,
         payment_reference: customer.paymentReference,
-        status: 'verificando'
+        status: 'verificando',
+        notes: orderNotes
       })
       .select()
       .single();
 
     if (orderError) {
       console.error('Error insertando orden en Supabase:', orderError);
-      throw new Error(`Error en base de datos: ${orderError.message}`);
+      // No lanzamos error fatal aquí para permitir que el flujo de WhatsApp continúe en el cliente
+      return new Response(JSON.stringify({ error: 'Error al registrar pedido en DB', details: orderError.message }), { status: 500 });
     }
 
-    // 2. Insertar los items de la orden y restar stock
+    // 3. Insertar los items de la orden y restar stock
     for (const item of items) {
-      // Registrar item
-      const { error: itemError } = await supabase
-        .from('order_items')
-        .insert({
-          order_id: order.id,
-          product_id: item.productId,
-          variant_id: item.variantId,
-          product_name: item.name,
-          size: item.size,
-          price_usd: parseFloat(item.price) || 0,
-          quantity: parseInt(item.qty) || 1
-        });
+      try {
+        await supabase
+          .from('order_items')
+          .insert({
+            order_id: order.id,
+            product_id: item.productId,
+            variant_id: item.variantId,
+            product_name: item.name,
+            size: item.size,
+            price_usd: parseFloat(item.price) || 0,
+            quantity: parseInt(item.qty) || 1
+          });
 
-      if (itemError) {
-        console.error('Error insertando item de orden:', itemError);
-        throw new Error(`Error en items de orden: ${itemError.message}`);
-      }
-
-      // Restar stock de la variante
-      if (item.variantId) {
-        const { data: currentVariant, error: variantFetchError } = await supabase
-          .from('variants')
-          .select('stock_quantity')
-          .eq('id', item.variantId)
-          .single();
-
-        if (variantFetchError) {
-          console.warn('No se pudo obtener stock para actualizar:', variantFetchError);
-        } else if (currentVariant) {
-          const { error: stockUpdateError } = await supabase
-            .from('variants')
-            .update({ stock_quantity: Math.max(0, currentVariant.stock_quantity - item.qty) })
-            .eq('id', item.variantId);
-          
-          if (stockUpdateError) {
-            console.error('Error actualizando stock:', stockUpdateError);
+        // Restar stock
+        if (item.variantId) {
+          const { data: v } = await supabase.from('variants').select('stock_quantity').eq('id', item.variantId).single();
+          if (v) {
+            await supabase.from('variants')
+              .update({ stock_quantity: Math.max(0, v.stock_quantity - item.qty) })
+              .eq('id', item.variantId);
           }
         }
+      } catch (itemErr) {
+        console.error('Error procesando item individual:', itemErr);
       }
     }
 
@@ -88,7 +80,7 @@ export const POST: APIRoute = async ({ request }) => {
     }), { status: 200 });
 
   } catch (e: any) {
-    console.error('Error fatal creando orden:', e);
-    return new Response(JSON.stringify({ error: e.message || 'Error interno del servidor' }), { status: 500 });
+    console.error('Error fatal detectado:', e);
+    return new Response(JSON.stringify({ error: 'Error interno del servidor' }), { status: 500 });
   }
 };
