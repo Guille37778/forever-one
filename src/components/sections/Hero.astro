@@ -40,11 +40,11 @@ const fullButtonLink = safeButtonLink.startsWith('http') ? safeButtonLink : `${c
         <div class="hidden md:block mb-6 opacity-0 animate-heroUp" style="animation-delay: 0.2s; animation-fill-mode: forwards;">
             <span class="text-gold font-bold tracking-[0.5em] uppercase text-[9px] md:text-[11px] border-b border-gold/30 pb-2">{tagline}</span>
         </div>
-        <h1 id="hero-title" class="text-5xl md:text-9xl font-serif font-black tracking-tighter mb-4 italic leading-tight opacity-0 animate-heroUp" 
+        <h1 id="hero-title" class="text-3xl md:text-9xl font-serif font-black tracking-tighter mb-4 italic leading-tight opacity-0 animate-heroUp" 
             style="animation-delay: 0.5s; animation-fill-mode: forwards;">
             {title}<span id="hero-highlight" class="metal-gold-text inline-block px-2 md:-ml-4 md:pr-12">{highlight}</span>
         </h1>
-        <h2 class="text-lg md:text-3xl font-light tracking-[0.3em] text-gray-400 uppercase italic mb-12 opacity-0 animate-heroUp md:pr-8" 
+        <h2 class="text-base md:text-3xl font-light tracking-[0.2em] md:tracking-[0.3em] text-gray-400 uppercase italic mb-10 opacity-0 animate-heroUp md:pr-8" 
             style="animation-delay: 0.8s; animation-fill-mode: forwards;">
             <span class="text-white">{subtitle.split(' ')[0]}</span> {subtitle.split(' ').slice(1).join(' ')}
         </h2>
