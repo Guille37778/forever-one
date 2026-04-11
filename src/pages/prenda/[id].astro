@@ -87,7 +87,7 @@ const productInfo = {
 
 <Layout title={`${productInfo.nombre} | Forever One`}>
     <Header isBlack={true} />
-    <main class="bg-white md:bg-[#F9F8F6] pt-12 md:pt-16 lg:pt-40 pb-12 md:pb-20 overflow-x-hidden"
+    <main class="bg-white md:bg-[#F9F8F6] pt-24 md:pt-32 lg:pt-40 pb-12 md:pb-20 overflow-x-hidden"
           x-data="{ notification: { show: false, message: '', type: 'success' } }"
           @notify.window="notification.show = true; notification.message = $event.detail.message; setTimeout(() => notification.show = false, 5000)">
         
