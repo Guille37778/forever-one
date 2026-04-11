@@ -143,7 +143,7 @@ const productInfo = {
                         touchStartX: 0,
                         touchEndX: 0
                      })}>
-                    <div class="relative group bg-white overflow-hidden md:shadow-2xl md:border border-gold/10"
+                    <div class="max-w-2xl mx-auto w-full relative group bg-white overflow-hidden md:shadow-2xl md:border border-gold/10"
                          @touchstart="touchStartX = $event.touches[0].clientX"
                          @touchend="
                             touchEndX = $event.changedTouches[0].clientX;
@@ -177,7 +177,7 @@ const productInfo = {
                             </button>
 
                             <!-- Navigation Arrows (Desktop) -->
-                            <div class="hidden md:flex absolute inset-y-0 left-6 items-center z-10">
+                            <div class="hidden md:flex absolute top-1/2 -translate-y-1/2 left-6 z-10">
                                 <button @click="currentSlide = (currentSlide > 0) ? currentSlide - 1 : total - 1" 
                                         class="w-12 h-12 bg-white/60 hover:bg-white backdrop-blur-md rounded-full shadow-xl text-black transition-all flex items-center justify-center group border border-white/20 hover:border-gold hover:scale-110 active:scale-95">
                                     <svg class="w-6 h-6 transition-transform group-hover:-translate-x-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -185,7 +185,7 @@ const productInfo = {
                                     </svg>
                                 </button>
                             </div>
-                            <div class="hidden md:flex absolute inset-y-0 right-6 items-center z-10">
+                            <div class="hidden md:flex absolute top-1/2 -translate-y-1/2 right-6 z-10">
                                 <button @click="currentSlide = (currentSlide < total - 1) ? currentSlide + 1 : 0" 
                                         class="w-12 h-12 bg-white/60 hover:bg-white backdrop-blur-md rounded-full shadow-xl text-black transition-all flex items-center justify-center group border border-white/20 hover:border-gold hover:scale-110 active:scale-95">
                                     <svg class="w-6 h-6 transition-transform group-hover:translate-x-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -206,7 +206,7 @@ const productInfo = {
                     </div>
 
                     <!-- Thumbnails (Desktop Only) -->
-                    <div class="hidden md:grid grid-cols-6 gap-3">
+                    <div class="max-w-2xl mx-auto w-full hidden md:grid grid-cols-6 gap-3">
                         {productInfo.imagenes.map((img: string, idx: number) => (
                             <button @click={`currentSlide = ${idx}`}
                                     :class={`currentSlide === ${idx} ? 'border-[#B8860B]' : 'border-gold/10 opacity-60'`}
