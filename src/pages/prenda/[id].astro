@@ -136,19 +136,18 @@ const productInfo = {
             <div class="grid grid-cols-1 lg:grid-cols-12 gap-2 lg:gap-16 items-start">
                 
                 <!-- ── LEFT: Gallery (8 cols) ───────────────────── -->
-                <div class="lg:col-span-7 flex flex-col gap-6" x-data="{ currentSlide: 0, total: productInfo.imagenes.length }">
-                    <div class="relative group bg-white overflow-hidden md:shadow-2xl md:border border-gold/10">
+                <div class="lg:col-span-7 flex flex-col gap-6" x-data={`{ currentSlide: 0, total: ${productInfo.imagenes.length}, touchStartX: 0 }`}>
+                    <div class="relative group bg-white overflow-hidden md:shadow-2xl md:border border-gold/10"
+                         @touchstart="touchStartX = $event.touches[0].clientX"
+                         @touchend="
+                            const diff = touchStartX - $event.changedTouches[0].clientX;
+                            if (Math.abs(diff) > 50) {
+                                if (diff > 0) { currentSlide = currentSlide < total - 1 ? currentSlide + 1 : 0 }
+                                else { currentSlide = currentSlide > 0 ? currentSlide - 1 : total - 1 }
+                            }
+                         ">
                         <!-- Image Slider Container -->
-                        <div class="relative aspect-square md:aspect-[4/5] overflow-hidden bg-white"
-                             x-data="{ touchStartX: 0 }"
-                             @touchstart="touchStartX = $event.changedTouches[0].clientX"
-                             @touchend="
-                                const diff = touchStartX - $event.changedTouches[0].clientX;
-                                if (Math.abs(diff) > 50) {
-                                    if (diff > 0) { currentSlide = currentSlide < total - 1 ? currentSlide + 1 : 0 }
-                                    else { currentSlide = currentSlide > 0 ? currentSlide - 1 : total - 1 }
-                                }
-                             ">
+                        <div class="relative aspect-square md:aspect-[4/5] overflow-hidden bg-white">
                             <div class="flex transition-transform duration-500 ease-out h-full" 
                                  :style="`transform: translateX(-${currentSlide * 100}%)`">
                                 {productInfo.imagenes.map((img: string, idx: number) => (
