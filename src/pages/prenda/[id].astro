@@ -177,13 +177,21 @@ const productInfo = {
                             </button>
 
                             <!-- Navigation Arrows (Desktop) -->
-                            <div class="hidden md:block absolute inset-y-0 left-0 flex items-center">
+                            <div class="hidden md:flex absolute inset-y-0 left-6 items-center z-10">
                                 <button @click="currentSlide = (currentSlide > 0) ? currentSlide - 1 : total - 1" 
-                                        class="bg-white/80 hover:bg-white p-3 rounded-r-lg shadow-lg text-black transition-all">❮</button>
+                                        class="w-12 h-12 bg-white/60 hover:bg-white backdrop-blur-md rounded-full shadow-xl text-black transition-all flex items-center justify-center group border border-white/20 hover:border-gold hover:scale-110 active:scale-95">
+                                    <svg class="w-6 h-6 transition-transform group-hover:-translate-x-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                                    </svg>
+                                </button>
                             </div>
-                            <div class="hidden md:block absolute inset-y-0 right-0 flex items-center">
+                            <div class="hidden md:flex absolute inset-y-0 right-6 items-center z-10">
                                 <button @click="currentSlide = (currentSlide < total - 1) ? currentSlide + 1 : 0" 
-                                        class="bg-white/80 hover:bg-white p-3 rounded-l-lg shadow-lg text-black transition-all">❯</button>
+                                        class="w-12 h-12 bg-white/60 hover:bg-white backdrop-blur-md rounded-full shadow-xl text-black transition-all flex items-center justify-center group border border-white/20 hover:border-gold hover:scale-110 active:scale-95">
+                                    <svg class="w-6 h-6 transition-transform group-hover:translate-x-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                                    </svg>
+                                </button>
                             </div>
                         </div>
 
