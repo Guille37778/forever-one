@@ -61,7 +61,7 @@ const sub = Astro.url.searchParams.get('sub') || '';
         <Hero 
             title="Viste con" 
             highlight="Distinción" 
-            subtitle="Explore nuestra selección de piezas exclusivas diseñadas para elevar su estilo."
+            subtitle="Alta Costura y Distinción."
             image="https://images.unsplash.com/photo-1441984904996-e0b6ba687e04?auto=format&fit=crop&q=80&w=2000"
         />
 
@@ -115,23 +115,18 @@ const sub = Astro.url.searchParams.get('sub') || '';
         </div>
 
         <!-- Dollar Widget -->
-        <div id="dollar-widget" 
-             style={`position:fixed !important; left:25px !important; bottom:25px !important; z-index:1500 !important; cursor:default;`}>
-            <div style="background:#000000; border-radius:10px; padding:12px 18px; 
-                        display:flex; align-items:center; gap:14px; 
-                        box-shadow:0 20px 40px -10px rgba(0,0,0,0.8);
-                        border: 1px solid rgba(255,255,255,0.03);">
+        <div id="dollar-widget" class="dollar-widget-container">
+            <div class="dollar-widget-content">
                 <!-- Icon Circle -->
-                <div style="width:36px; height:36px; border-radius:50%; border:1px solid rgba(184,134,11,0.35); 
-                            display:flex; align-items:center; justify-content:center; flex-shrink:0;">
-                    <span style="color:#B8860B; font-weight:900; font-size:15px; font-family: 'Cinzel', serif;">$</span>
+                <div class="dollar-icon-circle">
+                    <span class="dollar-symbol">$</span>
                 </div>
                 <!-- Labels -->
-                <div style="display:flex; flex-direction:column; gap:3px;">
-                    <span style="font-size:8px; font-weight:900; color:#B8860B; text-transform:uppercase; letter-spacing:0.2em; line-height:1; opacity:0.8;">
+                <div class="dollar-labels">
+                    <span class="dollar-label-top">
                         Tasa BCV + 1%
                     </span>
-                    <span style="font-size:18px; font-weight:900; color:#fff; text-transform:uppercase; font-style:italic; line-height:1; font-family: 'Cinzel', serif; letter-spacing: 0.04em;">
+                    <span class="dollar-label-bottom">
                         Bs. {dollarRate.toFixed(2)}
                     </span>
                 </div>
@@ -142,6 +137,91 @@ const sub = Astro.url.searchParams.get('sub') || '';
             @font-face {
                 font-family: 'Cinzel';
                 src: url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&display=swap');
+            }
+
+            .dollar-widget-container {
+                position: fixed !important;
+                left: 25px !important;
+                bottom: 25px !important;
+                z-index: 1500 !important;
+                cursor: default;
+            }
+            .dollar-widget-content {
+                background: #000000;
+                border-radius: 10px;
+                padding: 12px 18px;
+                display: flex;
+                align-items: center;
+                gap: 14px;
+                box-shadow: 0 20px 40px -10px rgba(0,0,0,0.8);
+                border: 1px solid rgba(255,255,255,0.03);
+                transition: all 0.3s ease;
+            }
+            .dollar-icon-circle {
+                width: 36px;
+                height: 36px;
+                border-radius: 50%;
+                border: 1px solid rgba(184,134,11,0.35);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                flex-shrink: 0;
+            }
+            .dollar-symbol {
+                color: #B8860B;
+                font-weight: 900;
+                font-size: 15px;
+                font-family: 'Cinzel', serif;
+            }
+            .dollar-labels {
+                display: flex;
+                flex-direction: column;
+                gap: 3px;
+            }
+            .dollar-label-top {
+                font-size: 8px;
+                font-weight: 900;
+                color: #B8860B;
+                text-transform: uppercase;
+                letter-spacing: 0.2em;
+                line-height: 1;
+                opacity: 0.8;
+            }
+            .dollar-label-bottom {
+                font-size: 18px;
+                font-weight: 900;
+                color: #fff;
+                text-transform: uppercase;
+                font-style: italic;
+                line-height: 1;
+                font-family: 'Cinzel', serif;
+                letter-spacing: 0.04em;
+            }
+
+            @media (max-width: 768px) {
+                .dollar-widget-container {
+                    left: 15px !important;
+                    bottom: 15px !important;
+                }
+                .dollar-widget-content {
+                    padding: 8px 12px;
+                    gap: 10px;
+                    border-radius: 8px;
+                }
+                .dollar-icon-circle {
+                    width: 28px;
+                    height: 28px;
+                }
+                .dollar-symbol {
+                    font-size: 12px;
+                }
+                .dollar-label-top {
+                    font-size: 7px;
+                    letter-spacing: 0.15em;
+                }
+                .dollar-label-bottom {
+                    font-size: 14px;
+                }
             }
         </style>
     </main>
@@ -161,7 +241,7 @@ const sub = Astro.url.searchParams.get('sub') || '';
             const titleEl = document.getElementById('hero-title');
             const highlightEl = document.getElementById('hero-highlight');
             if (titleEl && highlightEl) {
-                if (titleEl.firstChild) titleEl.firstChild.textContent = title + ' ';
+                if (titleEl.firstChild) titleEl.firstChild.textContent = title;
                 highlightEl.textContent = highlight;
             }
         }

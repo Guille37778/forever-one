@@ -24,13 +24,34 @@ const { data: variants } = await supabase
   .select('*')
   .eq('product_id', id);
 
-// Fetch recommendations (same subcategory)
-const { data: recommendations } = await supabase
+// Fetch recommendations
+let { data: subcategoryRecs } = await supabase
   .from('products')
   .select('*')
   .eq('subcategory_id', product.subcategory_id)
+  .eq('is_active', true)
   .neq('id', id)
   .limit(4);
+
+let recommendations = subcategoryRecs || [];
+
+// Fallback to category if too few results
+if (recommendations.length < 2) {
+  const { data: categoryRecs } = await supabase
+    .from('products')
+    .select('*')
+    .eq('category', product.category)
+    .eq('is_active', true)
+    .neq('id', id)
+    .limit(8);
+  
+  const existingIds = new Set(recommendations.map(r => r.id));
+  categoryRecs?.forEach(p => {
+      if (!existingIds.has(p.id) && recommendations.length < 4) {
+          recommendations.push(p);
+      }
+  });
+}
 
 // Fetch reviews
 const { data: reviews } = await supabase
@@ -66,125 +87,198 @@ const productInfo = {
 
 <Layout title={`${productInfo.nombre} | Forever One`}>
     <Header isBlack={true} />
-    <main class="bg-[#F9F8F6] pt-16 md:pt-24 pb-12 md:pb-20 overflow-x-hidden">
-        <div class="max-w-7xl mx-auto px-6">
+    <main class="bg-white md:bg-[#F9F8F6] pt-24 md:pt-32 pb-12 md:pb-20 overflow-x-hidden"
+          x-data="{ notification: { show: false, message: '', type: 'success' } }"
+          @notify.window="notification.show = true; notification.message = $event.detail.message; setTimeout(() => notification.show = false, 5000)">
+        
+        <!-- Custom Branded Notification -->
+        <div x-show="notification.show" 
+             x-transition:enter="transition ease-out duration-300"
+             x-transition:enter-start="opacity-0 -translate-y-10"
+             x-transition:enter-end="opacity-100 translate-y-0"
+             x-transition:leave="transition ease-in duration-200"
+             x-transition:leave-start="opacity-100 translate-y-0"
+             x-transition:leave-end="opacity-0 -translate-y-10"
+             class="fixed top-24 left-1/2 -translate-x-1/2 z-[100] w-[90%] max-w-md"
+             x-cloak>
+            <div class="bg-black border border-gold/30 shadow-2xl p-6 rounded-2xl flex items-center justify-between gap-4 backdrop-blur-xl bg-black/90">
+                <div class="flex items-center gap-4">
+                    <div class="w-10 h-10 bg-gold/10 rounded-full flex items-center justify-center text-gold text-xl">✦</div>
+                    <p class="text-[11px] font-black uppercase tracking-widest text-white leading-relaxed" x-text="notification.message"></p>
+                </div>
+                <button @click="notification.show = false" class="text-slate-500 hover:text-white transition-colors">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+        </div>
+
+        <div class="max-w-7xl mx-auto px-4 md:px-6">
             
-            
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 items-start">
-                
-                <!-- ── LEFT: Gallery ─────────────────────────────── -->
-                <div class="flex flex-col gap-6">
-                    <div class="relative group bg-white overflow-hidden shadow-2xl border border-gold/10 lg:sticky lg:top-32">
-                        <div class="aspect-square overflow-hidden">
-                            <img id="main-product-image" 
-                                 src={productInfo.imagenes[0]} 
-                                 alt={productInfo.nombre}
-                                 class="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105"
-                            />
+            <!-- ── TOP SECTION: Status & Title ──────────────── -->
+            <div class="mb-4 lg:hidden">
+                <div class="flex justify-between items-center mb-1 text-[10px] uppercase font-bold tracking-widest text-[#B8860B]">
+                    <span>{productInfo.categoria_label} · {(reviews?.length || 0) > 0 ? reviews.length + 5 : 3} vendidos</span>
+                    <div class="flex items-center gap-1.5">
+                        <span class="text-slate-900">
+                             {reviews?.length ? (reviews.reduce((acc, r) => acc + r.rating, 0) / reviews.length).toFixed(1) : '5.0'}
+                        </span>
+                        <div class="flex text-gold">
+                             <svg class="w-3 h-3 fill-current" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path></svg>
                         </div>
-                        <div class="absolute inset-0 pointer-events-none border-[12px] border-white/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                        
-                        <!-- Additional Info Icons Inside Sticky Area -->
-                        <div class="border-t border-gold/10 pt-4 mt-2 pb-2 px-4 md:px-8">
-                            <div class="grid grid-cols-3 gap-4">
-                                <div class="flex flex-col items-center text-center">
-                                    <div class="text-gold mb-1.5">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+                        <span class="text-slate-400 font-medium lowercase">({reviews?.length || 0})</span>
+                    </div>
+                </div>
+                <h1 class="text-xl font-bold text-slate-900 leading-tight">
+                    {productInfo.nombre}
+                </h1>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-2 lg:gap-16 items-start">
+                
+                <!-- ── LEFT: Gallery (8 cols) ───────────────────── -->
+                <div class="lg:col-span-7 flex flex-col gap-6" x-data="{ currentSlide: 0, total: productInfo.imagenes.length }">
+                    <div class="relative group bg-white overflow-hidden md:shadow-2xl md:border border-gold/10">
+                        <!-- Image Slider Container -->
+                        <div class="relative aspect-square md:aspect-[4/5] overflow-hidden bg-white">
+                            <div class="flex transition-transform duration-500 ease-out h-full" 
+                                 :style="`transform: translateX(-${currentSlide * 100}%)`">
+                                {productInfo.imagenes.map((img: string, idx: number) => (
+                                    <div class="min-w-full h-full">
+                                        <img src={img} 
+                                             alt={`${productInfo.nombre} ${idx + 1}`}
+                                             class="w-full h-full object-contain md:object-cover" />
                                     </div>
-                                    <span class="text-[7px] uppercase tracking-[0.2em] font-black text-slate-500">Diseño Original</span>
-                                </div>
-                                <div class="flex flex-col items-center text-center">
-                                    <div class="text-gold mb-1.5">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path></svg>
-                                    </div>
-                                    <span class="text-[7px] uppercase tracking-[0.2em] font-black text-slate-500">Empaque Lujo</span>
-                                </div>
-                                <div class="flex flex-col items-center text-center">
-                                    <div class="text-gold mb-1.5">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                                    </div>
-                                    <span class="text-[7px] uppercase tracking-[0.2em] font-black text-slate-500">Envío Inmediato</span>
-                                </div>
+                                ))}
+                            </div>
+
+                            <!-- Indicator "1/X" -->
+                            <div class="absolute top-4 left-4 bg-black/50 backdrop-blur-sm text-white text-[10px] font-bold px-2 py-1 rounded-full z-10 tracking-widest">
+                                <span x-text="currentSlide + 1"></span>/{productInfo.imagenes.length}
+                            </div>
+
+                            <!-- Heart Button -->
+                            <button class="absolute top-4 right-4 w-10 h-10 bg-white rounded-full shadow-lg flex items-center justify-center text-slate-400 hover:text-red-500 transition-colors z-10">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 006.364-6.364z"></path></svg>
+                            </button>
+
+                            <!-- Navigation Arrows (Desktop) -->
+                            <div class="hidden md:block absolute inset-y-0 left-0 flex items-center">
+                                <button @click="currentSlide = (currentSlide > 0) ? currentSlide - 1 : total - 1" 
+                                        class="bg-white/80 hover:bg-white p-3 rounded-r-lg shadow-lg text-black transition-all">❮</button>
+                            </div>
+                            <div class="hidden md:block absolute inset-y-0 right-0 flex items-center">
+                                <button @click="currentSlide = (currentSlide < total - 1) ? currentSlide + 1 : 0" 
+                                        class="bg-white/80 hover:bg-white p-3 rounded-l-lg shadow-lg text-black transition-all">❯</button>
                             </div>
                         </div>
-                    </div>
-                    
-                    {productInfo.imagenes.length > 1 && (
-                        <div class="grid grid-cols-4 md:grid-cols-6 gap-4">
-                            {productInfo.imagenes.map((img: string, idx: number) => (
-                                <button onclick={`document.getElementById('main-product-image').src='${img}'`}
-                                        class="aspect-[4/5] bg-white border border-gold/10 overflow-hidden hover:border-gold transition-all focus:outline-none focus:ring-1 focus:ring-gold">
-                                    <img src={img} alt={`Vista ${idx + 1}`} class="w-full h-full object-cover" />
-                                </button>
+
+                        <!-- Dots Indicator (Mobile) -->
+                        <div class="flex justify-center gap-2 pt-3 pb-0 md:hidden">
+                            {productInfo.imagenes.map((_, idx: number) => (
+                                <button @click={`currentSlide = ${idx}`}
+                                        class="w-2 h-2 rounded-full transition-all"
+                                        :class={`currentSlide === ${idx} ? 'bg-[#B8860B] w-4' : 'bg-slate-300'`}></button>
                             ))}
                         </div>
-                    )}
+                    </div>
+
+                    <!-- Thumbnails (Desktop Only) -->
+                    <div class="hidden md:grid grid-cols-6 gap-3">
+                        {productInfo.imagenes.map((img: string, idx: number) => (
+                            <button @click={`currentSlide = ${idx}`}
+                                    :class={`currentSlide === ${idx} ? 'border-[#B8860B]' : 'border-gold/10 opacity-60'`}
+                                    class="aspect-square bg-white border overflow-hidden hover:opacity-100 transition-all">
+                                <img src={img} alt={`Vista ${idx + 1}`} class="w-full h-full object-cover" />
+                            </button>
+                        ))}
+                    </div>
                 </div>
 
-                <!-- ── RIGHT: Details ────────────────────────────── -->
-                <div class="flex flex-col">
-                    <div class="mb-4">
-                        <span class="text-[9px] uppercase tracking-[0.5em] font-black text-[#B8860B] mb-2 block animate-fade-in">
-                            {productInfo.categoria_label} · {productInfo.coleccion || 'Exclusiva'}
-                        </span>
-                        <h1 class="text-2xl md:text-4xl lg:text-5xl font-black italic uppercase tracking-tight text-black leading-[0.95] mb-6 font-primary">
+                <!-- ── RIGHT: Product Options (4 cols) ──────────── -->
+                <div class="lg:col-span-5 flex flex-col">
+                    <!-- Desktop Header -->
+                    <div class="hidden lg:block mb-6">
+                        <div class="flex justify-between items-center mb-2 text-[10px] uppercase font-bold tracking-widest text-[#B8860B]">
+                            <span>{productInfo.categoria_label} · {(reviews?.length || 0) > 0 ? reviews.length + 5 : 3} vendidos</span>
+                            <div class="flex items-center gap-1.5 border-l border-slate-200 pl-4">
+                                <span class="text-slate-900">
+                                     {reviews?.length ? (reviews.reduce((acc, r) => acc + r.rating, 0) / reviews.length).toFixed(1) : '5.0'}
+                                </span>
+                                <div class="flex text-gold">
+                                     <svg class="w-3 h-3 fill-current" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path></svg>
+                                </div>
+                                <span class="text-slate-400 font-medium lowercase">({reviews?.length || 0} reseñas)</span>
+                            </div>
+                        </div>
+                        <h1 class="text-3xl lg:text-4xl font-black text-slate-900 italic uppercase leading-tight font-primary">
                             {productInfo.nombre}
                         </h1>
                     </div>
 
-                    <div class="flex items-baseline gap-4 mb-8 pb-8 border-b border-gold/10">
-                        <span class="text-3xl md:text-4xl font-black italic color-gold text-[#B8860B] font-primary">
-                            ${productInfo.precio.toFixed(2)}
-                        </span>
-                        <span class="text-sm md:text-base font-bold text-slate-400">
-                            ≈ Bs. {(productInfo.precio * dollarRate).toLocaleString('es-VE', { minimumFractionDigits: 2 })}
-                        </span>
-                    </div>
+                    <!-- Price Box -->
+                    <div class="mb-8 px-6 pt-2 pb-6 bg-white md:bg-transparent md:p-0 rounded-2xl md:rounded-none">
+                        <div class="flex flex-col gap-1 mb-6">
+                            <span class="text-xs font-bold text-slate-400 tracking-wider">PRECIO EXCLUSIVO</span>
+                            <div class="flex items-baseline gap-4">
+                                <span class="text-4xl lg:text-5xl font-black italic text-[#B8860B] font-primary">
+                                    ${productInfo.precio.toFixed(2)}
+                                </span>
+                            </div>
+                            <span class="text-sm font-bold text-slate-400">
+                                ≈ Bs. {(productInfo.precio * dollarRate).toLocaleString('es-VE', { minimumFractionDigits: 2 })}
+                            </span>
+                            <div class="mt-4 flex items-center gap-2">
+                                <span class="text-[9px] font-black uppercase tracking-[0.3em] text-[#B8860B]">Envíos a toda Venezuela ✦</span>
+                            </div>
+                        </div>
 
-                    <!-- Description Mini -->
-                    <p class="text-xs md:text-sm text-slate-600 font-medium leading-relaxed italic mb-8 max-w-lg">
-                        {productInfo.descripcion}
-                    </p>
+                        <!-- Main Action -->
+                        <div class="mb-10">
+                             <button id="add-to-cart-btn"
+                                     data-product={JSON.stringify(productInfo)}
+                                     disabled={productInfo.stock <= 0}
+                                     class="w-full flex items-center justify-center bg-black text-white py-5 rounded-2xl transition-all hover:bg-[#B8860B] active:scale-95 disabled:opacity-50 shadow-xl border border-white/10 group gap-3">
+                                 <svg class="w-5 h-5 transition-transform group-hover:-translate-y-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path>
+                                 </svg>
+                                 <span class="text-[10px] font-black uppercase tracking-[0.4em]">Añadir al Carrito</span>
+                             </button>
+                        </div>
 
-                    <!-- Sizes -->
-                    <div class="mb-8">
-                        <h3 class="text-[9px] uppercase tracking-[0.4em] font-black text-black mb-4 flex items-center gap-2">
-                           Tallas Disponibles
-                           {productInfo.stock > 0 ? (
-                               <span class="ml-2 text-[8px] color-[#059669] bg-[#059669]/5 px-2 py-0.5 border border-[#059669]/20 font-bold lowercase tracking-normal">En stock ({productInfo.stock})</span>
-                           ) : (
-                               <span class="ml-2 text-[8px] text-red-500 bg-red-50 px-2 py-0.5 border border-red-100 font-bold lowercase tracking-normal">Agotado</span>
-                           )}
-                        </h3>
-                        <div class="flex flex-wrap gap-3">
-                            {variants && variants.length > 0 ? (
-                                variants.map((v: any) => (
-                                    <button 
-                                        disabled={v.stock_quantity <= 0}
-                                        class={`size-btn min-w-[50px] h-[50px] flex items-center justify-center border text-xs font-black transition-all ${v.stock_quantity > 0 ? 'border-slate-200 hover:border-gold hover:text-gold text-black cursor-pointer' : 'border-slate-100 text-slate-300 cursor-not-allowed bg-slate-50'}`}
-                                        onclick={`window.__selectSize('${v.size}')`}
-                                        data-size={v.size}
-                                    >
-                                        {v.size}
-                                    </button>
-                                ))
-                            ) : (
-                                <span class="text-[10px] text-slate-400 font-bold uppercase tracking-widest italic">Talla única</span>
-                            )}
+                        <!-- Sizes -->
+                        <div class="mb-10">
+                            <h3 class="text-[9px] uppercase tracking-[0.4em] font-black text-black mb-5 flex items-center justify-between">
+                               <span>Tallas Disponibles</span>
+                               {productInfo.stock <= 0 && (
+                                   <span class="text-red-500 font-bold">Agotado</span>
+                               )}
+                            </h3>
+                            <div class="flex flex-wrap gap-3">
+                                {variants && variants.length > 0 ? (
+                                    variants.map((v: any) => (
+                                        <button 
+                                            disabled={v.stock_quantity <= 0}
+                                            class={`size-btn min-w-[55px] h-[55px] rounded-lg flex items-center justify-center border-2 text-xs font-black transition-all ${v.stock_quantity > 0 ? 'border-slate-100 hover:border-gold hover:text-gold text-black cursor-pointer' : 'border-slate-50 text-slate-200 cursor-not-allowed bg-slate-50'}`}
+                                            onclick={`window.__selectSize('${v.size}')`}
+                                            data-size={v.size}
+                                        >
+                                            {v.size}
+                                        </button>
+                                    ))
+                                ) : (
+                                    <span class="text-[10px] text-slate-400 font-bold uppercase tracking-widest italic">Talla única</span>
+                                )}
+                            </div>
+                        </div>
+
+                        <!-- Product Description -->
+                        <div class="mb-12 border-l-2 border-gold/20 pl-5">
+                             <h3 class="text-[9px] uppercase tracking-[0.4em] font-black text-slate-400 mb-4">Descripción</h3>
+                             <p class="text-xs text-slate-700 font-medium leading-[1.8] italic uppercase">
+                                 {productInfo.descripcion}
+                             </p>
                         </div>
                     </div>
-
-
-                    <!-- CTA Buttons -->
-                    <div class="flex flex-col sm:flex-row gap-4 mb-12">
-                        <button id="add-to-cart-btn"
-                                data-product={JSON.stringify(productInfo)}
-                                disabled={productInfo.stock <= 0}
-                                class="flex-1 bg-black text-white text-[10px] uppercase tracking-[0.52em] font-black py-5 px-8 transition-all hover:bg-[#B8860B] disabled:opacity-50 disabled:cursor-not-allowed shadow-xl hover:shadow-gold/20 flex items-center justify-center gap-3">
-                            ✦ Añadir al Carrito
-                        </button>
-                    </div>
-
                 </div>
             </div>
 
@@ -200,17 +294,33 @@ const productInfo = {
                 </div>
 
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-20" x-show="tab === 'reviews'">
-                    <!-- Reviews Column -->
-                    <div id="reviews-section">
-                        <div class="flex justify-between items-center mb-10">
-                            <h2 class="text-xl font-black italic uppercase italic text-black">Opiniones del producto</h2>
-                            <div class="flex items-center gap-2">
-                                <div class="flex text-gold">
-                                    {[1, 2, 3, 4, 5].map(_ => (
-                                        <svg class="w-3.5 h-3.5 fill-current" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path></svg>
-                                    ))}
+                        <!-- Reviews Header Redesign -->
+                        <div class="mb-6 border-b border-gold/10 pb-6">
+                            <div class="flex flex-col md:flex-row md:items-end justify-between gap-6">
+                                <div>
+                                    <h2 class="text-3xl font-black italic uppercase text-black font-primary leading-tight">
+                                        Opiniones<br/>del producto
+                                    </h2>
                                 </div>
-                                <span class="text-xs font-black italic text-gold">{reviews?.length || 0} RESEÑAS</span>
+                                <div class="flex items-center gap-6 bg-slate-50 p-6 rounded-2xl border border-slate-100">
+                                    <div class="flex flex-col">
+                                        <span class="text-3xl font-black text-black leading-none mb-1">
+                                            {reviews?.length ? (reviews.reduce((acc, r) => acc + r.rating, 0) / reviews.length).toFixed(1) : '5.0'}
+                                        </span>
+                                        <div class="flex text-gold">
+                                            {[1, 2, 3, 4, 5].map((_, i) => (
+                                                <svg class="w-3.5 h-3.5 fill-current" viewBox="0 0 20 20">
+                                                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
+                                                </svg>
+                                            ))}
+                                        </div>
+                                    </div>
+                                    <div class="h-10 w-px bg-slate-200"></div>
+                                    <div class="flex flex-col">
+                                        <span class="text-[9px] font-black uppercase tracking-[0.3em] text-slate-400 mb-1">Total</span>
+                                        <span class="text-xs font-black italic text-[#B8860B] text-gold uppercase">{reviews?.length || 0} RESEÑAS</span>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
@@ -291,55 +401,59 @@ const productInfo = {
 
                     <!-- Recommendations Column -->
                     <div>
-                        <h2 class="text-xl font-black uppercase italic text-black mb-10">Productos similares</h2>
-                        <div class="grid grid-cols-2 gap-4 md:gap-8">
-                            {recommendations && recommendations.map((p: any) => (
-                                <a href={`/prenda/${p.id}`} class="group group bg-white shadow-sm border border-gold/5 overflow-hidden transition-all hover:shadow-2xl hover:-translate-y-2">
-                                    <div class="aspect-[4/5] bg-slate-100 overflow-hidden">
-                                        <img src={p.image_urls?.[0]} alt={p.name} class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
-                                    </div>
-                                    <div class="p-6">
-                                        <h4 class="text-[10px] font-black italic uppercase tracking-widest text-black mb-2">{p.name}</h4>
-                                        <p class="text-xs font-bold text-gold">${p.price.toFixed(2)}</p>
-                                    </div>
-                                </a>
-                            ))}
+                        <h2 class="text-3xl font-black italic uppercase text-black font-primary mb-12">Productos similares</h2>
+                        <div class="flex overflow-x-auto snap-x snap-mandatory gap-4 md:gap-8 pb-8 no-scrollbar -mx-4 px-4 md:mx-0 md:px-0 lg:grid lg:grid-cols-2 lg:overflow-visible">
+                            {recommendations && recommendations.length > 0 ? (
+                                recommendations.map((p: any) => (
+                                    <a href={`/prenda/${p.id}`} class="min-w-[80%] md:min-w-[45%] lg:min-w-0 snap-start group bg-white shadow-sm border border-gold/5 overflow-hidden transition-all hover:shadow-2xl hover:-translate-y-2">
+                                        <div class="aspect-[4/5] bg-slate-100 overflow-hidden">
+                                            <img src={p.image_urls?.[0]} alt={p.name} class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
+                                        </div>
+                                        <div class="p-6">
+                                            <h4 class="text-[10px] font-black italic uppercase tracking-widest text-black mb-2">{p.name}</h4>
+                                            <p class="text-xs font-bold text-gold">${p.price.toFixed(2)}</p>
+                                        </div>
+                                    </a>
+                                ))
+                            ) : (
+                                <p class="text-[10px] text-slate-400 uppercase tracking-widest italic py-12 border border-dashed border-gold/10 w-full text-center col-span-2">Descubriendo más productos para usted...</p>
+                            )}
                         </div>
                     </div>
                 </div>
 
                 <!-- ── TABS: Specs Content ──────────────────────── -->
                 <div x-show="tab === 'specs'" x-cloak class="max-w-4xl mx-auto animate-fade-in">
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-x-20 gap-y-12 bg-white p-6 md:p-12 shadow-sm border border-gold/5">
-                        <div>
-                            <h4 class="text-[10px] uppercase tracking-[0.4em] font-black text-black mb-6 border-b border-gold/10 pb-2">Materiales y Cuidado</h4>
-                            <ul class="space-y-4 text-xs text-slate-600 italic leading-relaxed">
-                                <li class="flex items-start gap-3">
-                                    <span class="text-gold mt-1">✦</span>
-                                    <span>Composición premium seleccionada para durabilidad y confort excepcional.</span>
-                                </li>
-                                <li class="flex items-start gap-3">
-                                    <span class="text-gold mt-1">✦</span>
-                                    <span>Limpieza profesional recomendada para preservar el acabado de lujo.</span>
-                                </li>
-                            </ul>
-                        </div>
-                        <div>
-                            <h4 class="text-[10px] uppercase tracking-[0.4em] font-black text-black mb-6 border-b border-gold/10 pb-2">Detalles Técnicos</h4>
-                            <div class="space-y-4">
-                                <div class="flex justify-between border-b border-slate-50 pb-2">
-                                    <span class="text-[9px] uppercase tracking-widest text-slate-400 font-bold">Colección</span>
-                                    <span class="text-[9px] uppercase tracking-widest text-black font-black">{productInfo.coleccion || 'Atelier'}</span>
-                                </div>
-                                <div class="flex justify-between border-b border-slate-50 pb-2">
-                                    <span class="text-[9px] uppercase tracking-widest text-slate-400 font-bold">Categoría</span>
-                                    <span class="text-[9px] uppercase tracking-widest text-black font-black">{productInfo.categoria_label}</span>
-                                </div>
-                                <div class="flex justify-between border-b border-slate-50 pb-2">
-                                    <span class="text-[9px] uppercase tracking-widest text-slate-400 font-bold">Disponibilidad</span>
-                                    <span class="text-[9px] uppercase tracking-widest text-gold font-black italic">{productInfo.stock > 0 ? 'Disponible' : 'Bajo pedido'}</span>
+                    <div class="bg-white p-6 md:p-12 shadow-sm border border-gold/5">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-x-20 gap-y-12">
+                            <div>
+                                <h4 class="text-[10px] uppercase tracking-[0.4em] font-black text-black mb-6 border-b border-gold/10 pb-2">Materiales y Cuidado</h4>
+                                <ul class="space-y-4 text-xs text-slate-600 italic leading-relaxed">
+                                    <li class="flex items-start gap-3">
+                                        <span class="text-gold mt-1">✦</span>
+                                        <span>Composición premium seleccionada para durabilidad y confort excepcional.</span>
+                                    </li>
+                                    <li class="flex items-start gap-3">
+                                        <span class="text-gold mt-1">✦</span>
+                                        <span>Limpieza profesional recomendada para preservar el acabado de lujo.</span>
+                                    </li>
+                                </ul>
+                            </div>
+                            <div>
+                                <h4 class="text-[10px] uppercase tracking-[0.4em] font-black text-black mb-6 border-b border-gold/10 pb-2">Detalles Técnicos</h4>
+                                <div class="space-y-4">
+                                    <div class="flex justify-between border-b border-slate-50 pb-2">
+                                        <span class="text-[9px] uppercase tracking-widest text-slate-400 font-bold">Colección</span>
+                                        <span class="text-[9px] uppercase tracking-widest text-black font-black">{productInfo.coleccion || 'Atelier'}</span>
+                                    </div>
+                                    <div class="flex justify-between border-b border-slate-50 pb-2">
+                                        <span class="text-[9px] uppercase tracking-widest text-slate-400 font-bold">Categoría</span>
+                                        <span class="text-[9px] uppercase tracking-widest text-black font-black">{productInfo.categoria_label}</span>
+                                    </div>
                                 </div>
                             </div>
+                        </div>
+                            </p>
                         </div>
                     </div>
                 </div>
@@ -417,12 +531,14 @@ const productInfo = {
                         const result = await response.json();
 
                         if (response.ok) {
-                            alert('✦ ¡Muchas gracias! Su reseña ha sido enviada con éxito.');
+                            window.dispatchEvent(new CustomEvent('notify', { detail: { message: '✦ ¡Muchas gracias! Su reseña ha sido enviada con éxito.' } }));
                             reviewForm.reset();
-                            // Opcional: recargar la página para ver la reseña
-                            window.location.reload();
+                            // Delay reload to allow user to see the message
+                            setTimeout(() => {
+                                window.location.reload();
+                            }, 2000);
                         } else {
-                            alert('❌ ERROR: ' + (result.error || 'No se pudo enviar la reseña'));
+                            window.dispatchEvent(new CustomEvent('notify', { detail: { message: '❌ ERROR: ' + (result.error || 'No se pudo enviar la reseña') } }));
                         }
                     } catch (err) {
                         console.error(err);

@@ -280,25 +280,11 @@ const deliveryZones = settingsData?.find((s: any) => s.key === 'delivery_zones')
 <!-- Cart FAB (Bottom-Right) -->
 <button id="open-cart-fab"
         onclick="window.__openCart()"
-        style="position:fixed !important; bottom:24px !important; right:24px !important;
-               z-index:1500 !important; width:64px; height:64px; border-radius:50%;
-               display:flex; align-items:center; justify-content:center;
-               border:1px solid rgba(255,255,255,0.2);
-               background:linear-gradient(135deg,#8B6508 0%,#B8860B 25%,#f3cf7a 50%,#B8860B 75%,#8B6508 100%);
-               background-size:200% auto; animation:shine 5s linear infinite;
-               box-shadow:0 8px 32px rgba(184,134,11,0.4);
-               cursor:pointer; transition:transform 0.2s ease;"
-        onmouseenter="this.style.transform='scale(1.1)'"
-        onmouseleave="this.style.transform='scale(1)'">
-    <svg style="width:28px;height:28px;color:#fff;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        class="cart-fab">
+    <svg class="cart-fab-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/>
     </svg>
-    <span id="cart-count-badge"
-          style="display:none; position:absolute; top:-6px; right:-6px;
-                 background:#fff; color:#000; font-size:11px; font-weight:900;
-                 width:24px; height:24px; border-radius:50%;
-                 align-items:center; justify-content:center;
-                 box-shadow:0 2px 8px rgba(0,0,0,0.2); border:2px solid rgba(0,0,0,0.05);">0</span>
+    <span id="cart-count-badge" class="cart-badge">0</span>
 </button>
 
 <style>
@@ -338,6 +324,72 @@ const deliveryZones = settingsData?.find((s: any) => s.key === 'delivery_zones')
     @media (min-width: 640px) { .cart-input-grid { grid-template-columns: 1fr 1fr; } }
     .method-grid, .courier-grid { display: grid; grid-template-columns: 1fr; gap: 0.75rem; margin-bottom: 1.5rem; }
     @media (min-width: 480px) { .method-grid, .courier-grid { grid-template-columns: 1fr 1fr 1fr; } }
+
+    /* ── CART FAB RESPONSIVE ────────────────────────── */
+    .cart-fab {
+        position: fixed !important;
+        bottom: 24px !important;
+        right: 24px !important;
+        z-index: 1500 !important;
+        width: 64px;
+        height: 64px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid rgba(255,255,255,0.2);
+        background: linear-gradient(135deg,#8B6508 0%,#B8860B 25%,#f3cf7a 50%,#B8860B 75%,#8B6508 100%);
+        background-size: 200% auto;
+        animation: shine 5s linear infinite;
+        box-shadow: 0 8px 32px rgba(184,134,11,0.4);
+        cursor: pointer;
+        transition: transform 0.2s ease;
+    }
+    .cart-fab:hover {
+        transform: scale(1.1);
+    }
+    .cart-fab-icon {
+        width: 28px;
+        height: 28px;
+        color: #fff;
+    }
+    .cart-badge {
+        display: none;
+        position: absolute;
+        top: -6px;
+        right: -6px;
+        background: #fff;
+        color: #000;
+        font-size: 11px;
+        font-weight: 900;
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        border: 2px solid rgba(0,0,0,0.05);
+    }
+
+    @media (max-width: 768px) {
+        .cart-fab {
+            bottom: 20px !important;
+            right: 20px !important;
+            width: 48px;
+            height: 48px;
+        }
+        .cart-fab-icon {
+            width: 20px;
+            height: 20px;
+        }
+        .cart-badge {
+            width: 18px;
+            height: 18px;
+            font-size: 9px;
+            top: -4px;
+            right: -4px;
+        }
+    }
 </style>
 
 <script is:inline define:vars={{ initialDollarRate: dollarRate, deliveryZonesRaw: deliveryZones, initialDeliveryEnabled: deliveryEnabled }}>
