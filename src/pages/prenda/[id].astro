@@ -87,7 +87,7 @@ const productInfo = {
 
 <Layout title={`${productInfo.nombre} | Forever One`}>
     <Header isBlack={true} />
-    <main class="bg-white md:bg-[#F9F8F6] pt-12 md:pt-16 lg:pt-20 pb-12 md:pb-20 overflow-x-hidden"
+    <main class="bg-white md:bg-[#F9F8F6] pt-12 md:pt-16 lg:pt-16 pb-12 md:pb-20 overflow-x-hidden"
           x-data="{ notification: { show: false, message: '', type: 'success' } }"
           @notify.window="notification.show = true; notification.message = $event.detail.message; setTimeout(() => notification.show = false, 5000)">
         
@@ -220,7 +220,7 @@ const productInfo = {
                 <!-- ── RIGHT: Product Options (4 cols) ──────────── -->
                 <div class="lg:col-span-5 flex flex-col">
                     <!-- Desktop Header -->
-                    <div class="hidden lg:block mb-6">
+                    <div class="hidden lg:block mb-4">
                         <div class="flex justify-between items-center mb-2 text-[10px] uppercase font-bold tracking-widest text-[#B8860B]">
                             <span>{productInfo.categoria_label} · {(reviews?.length || 0) > 0 ? reviews.length + 5 : 3} vendidos</span>
                             <div class="flex items-center gap-1.5 border-l border-slate-200 pl-4">
@@ -239,8 +239,8 @@ const productInfo = {
                     </div>
 
                     <!-- Price Box -->
-                    <div class="mb-8 px-6 pt-2 pb-6 bg-white md:bg-transparent md:p-0 rounded-2xl md:rounded-none">
-                        <div class="flex flex-col gap-1 mb-6">
+                    <div class="mb-6 px-6 pt-2 pb-6 bg-white md:bg-transparent md:p-0 rounded-2xl md:rounded-none">
+                        <div class="flex flex-col gap-1 mb-4">
                             <span class="text-xs font-bold text-slate-400 tracking-wider">PRECIO EXCLUSIVO</span>
                             <div class="flex items-baseline gap-4">
                                 <span class="text-3xl lg:text-4xl font-black italic text-[#B8860B] font-primary">
@@ -256,7 +256,7 @@ const productInfo = {
                         </div>
 
                         <!-- Main Action -->
-                        <div class="mb-10">
+                        <div class="mb-6">
                              <button id="add-to-cart-btn"
                                      data-product={JSON.stringify(productInfo)}
                                      disabled={productInfo.stock <= 0}
