@@ -61,7 +61,7 @@ const sub = Astro.url.searchParams.get('sub') || '';
         <Hero 
             title="Viste con" 
             highlight="Distinción" 
-            subtitle="Alta Costura y Distinción."
+            subtitle="Productos de alta Gama y distinción."
             image="https://images.unsplash.com/photo-1441984904996-e0b6ba687e04?auto=format&fit=crop&q=80&w=2000"
         />
 
@@ -237,16 +237,47 @@ const sub = Astro.url.searchParams.get('sub') || '';
         let searchQuery = '';
 
         // ── Hero Update Logic ──────────────────────────────────────────────────────
-        function __updateHeroText(title, highlight) {
+        function __updateHeroText(title, highlight, subtitle) {
             const titleEl = document.getElementById('hero-title');
             const highlightEl = document.getElementById('hero-highlight');
+            const subtitleEl = document.getElementById('hero-subtitle');
+            
             if (titleEl && highlightEl) {
                 if (titleEl.firstChild) titleEl.firstChild.textContent = title;
                 highlightEl.textContent = highlight;
             }
+            
+            if (subtitleEl && subtitle) {
+                const words = subtitle.split(' ');
+                const first = words[0];
+                const rest = words.slice(1).join(' ');
+                subtitleEl.innerHTML = `<span class="text-white">${first}</span> ${rest}`;
+            }
         }
 
         function refreshHero() {
+            const btnContainer = document.getElementById('hero-button-container');
+            const scrollAnim = document.getElementById('hero-scroll-animation');
+            
+            // Only show button if we are in "Todos" category and no subcategory or search
+            const isDefault = activeCategory === 'Todos' && !activeSubcategory && !searchQuery;
+            
+            if (btnContainer) {
+                if (isDefault) btnContainer.classList.remove('hidden');
+                else btnContainer.classList.add('hidden');
+            }
+            
+            if (scrollAnim) {
+                // Animation only for mobile (handled by md:hidden in Hero component, but needs to be triggered here)
+                if (isDefault) {
+                    scrollAnim.classList.remove('flex');
+                    scrollAnim.classList.add('hidden');
+                } else {
+                    scrollAnim.classList.remove('hidden');
+                    scrollAnim.classList.add('flex');
+                }
+            }
+
             if (activeSubcategory) {
                 const p = products.find(p => p.subcategory_slug === activeSubcategory);
                 const subName = (p ? p.subcategory_name : activeSubcategory).trim();
@@ -255,12 +286,12 @@ const sub = Astro.url.searchParams.get('sub') || '';
                 if (words.length > 1) {
                     const first = words[0];
                     const rest = words.slice(1).join(' ');
-                    __updateHeroText(first, rest);
+                    __updateHeroText(first, rest, "Productos de alta Gama y distinción.");
                 } else {
-                    __updateHeroText('', subName);
+                    __updateHeroText('', subName, "Productos de alta Gama y distinción.");
                 }
             } else {
-                __updateHeroText('Viste con', 'Distinción');
+                __updateHeroText('Viste con', 'Distinción', "Productos de alta Gama y distinción.");
             }
         }
 
@@ -315,6 +346,7 @@ const sub = Astro.url.searchParams.get('sub') || '';
         window.__setSearch = function(val) {
             searchQuery = val.toLowerCase().trim();
             renderGrid();
+            refreshHero();
         };
 
         window.__showSuggestions = function(val) {
@@ -387,7 +419,9 @@ const sub = Astro.url.searchParams.get('sub') || '';
                 if(input) input.value = prod.nombre;
                 activeCategory = 'Todos';
                 activeSubcategory = '';
-                window.__setSearch(prod.nombre);
+                searchQuery = prod.nombre.toLowerCase(); // Ensure search query is updated
+                renderGrid();
+                refreshHero();
             }
             window.__hideSuggestions();
             el('product-grid').scrollIntoView({ behavior: 'smooth', block: 'start' });
