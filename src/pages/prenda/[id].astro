@@ -87,7 +87,7 @@ const productInfo = {
 
 <Layout title={`${productInfo.nombre} | Forever One`}>
     <Header isBlack={true} />
-    <main class="bg-white md:bg-[#F9F8F6] pt-24 md:pt-32 pb-12 md:pb-20 overflow-x-hidden"
+    <main class="bg-white md:bg-[#F9F8F6] pt-12 md:pt-16 lg:pt-20 pb-12 md:pb-20 overflow-x-hidden"
           x-data="{ notification: { show: false, message: '', type: 'success' } }"
           @notify.window="notification.show = true; notification.message = $event.detail.message; setTimeout(() => notification.show = false, 5000)">
         
@@ -143,7 +143,7 @@ const productInfo = {
                         touchStartX: 0,
                         touchEndX: 0
                      })}>
-                    <div class="max-w-2xl mx-auto w-full relative group bg-white overflow-hidden md:shadow-2xl md:border border-gold/10"
+                    <div class="max-w-md mx-auto w-full relative group bg-white overflow-hidden md:shadow-2xl md:border border-gold/10"
                          @touchstart="touchStartX = $event.touches[0].clientX"
                          @touchend="
                             touchEndX = $event.changedTouches[0].clientX;
@@ -206,7 +206,7 @@ const productInfo = {
                     </div>
 
                     <!-- Thumbnails (Desktop Only) -->
-                    <div class="max-w-2xl mx-auto w-full hidden md:grid grid-cols-6 gap-3">
+                    <div class="max-w-md mx-auto w-full hidden md:grid grid-cols-6 gap-3">
                         {productInfo.imagenes.map((img: string, idx: number) => (
                             <button @click={`currentSlide = ${idx}`}
                                     :class={`currentSlide === ${idx} ? 'border-[#B8860B]' : 'border-gold/10 opacity-60'`}
@@ -233,7 +233,7 @@ const productInfo = {
                                 <span class="text-slate-400 font-medium lowercase">({reviews?.length || 0} reseñas)</span>
                             </div>
                         </div>
-                        <h1 class="text-3xl lg:text-4xl font-black text-slate-900 italic uppercase leading-tight font-primary">
+                        <h1 class="text-3xl lg:text-3xl font-black text-slate-900 italic uppercase leading-tight font-primary">
                             {productInfo.nombre}
                         </h1>
                     </div>
@@ -243,7 +243,7 @@ const productInfo = {
                         <div class="flex flex-col gap-1 mb-6">
                             <span class="text-xs font-bold text-slate-400 tracking-wider">PRECIO EXCLUSIVO</span>
                             <div class="flex items-baseline gap-4">
-                                <span class="text-3xl lg:text-5xl font-black italic text-[#B8860B] font-primary">
+                                <span class="text-3xl lg:text-4xl font-black italic text-[#B8860B] font-primary">
                                     ${productInfo.precio.toFixed(2)}
                                 </span>
                             </div>
