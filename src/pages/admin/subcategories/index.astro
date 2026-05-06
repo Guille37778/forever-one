@@ -4,8 +4,16 @@ import { supabase, supabaseAdmin } from '../../../lib/supabase';
 
 const accessToken = Astro.cookies.get('sb-access-token')?.value;
 if (!accessToken) return Astro.redirect('/admin/login');
-const { data: { user }, error: authError } = await supabase.auth.getUser(accessToken);
-if (authError || !user) return Astro.redirect('/admin/login');
+
+let user = null;
+try {
+    const { data: userData, error: authError } = await supabase.auth.getUser(accessToken);
+    if (authError || !userData?.user) return Astro.redirect('/admin/login');
+    user = userData.user;
+} catch (e) {
+    console.error('[Subcategories] Auth Error:', e);
+    return Astro.redirect('/admin/login');
+}
 
 let statusMessage = '';
 let statusType = '';
@@ -41,14 +49,32 @@ if (Astro.request.method === 'POST') {
     if (action === 'delete') {
         const id = formData.get('id')?.toString();
         if (id) {
-            const { error } = await supabaseAdmin.from('subcategories').delete().eq('id', id);
-            if (error) {
-                console.error('Error al eliminar subcategoría:', error);
-                statusMessage = `Error al eliminar: ${error.message}`;
+            // 1. Verificar si hay productos asociados y obtener nombres
+            const { data: blockingProducts, count, error: countError } = await supabaseAdmin
+                .from('products')
+                .select('name', { count: 'exact' })
+                .eq('subcategory_id', id)
+                .limit(5);
+
+            if (count && count > 0) {
+                const productNames = blockingProducts?.map((p: any) => p.name).join(', ');
+                statusMessage = `No se puede eliminar: hay ${count} productos asociados (${productNames}${count > 5 ? '...' : ''}). Por favor, reasígnalos a otra categoría primero.`;
+                statusType = 'error';
+            } else if (countError) {
+                console.error('Error al verificar productos:', countError);
+                statusMessage = `Error técnico al verificar productos: ${countError.message}`;
                 statusType = 'error';
             } else {
-                statusMessage = 'Subcategoría eliminada con éxito.';
-                statusType = 'success';
+                // 2. Proceder con el borrado si está vacía
+                const { error } = await supabaseAdmin.from('subcategories').delete().eq('id', id);
+                if (error) {
+                    console.error('Error al eliminar subcategoría:', error);
+                    statusMessage = `Error al eliminar: ${error.message}`;
+                    statusType = 'error';
+                } else {
+                    statusMessage = 'Subcategoría eliminada con éxito.';
+                    statusType = 'success';
+                }
             }
         }
     }
@@ -59,8 +85,8 @@ const { data: subcategories } = await supabase
     .order('parent_category', { ascending: true })
     .order('name', { ascending: true });
 
-const ropaSubs = subcategories?.filter(s => s.parent_category === 'ropa') || [];
-const accesoriosSubs = subcategories?.filter(s => s.parent_category === 'accesorios') || [];
+const ropaSubs = subcategories?.filter((s: any) => s.parent_category === 'ropa') || [];
+const accesoriosSubs = subcategories?.filter((s: any) => s.parent_category === 'accesorios') || [];
 ---
 
 <AdminLayout title="Subcategorías" activeNav="subcategories" user={{ email: user?.email || '' }}>
@@ -229,7 +255,7 @@ const accesoriosSubs = subcategories?.filter(s => s.parent_category === 'accesor
         <div class="subcat-list">
           {ropaSubs.length === 0 ? (
             <div class="empty-group">Sin subcategorías de Ropa aún</div>
-          ) : ropaSubs.map(sub => (
+          ) : ropaSubs.map((sub: any) => (
             <div class="subcat-item">
               <div>
                 <p class="subcat-name">{sub.name}</p>
@@ -254,7 +280,7 @@ const accesoriosSubs = subcategories?.filter(s => s.parent_category === 'accesor
         <div class="subcat-list">
           {accesoriosSubs.length === 0 ? (
             <div class="empty-group">Sin subcategorías de Accesorios aún</div>
-          ) : accesoriosSubs.map(sub => (
+          ) : accesoriosSubs.map((sub: any) => (
             <div class="subcat-item">
               <div>
                 <p class="subcat-name">{sub.name}</p>

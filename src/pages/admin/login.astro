@@ -457,81 +457,85 @@ if (Astro.request.method === 'POST') {
   </div>
 
   <script>
-    const overlay = document.getElementById('intro-overlay');
-    const statusText = document.getElementById('status-text');
-    const audio = document.getElementById('audio-login');
+    // Variable para controlar el estado del script
+    (function() {
+      // Usar casting para TypeScript
+      const overlay = document.getElementById('intro-overlay');
+      const statusText = document.getElementById('status-text');
+      const audio = document.getElementById('audio-login') as HTMLAudioElement;
+      const form = document.getElementById('login-form') as HTMLFormElement;
+      const errorBox = document.getElementById('error-box');
+      const submitBtn = document.getElementById('submit-btn') as HTMLButtonElement;
 
-    // Desvanecer carga inicial
-    window.addEventListener('load', () => {
-      setTimeout(() => {
-        overlay.classList.add('fade-out');
-      }, 1500);
-    });
-
-    const form = document.getElementById('login-form');
-    const errorBox = document.getElementById('error-box');
-    const submitBtn = document.getElementById('submit-btn');
-
-    form.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      errorBox.style.display = 'none';
-      submitBtn.textContent = 'Verificando Nodo...';
-      submitBtn.disabled = true;
-
-      const formData = new FormData(form);
-      
-      try {
-        const response = await fetch(window.location.href, {
-          method: 'POST',
-          body: formData
-        });
-
-        const result = await response.json();
-
-        if (result.success) {
-          submitBtn.textContent = 'Acceso Autorizado...';
-          
-          overlay.classList.remove('fade-out');
-          overlay.classList.add('active');
-          
-          // Aumentamos el margen de seguridad a 15 segundos para dar tiempo al audio
-          const redirectSafety = setTimeout(() => {
-            window.location.href = '/admin/dashboard';
-          }, 15000); 
-
-          audio.onended = () => {
-            clearTimeout(redirectSafety);
-            // Pequeño margen para que el overlay termine de verse elegante
-            setTimeout(() => {
-               window.location.href = '/admin/dashboard';
-            }, 600);
-          };
-
-          try {
-            audio.play();
-          } catch(e) {
-            console.log("Audio play blocked by browser policy");
-            // Si el navegador bloquea el audio, entramos de inmediato
-            window.location.href = '/admin/dashboard';
-          }
-
+      // Desvanecer carga inicial
+      window.addEventListener('load', () => {
+        if (overlay) {
           setTimeout(() => {
-            statusText.classList.add('show');
-          }, 200);
-
-        } else {
-          submitBtn.textContent = 'Abrir Sistema →';
-          submitBtn.disabled = false;
-          errorBox.textContent = result.error || 'Autenticación Fallida';
-          errorBox.style.display = 'block';
+            overlay.classList.add('fade-out');
+          }, 1500);
         }
-      } catch (err) {
-        submitBtn.textContent = 'Abrir Sistema →';
-        submitBtn.disabled = false;
-        errorBox.textContent = 'Error de Enlace de Datos';
-        errorBox.style.display = 'block';
+      });
+
+      if (form && submitBtn && errorBox && overlay && audio && statusText) {
+        form.addEventListener('submit', async (e) => {
+          e.preventDefault();
+          errorBox.style.display = 'none';
+          submitBtn.textContent = 'Verificando Nodo...';
+          submitBtn.disabled = true;
+
+          const formData = new FormData(form);
+          
+          try {
+            const response = await fetch(window.location.href, {
+              method: 'POST',
+              body: formData
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+              submitBtn.textContent = 'Acceso Autorizado...';
+              
+              overlay.classList.remove('fade-out');
+              overlay.classList.add('active');
+              
+              // Seguridad de redirección
+              const redirectSafety = setTimeout(() => {
+                window.location.href = '/admin/dashboard';
+              }, 15000); 
+
+              audio.onended = () => {
+                clearTimeout(redirectSafety);
+                setTimeout(() => {
+                   window.location.href = '/admin/dashboard';
+                }, 600);
+              };
+
+              try {
+                audio.play();
+              } catch(e) {
+                window.location.href = '/admin/dashboard';
+              }
+
+              setTimeout(() => {
+                statusText.classList.add('show');
+              }, 200);
+
+            } else {
+              submitBtn.textContent = 'Abrir Sistema →';
+              submitBtn.disabled = false;
+              errorBox.textContent = result.error || 'Autenticación Fallida';
+              errorBox.style.display = 'block';
+            }
+          } catch (err) {
+            submitBtn.textContent = 'Abrir Sistema →';
+            submitBtn.disabled = false;
+            errorBox.textContent = 'Error de Enlace de Datos';
+            errorBox.style.display = 'block';
+          }
+        });
       }
-    });
+    })();
   </script>
 </body>
 </html>

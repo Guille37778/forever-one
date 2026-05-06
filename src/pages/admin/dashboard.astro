@@ -4,36 +4,46 @@ import { supabase } from '../../lib/supabase';
 
 const accessToken = Astro.cookies.get('sb-access-token')?.value;
 if (!accessToken) return Astro.redirect('/admin/login');
-const { data: { user }, error } = await supabase.auth.getUser(accessToken);
-if (error || !user) return Astro.redirect('/admin/login');
 
-const { count: totalProducts } = await supabase
-  .from('products').select('*', { count: 'exact', head: true });
+let user = null;
+try {
+  const { data: userData, error: authError } = await supabase.auth.getUser(accessToken);
+  if (authError || !userData?.user) return Astro.redirect('/admin/login');
+  user = userData.user;
+} catch (e) {
+  console.error('[Dashboard] Auth Error:', e);
+  return Astro.redirect('/admin/login');
+}
 
-const { count: lowStock } = await supabase
-  .from('variants').select('*', { count: 'exact', head: true }).lt('stock_quantity', 5);
+// Parallel fetching for high performance and stability
+const [
+  productsCount,
+  lowStockCount,
+  pendingOrdersCount,
+  subcategoriesCount,
+  customersCount,
+  settingsResponse
+] = await Promise.all([
+  supabase.from('products').select('*', { count: 'exact', head: true }),
+  supabase.from('variants').select('*', { count: 'exact', head: true }).lt('stock_quantity', 5),
+  supabase.from('orders').select('*', { count: 'exact', head: true }).eq('status', 'verificando'),
+  supabase.from('subcategories').select('*', { count: 'exact', head: true }),
+  supabase.from('profiles').select('*', { count: 'exact', head: true }),
+  supabase.from('site_settings').select('*').in('key', ['bcv_usd_rate', 'delivery_enabled', 'delivery_zones'])
+]);
 
-const { count: pendingOrders } = await supabase
-  .from('orders').select('*', { count: 'exact', head: true }).eq('status', 'verificando');
-
-const { count: totalSubcategories } = await supabase
-  .from('subcategories').select('*', { count: 'exact', head: true });
-
-  const { data: settingsData } = await supabase
-    .from('site_settings')
-    .select('*')
-    .in('key', ['bcv_usd_rate', 'delivery_enabled', 'delivery_zones']);
-
-  const rateData = settingsData?.find(s => s.key === 'bcv_usd_rate');
-  const deliveryEnabled = settingsData?.find(s => s.key === 'delivery_enabled')?.value === 'true';
-  const deliveryZones = settingsData?.find(s => s.key === 'delivery_zones')?.value || 'Yuma, Güigüe';
+const settingsData = settingsResponse.data;
+const rateData = settingsData?.find((s: any) => s.key === 'bcv_usd_rate');
+const deliveryEnabled = settingsData?.find((s: any) => s.key === 'delivery_enabled')?.value === 'true';
+const deliveryZones = settingsData?.find((s: any) => s.key === 'delivery_zones')?.value || 'Yuma, Güigüe';
 
 const stats = {
-  totalProducts: totalProducts || 0,
-  pendingOrders: pendingOrders || 0,
+  totalProducts: productsCount.count || 0,
+  pendingOrders: pendingOrdersCount.count || 0,
   totalRevenue: '$0.00',
-  lowStock: lowStock || 0,
-  subcategories: totalSubcategories || 0,
+  lowStock: lowStockCount.count || 0,
+  subcategories: subcategoriesCount.count || 0,
+  totalCustomers: customersCount.count || 0,
   bcvRate: rateData?.value || '0.00',
   lastUpdate: rateData?.updated_at ? new Date(rateData.updated_at).toLocaleString('es-VE') : 'Nunca',
   deliveryEnabled,
@@ -46,11 +56,12 @@ const Icons = {
   Shipping: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M16 16h6v4a2 2 0 01-2 2H4a2 2 0 01-2-2v-4h6"/><path d="M20 16v-4a2 2 0 00-2-2H6a2 2 0 00-2 2v4"/><path d="M12 16V10"/><rect x="8" y="2" width="8" height="4" rx="1"/></svg>`,
   Layers: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>`,
   Alert: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0zM12 9v4M12 17h.01"/></svg>`,
-  Plus: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>`
+  Plus: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>`,
+  Customers: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>`
 };
 ---
 
-<AdminLayout title="Panel Principal" activeNav="dashboard" user={{ email: user.email || '' }}>
+<AdminLayout title="Panel Principal" activeNav="dashboard" user={{ email: user?.email || '' }}>
 
   <style>
     .welcome-banner {
@@ -267,10 +278,10 @@ const Icons = {
       <p class="stat-meta">En verificación</p>
     </div>
     <div class="stat-card">
-      <div class="stat-icon-box" set:html={Icons.Layers} />
-      <p class="stat-label">Subcategorías</p>
-      <p class="stat-value">{stats.subcategories}</p>
-      <p class="stat-meta">Organizadas</p>
+      <div class="stat-icon-box" set:html={Icons.Customers} />
+      <p class="stat-label">Clientes Registrados</p>
+      <p class="stat-value">{stats.totalCustomers}</p>
+      <p class="stat-meta"><a href="/admin/customers" style="color:#B8860B; text-decoration:none; font-weight:700;">Ver directorio →</a></p>
     </div>
     <div class="stat-card">
       <div class="stat-icon-box" set:html={Icons.Alert} />
@@ -306,18 +317,18 @@ const Icons = {
         <p class="action-desc">Añadir al Atelier</p>
       </div>
     </a>
-    <a href="/admin/subcategories" class="action-card">
-      <div class="action-icon" set:html={Icons.Layers} />
-      <div class="action-info">
-        <p class="action-name">Categorización</p>
-        <p class="action-desc">Gestionar Estilos</p>
-      </div>
-    </a>
     <a href="/admin/orders" class="action-card">
       <div class="action-icon" set:html={Icons.Shipping} />
       <div class="action-info">
         <p class="action-name">Ver Pedidos</p>
         <p class="action-desc">Panel de Compras</p>
+      </div>
+    </a>
+    <a href="/admin/customers" class="action-card">
+      <div class="action-icon" set:html={Icons.Customers} />
+      <div class="action-info">
+        <p class="action-name">Clientes</p>
+        <p class="action-desc">Directorio de Compradores</p>
       </div>
     </a>
   </div>

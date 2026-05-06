@@ -1,7 +1,7 @@
 import type { APIRoute } from 'astro';
 import { supabaseAdmin as supabase } from '../../../lib/supabase';
 
-export const POST: APIRoute = async ({ request, cookies }) => {
+export const POST: APIRoute = async ({ request: _, cookies }) => {
   try {
     // 1. Verificar sesión de administrador (seguridad básica)
     const accessToken = cookies.get('sb-access-token')?.value;

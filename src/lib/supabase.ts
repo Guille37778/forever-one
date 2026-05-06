@@ -1,86 +1,115 @@
 import { createClient } from '@supabase/supabase-js';
 
+// SINGLETON: Client instances for the entire application life (per request on server)
 let _supabase: any = null;
 let _supabaseAdmin: any = null;
 
-// Lógica de inicialización dinámica para Cloudflare Workers
-export function initSupabase(env: any = {}) {
-    // Si ya tenemos un cliente real y no nos pasan nuevas variables, no hacemos nada
-    const isMock = !_supabase || _supabase === mockClient;
-    if (!isMock && Object.keys(env).length === 0) return;
-
-    // Buscamos en todas las fuentes posibles (Cloudflare bindings, Astro locals, Process, Global)
-    const g = (typeof globalThis !== 'undefined' ? globalThis : {}) as any;
-    
-    // Prioridad: 1. Inyectado por middleware (env), 2. Global (Cloudflare), 3. Process (Node/Polyfill), 4. Meta (Build time)
-    const supabaseUrl = 
-        env.SUPABASE_URL || 
-        env.PUBLIC_SUPABASE_URL || 
-        g.SUPABASE_URL || 
-        g.PUBLIC_SUPABASE_URL || 
-        (typeof process !== 'undefined' ? (process.env.SUPABASE_URL || process.env.PUBLIC_SUPABASE_URL) : '') ||
-        import.meta.env.SUPABASE_URL || 
-        import.meta.env.PUBLIC_SUPABASE_URL || 
-        '';
-
-    const supabaseAnonKey = 
-        env.SUPABASE_ANON_KEY || 
-        env.PUBLIC_SUPABASE_ANON_KEY || 
-        g.SUPABASE_ANON_KEY || 
-        g.PUBLIC_SUPABASE_ANON_KEY || 
-        (typeof process !== 'undefined' ? (process.env.SUPABASE_ANON_KEY || process.env.PUBLIC_SUPABASE_ANON_KEY) : '') ||
-        import.meta.env.SUPABASE_ANON_KEY || 
-        import.meta.env.PUBLIC_SUPABASE_ANON_KEY || 
-        '';
-
-    const supabaseServiceKey = 
-        env.SUPABASE_SERVICE_ROLE_KEY || 
-        g.SUPABASE_SERVICE_ROLE_KEY || 
-        (typeof process !== 'undefined' ? process.env.SUPABASE_SERVICE_ROLE_KEY : '') ||
-        import.meta.env.SUPABASE_SERVICE_ROLE_KEY || 
-        '';
-
-    // Log de diagnóstico seguro (solo visible en el panel de Cloudflare)
-    if (supabaseUrl && supabaseAnonKey) {
-        _supabase = createClient(supabaseUrl, supabaseAnonKey);
-        console.log(`✅ Supabase Initialized: ${supabaseUrl.substring(0, 15)}... | Key: ${supabaseAnonKey.substring(0, 10)}...`);
-    } else {
-        if (!isMock) console.warn('⚠️ Supabase connection failed: Missing keys in current context.');
-    }
-
-    if (supabaseUrl && supabaseServiceKey && supabaseServiceKey.length > 20) {
-        _supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
-    } else {
-        _supabaseAdmin = _supabase;
-    }
-}
-
-// Objeto mock para evitar errores antes de la inicialización
+// Mock client for safety during early access
 const mockClient = {
     from: () => ({
         select: () => ({
             order: () => Promise.resolve({ data: [], error: null }),
             eq: () => ({ 
                 single: () => Promise.resolve({ data: null, error: null }),
-                order: () => Promise.resolve({ data: [], error: null })
+                order: () => Promise.resolve({ data: [], error: null }),
+                in: () => Promise.resolve({ data: [], error: null })
             }),
-            single: () => Promise.resolve({ data: null, error: null })
+            single: () => Promise.resolve({ data: null, error: null }),
+            in: () => Promise.resolve({ data: [], error: null })
         })
     }),
-    auth: { getSession: () => Promise.resolve({ data: { session: null } }) }
+    auth: { 
+        getSession: () => Promise.resolve({ data: { session: null }, error: null }),
+        getUser: () => Promise.resolve({ data: { user: null }, error: null })
+    }
 } as any;
 
-// Exportamos Proxies que se redirigen al cliente real una vez inicializado
+/**
+ * Initializes Supabase clients using the best available environment variables.
+ * Designed for Cloudflare Workers (Astro) where env vars are in the context.
+ */
+export function initSupabase(env: any = {}) {
+    // If we're in the browser and already have a client, don't recreate it
+    // This prevents the 'Auth instance and storage' locks that cause hangs.
+    const isBrowser = typeof window !== 'undefined';
+    if (isBrowser && _supabase && _supabase !== mockClient) {
+        return;
+    }
+
+    // On the server, we might need to re-initialize if new env vars are provided
+    // but we should avoid doing it more than once per execution if possible.
+    if (!isBrowser && _supabase && _supabase !== mockClient && Object.keys(env).length === 0) {
+        return;
+    }
+
+    // Resolve keys with priority
+    const g = (globalThis || {}) as any;
+    const getVar = (key: string) => 
+        env[key] || 
+        env[`PUBLIC_${key}`] || 
+        g[key] || 
+        g[`PUBLIC_${key}`] || 
+        (typeof process !== 'undefined' ? (process.env[key] || process.env[`PUBLIC_${key}`]) : '') ||
+        (import.meta as any).env[key] || 
+        (import.meta as any).env[`PUBLIC_${key}`] || 
+        '';
+
+    const supabaseUrl = getVar('SUPABASE_URL');
+    const supabaseAnonKey = getVar('SUPABASE_ANON_KEY');
+    const supabaseServiceKey = getVar('SUPABASE_SERVICE_ROLE_KEY');
+
+    if (supabaseUrl && supabaseAnonKey) {
+        const authConfig: any = {
+            persistSession: true,
+            autoRefreshToken: true,
+            detectSessionInUrl: true,
+            // PKCE can be flaky in some SSR environments if cookies aren't handled perfectly
+            // but we keep it enabled as it's the modern standard.
+            flowType: 'pkce'
+        };
+
+        try {
+            _supabase = createClient(supabaseUrl, supabaseAnonKey, { auth: authConfig });
+            
+            if (supabaseServiceKey && supabaseServiceKey.length > 20) {
+                _supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
+                    auth: { persistSession: false }
+                });
+            } else {
+                _supabaseAdmin = _supabase;
+            }
+
+            if (isBrowser) console.log(`✅ Supabase Shielding Active ✦`);
+        } catch (e) {
+            console.error('❌ Failed to create Supabase client:', e);
+            _supabase = mockClient;
+            _supabaseAdmin = mockClient;
+        }
+    } else {
+        // Fallback to mock if no keys found yet
+        if (!_supabase) {
+            _supabase = mockClient;
+            _supabaseAdmin = mockClient;
+        }
+    }
+}
+
+// Export lazy-initialized proxies to allow importing before initSupabase is called
 export const supabase = new Proxy({}, {
     get: (target, prop) => {
-        if (!_supabase) initSupabase(); // Intento de inicialización perezosa con env vars estáticos
+        if (!_supabase || _supabase === mockClient) initSupabase();
         return (_supabase || mockClient)[prop];
     }
 }) as any;
 
 export const supabaseAdmin = new Proxy({}, {
     get: (target, prop) => {
-        if (!_supabaseAdmin) initSupabase();
+        if (!_supabaseAdmin || _supabaseAdmin === mockClient) initSupabase();
         return (_supabaseAdmin || _supabase || mockClient)[prop];
     }
 }) as any;
+
+// Expose to window for inline scripts if in browser
+if (typeof window !== 'undefined') {
+    (window as any).supabase = supabase;
+}

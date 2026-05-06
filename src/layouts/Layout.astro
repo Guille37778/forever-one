@@ -1,6 +1,7 @@
 ---
 import { ClientRouter } from 'astro:transitions';
 import CartDrawer from '../components/CartDrawer.astro';
+import AuthModal from '../components/AuthModal.astro';
 import '../styles/global.css';
 
 interface Props {
@@ -43,9 +44,33 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
 
 		<slot />
 		<CartDrawer />
+		<AuthModal />
 		
-		<!-- Marcador de diagnóstico para confirmar renderizado completo -->
-		<div style="display:none">FO1</div>
+		<script>
+			import { initAuthStore } from '../lib/authStore';
+			
+			declare global {
+				interface Window {
+					Alpine: any;
+					__addToCart: (product: any) => void;
+				}
+			}
+			
+			// Register store during Alpine initialization
+			document.addEventListener('alpine:init', () => {
+				initAuthStore();
+			});
+
+			// Fallback if alpine:init already fired or for view transitions
+			const ensureAuthStore = () => {
+				if (window.Alpine && !window.Alpine.store('auth')) {
+					initAuthStore();
+				}
+			};
+
+			document.addEventListener('DOMContentLoaded', ensureAuthStore);
+			document.addEventListener('astro:after-swap', ensureAuthStore);
+		</script>
 	</body>
 </html>
 

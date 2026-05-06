@@ -1,9 +1,12 @@
 import type { APIRoute } from 'astro';
-import { supabase } from '../../../../lib/supabase';
+import { supabaseAdmin } from '../../../../lib/supabase';
+
+const VALID_STATUSES = ['verificando', 'preparando', 'enviado', 'entregado', 'cancelado'];
 
 /**
  * Update Order Status API
- * PUT /api/orders/[id]/status
+ * POST /api/orders/[id]/status
+ * Uses supabaseAdmin to bypass RLS — only callable from admin panel.
  */
 export const POST: APIRoute = async ({ request, params }) => {
   try {
@@ -14,12 +17,16 @@ export const POST: APIRoute = async ({ request, params }) => {
       return new Response(JSON.stringify({ error: 'ID de orden requerido' }), { status: 400 });
     }
 
-    const updateData: any = { updated_at: new Date() };
-    if (status) updateData.status = status;
-    if (trackingNumber) updateData.tracking_number = trackingNumber;
-    if (notes) updateData.notes = notes;
+    if (status && !VALID_STATUSES.includes(status)) {
+      return new Response(JSON.stringify({ error: `Estado inválido: ${status}` }), { status: 400 });
+    }
 
-    const { error } = await supabase
+    const updateData: any = { updated_at: new Date().toISOString() };
+    if (status) updateData.status = status;
+    if (trackingNumber !== undefined) updateData.tracking_number = trackingNumber;
+    if (notes !== undefined) updateData.notes = notes;
+
+    const { error } = await supabaseAdmin
       .from('orders')
       .update(updateData)
       .eq('id', id);
@@ -28,6 +35,7 @@ export const POST: APIRoute = async ({ request, params }) => {
 
     return new Response(JSON.stringify({ success: true }), { status: 200 });
   } catch (e: any) {
+    console.error('[status.ts] Error updating order status:', e);
     return new Response(JSON.stringify({ error: e.message }), { status: 500 });
   }
 };

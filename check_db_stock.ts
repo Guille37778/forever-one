@@ -12,7 +12,7 @@ async function checkStock() {
         }
 
         console.log('--- DB STOCK DATA ---');
-        data.forEach(p => {
+        data.forEach((p: any) => {
             console.log(`Product: ${p.name} | Stock: ${p.stock_quantity}`);
         });
     } catch (err) {

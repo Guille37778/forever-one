@@ -1,4 +1,4 @@
-export const POST = async ({ request }) => {
+export const POST = async ({ request }: any) => {
   console.log('[API-TEST] POST recibido');
   const body = await request.text();
   console.log('[API-TEST] Body:', body);

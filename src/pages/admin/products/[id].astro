@@ -5,12 +5,27 @@ import { supabase, supabaseAdmin } from '../../../lib/supabase';
 const { id } = Astro.params;
 const accessToken = Astro.cookies.get('sb-access-token')?.value;
 if (!accessToken) return Astro.redirect('/admin/login');
-const { data: { user }, error: authError } = await supabase.auth.getUser(accessToken);
-if (authError || !user) return Astro.redirect('/admin/login');
 
-const { data: product } = await supabase.from('products').select('*, variants(*)').eq('id', id).single();
-const { data: collections } = await supabase.from('collections').select('*').eq('is_active', true);
-const { data: allSubcategories } = await supabase.from('subcategories').select('*');
+let user = null;
+try {
+    const { data: userData, error: authError } = await supabase.auth.getUser(accessToken);
+    if (authError || !userData?.user) return Astro.redirect('/admin/login');
+    user = userData.user;
+} catch (e) {
+    console.error('[Product Edit] Auth Error:', e);
+    return Astro.redirect('/admin/login');
+}
+
+// Cargar datos en paralelo para máxima eficiencia
+const [productResponse, collectionsResponse, subcategoriesResponse] = await Promise.all([
+    supabase.from('products').select('*, variants(*)').eq('id', id).single(),
+    supabase.from('collections').select('*').eq('is_active', true),
+    supabase.from('subcategories').select('*')
+]);
+
+const product = productResponse.data;
+const collections = collectionsResponse.data;
+const allSubcategories = subcategoriesResponse.data;
 
 if (!product) return Astro.redirect('/admin/products');
 
@@ -207,7 +222,7 @@ if (isSuccess) successMessage = '✦ Prenda actualizada correctamente.';
           <label>Subcategoría</label>
           <select name="subcategory_id" id="subcategory_id">
             <option value="">Sin subcategoría</option>
-            {allSubcategories?.map(s => (
+            {allSubcategories?.map((s: any) => (
               <option value={s.id} data-parent={s.parent_category} selected={product.subcategory_id === s.id}>{s.name}</option>
             ))}
           </select>
@@ -216,7 +231,7 @@ if (isSuccess) successMessage = '✦ Prenda actualizada correctamente.';
           <label>Colección</label>
           <select name="collection_id">
             <option value="">Sin colección</option>
-            {collections?.map(c => (
+            {collections?.map((c: any) => (
               <option value={c.id} selected={product.collection_id === c.id}>{c.name}</option>
             ))}
           </select>

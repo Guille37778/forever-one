@@ -1,42 +1,75 @@
 ---
 import AdminLayout from '../../../layouts/AdminLayout.astro';
-import { supabase } from '../../../lib/supabase';
+import { supabase, supabaseAdmin } from '../../../lib/supabase';
 
 const accessToken = Astro.cookies.get('sb-access-token')?.value;
 if (!accessToken) return Astro.redirect('/admin/login');
-const { data: { user }, error: authError } = await supabase.auth.getUser(accessToken);
-if (authError || !user) return Astro.redirect('/admin/login');
 
-// MANEJADOR DE ELIMINACIÓN DIRECTA
+let user = null;
+try {
+    const { data: userData, error: authError } = await supabase.auth.getUser(accessToken);
+    if (authError || !userData?.user) return Astro.redirect('/admin/login');
+    user = userData.user;
+} catch (e) {
+    console.error('[Products] Auth Error:', e);
+    return Astro.redirect('/admin/login');
+}
+
+// MANEJADOR DE ACCIONES DIRECTAS
 if (Astro.request.method === 'POST') {
     const formData = await Astro.request.formData();
     const id = formData.get('id')?.toString();
     const action = formData.get('action')?.toString();
 
     if (action === 'delete' && id) {
-        const { error } = await supabase.from('products').delete().eq('id', id);
+        const { error } = await supabaseAdmin.from('products').delete().eq('id', id);
         if (!error) return Astro.redirect('/admin/products');
+    }
+
+    if (action === 'update-stock' && id) {
+        const variantsJson = formData.get('variants')?.toString();
+        if (variantsJson) {
+            const newVariants = JSON.parse(variantsJson);
+            await supabaseAdmin.from('variants').delete().eq('product_id', id);
+            if (newVariants.length > 0) {
+                await supabaseAdmin.from('variants').insert(
+                    newVariants.map((v: any) => ({
+                        product_id: id,
+                        size: v.size,
+                        stock_quantity: parseInt(v.stock_qty.toString()) || 0
+                    }))
+                );
+            }
+            return Astro.redirect('/admin/products?updated=true');
+        }
     }
 }
 
-const { data: products } = await supabase
-    .from('products')
-    .select('*, collections(name), subcategories(name, id, parent_category), variants(size, stock_quantity)')
-    .order('created_at', { ascending: false });
+const updated = Astro.url.searchParams.get('updated') === 'true';
+const created = Astro.url.searchParams.get('created') === 'true';
 
-const { data: allSubcategories } = await supabase
-    .from('subcategories')
-    .select('*')
-    .order('name', { ascending: true });
 
-const ropaProducts = products?.filter(p => p.category === 'ropa' || (!p.category && p.subcategories?.parent_category === 'ropa')) || [];
-const accesoriosProducts = products?.filter(p => p.category === 'accesorios' || (!p.category && p.subcategories?.parent_category === 'accesorios')) || [];
+// Parallel fetching for high performance and stability
+const [productsResponse, subcategoriesResponse] = await Promise.all([
+    supabase.from('products')
+        .select('*, collections(name), subcategories(name, id, parent_category), variants(size, stock_quantity)')
+        .order('created_at', { ascending: false }),
+    supabase.from('subcategories')
+        .select('*')
+        .order('name', { ascending: true })
+]);
 
-const ropaSubcategories = allSubcategories?.filter(s => s.parent_category === 'ropa') || [];
-const accesoriosSubcategories = allSubcategories?.filter(s => s.parent_category === 'accesorios') || [];
+const products = productsResponse.data;
+const allSubcategories = subcategoriesResponse.data;
+
+const ropaProducts = products?.filter((p: any) => p.category === 'ropa' || (!p.category && p.subcategories?.parent_category === 'ropa')) || [];
+const accesoriosProducts = products?.filter((p: any) => p.category === 'accesorios' || (!p.category && p.subcategories?.parent_category === 'accesorios')) || [];
+
+const ropaSubcategories = allSubcategories?.filter((s: any) => s.parent_category === 'ropa') || [];
+const accesoriosSubcategories = allSubcategories?.filter((s: any) => s.parent_category === 'accesorios') || [];
 ---
 
-<AdminLayout title="Inventario" activeNav="products" user={{ email: user.email! }}>
+<AdminLayout title="Inventario" activeNav="products" user={{ email: user?.email || '' }}>
 
   <style>
     .page-header {
@@ -257,15 +290,208 @@ const accesoriosSubcategories = allSubcategories?.filter(s => s.parent_category 
       .table-card { overflow-x: auto; }
       table { min-width: 600px; }
     }
+
+    /* ─── STOCK TOOLTIP ATELIER ─── */
+    .stock-td {
+        position: relative;
+    }
+
+    .stock-trigger {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 4px 10px;
+        background: rgba(184, 134, 11, 0.05);
+        border: 1px solid rgba(184, 134, 11, 0.2);
+        border-radius: 4px;
+        font-family: 'Montserrat', sans-serif;
+        font-size: 11px;
+        font-weight: 700;
+        color: #B8860B;
+        cursor: help;
+        transition: all 0.3s ease;
+    }
+
+    .stock-trigger:hover {
+        background: #B8860B;
+        color: white;
+        border-color: #B8860B;
+    }
+
+    .stock-tooltip {
+        position: absolute;
+        bottom: 100%;
+        left: 50%;
+        transform: translateX(-50%) translateY(-10px);
+        background: white;
+        border: 1px solid #111;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+        padding: 1rem;
+        z-index: 100;
+        min-width: 140px;
+        opacity: 0;
+        visibility: hidden;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        pointer-events: none;
+        border-radius: 2px;
+    }
+
+    .stock-td:hover .stock-tooltip {
+        /* Mantener oculto por defecto hasta que se active por click */
+        pointer-events: none;
+    }
+    
+    /* Tooltip visible when x-show is true */
+    .stock-tooltip[x-cloak] { display: none; }
+    .stock-tooltip-active {
+        opacity: 1 !important;
+        visibility: visible !important;
+        transform: translateX(-50%) translateY(-5px) !important;
+    }
+
+    .tooltip-header {
+        font-size: 8px;
+        letter-spacing: 0.3em;
+        text-transform: uppercase;
+        color: #999;
+        margin-bottom: 0.75rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 1px solid #f0f0f0;
+        display: block;
+        font-weight: 700;
+    }
+
+    .tooltip-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 0.4rem;
+    }
+
+    .tooltip-row:last-child { margin-bottom: 0; }
+
+    .tooltip-size {
+        font-size: 10px;
+        font-weight: 800;
+        color: #111;
+    }
+
+    .tooltip-qty {
+        font-size: 10px;
+        font-weight: 700;
+        color: #B8860B;
+    }
+
+    .tooltip-qty.low {
+        color: #dc2626;
+    }
+
+    /* ─── EDICIÓN DE STOCK EN TOOLTIP ─── */
+    .edit-stock-btn {
+        width: 100%;
+        margin-top: 0.75rem;
+        padding: 5px;
+        background: transparent;
+        border: 1px dashed rgba(184, 134, 11, 0.4);
+        color: #B8860B;
+        font-size: 8px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    .edit-stock-btn:hover {
+        background: rgba(184, 134, 11, 0.1);
+        border-color: #B8860B;
+    }
+
+    .stock-input {
+        width: 45px;
+        padding: 2px 5px;
+        border: 1px solid #eee;
+        font-family: 'Montserrat', sans-serif;
+        font-size: 10px;
+        font-weight: 700;
+        text-align: center;
+        outline: none;
+    }
+    .stock-input:focus { border-color: #B8860B; }
+
+    .add-size-row {
+        margin-top: 0.75rem;
+        display: flex;
+        gap: 4px;
+    }
+    .add-size-select {
+        flex: 1;
+        font-size: 9px;
+        padding: 2px;
+        border: 1px solid #ddd;
+        outline: none;
+    }
+    .btn-add-variant {
+        padding: 2px 8px;
+        background: #111;
+        color: #f3cf7a;
+        font-size: 12px;
+        border: none;
+        cursor: pointer;
+    }
+
+    .tooltip-actions {
+        display: flex;
+        gap: 0.5rem;
+        margin-top: 1rem;
+        padding-top: 0.75rem;
+        border-top: 1px solid #f0f0f0;
+    }
+    .btn-stock-save {
+        flex: 1;
+        background: #B8860B;
+        color: white;
+        border: none;
+        padding: 6px;
+        font-size: 9px;
+        font-weight: 800;
+        text-transform: uppercase;
+        cursor: pointer;
+    }
+    .btn-stock-cancel {
+        padding: 6px 10px;
+        background: #f5f5f5;
+        color: #999;
+        border: none;
+        font-size: 9px;
+        font-weight: 700;
+        text-transform: uppercase;
+        cursor: pointer;
+    }
+    .btn-remove-variant {
+        color: #ff4444;
+        background: transparent;
+        border: none;
+        padding: 0 5px;
+        cursor: pointer;
+        font-size: 14px;
+        line-height: 1;
+    }
   </style>
 
   <!-- Page Header -->
   <div class="page-header">
     <div class="page-header-left">
-      <p>Gestión de Colección</p>
+      <p>Gestión del Atelier</p>
       <h2>Catálogo de Prendas</h2>
     </div>
-    <a href="/admin/products/new" class="add-btn">✦ Nueva Prenda</a>
+    <div style="display:flex; gap:1rem; align-items:center;">
+        {(updated || created) && (
+            <div style="background:rgba(184,134,11,0.1); border:1px solid #B8860B; color:#8B6508; padding:8px 15px; font-size:10px; letter-spacing:0.1em; font-weight:700; border-radius:4px;">
+                ✦ {updated ? 'Inventario actualizado' : 'Prenda añadida con éxito'}
+            </div>
+        )}
+        <a href="/admin/products/new" class="add-btn">✦ Nueva Prenda</a>
+    </div>
   </div>
 
   <!-- Inventory Tabs & Content -->
@@ -299,13 +525,13 @@ const accesoriosSubcategories = allSubcategories?.filter(s => s.parent_category 
       >
         Todos <span class="pill-count">{ropaProducts.length}</span>
       </button>
-      {ropaSubcategories.map(sub => (
+      {ropaSubcategories.map((sub: any) => (
         <button 
           class="filter-pill" 
           :class={`{ 'active': activeSubcategory === '${sub.id}' }`}
           @click={`activeSubcategory = '${sub.id}'`}
         >
-          {sub.name} <span class="pill-count">{ropaProducts.filter(p => p.subcategory_id === sub.id).length}</span>
+          {sub.name} <span class="pill-count">{ropaProducts.filter((p: any) => p.subcategory_id === sub.id).length}</span>
         </button>
       ))}
     </div>
@@ -320,13 +546,13 @@ const accesoriosSubcategories = allSubcategories?.filter(s => s.parent_category 
       >
         Todos <span class="pill-count">{accesoriosProducts.length}</span>
       </button>
-      {accesoriosSubcategories.map(sub => (
+      {accesoriosSubcategories.map((sub: any) => (
         <button 
           class="filter-pill" 
           :class={`{ 'active': activeSubcategory === '${sub.id}' }`}
           @click={`activeSubcategory = '${sub.id}'`}
         >
-          {sub.name} <span class="pill-count">{accesoriosProducts.filter(p => p.subcategory_id === sub.id).length}</span>
+          {sub.name} <span class="pill-count">{accesoriosProducts.filter((p: any) => p.subcategory_id === sub.id).length}</span>
         </button>
       ))}
     </div>
@@ -341,7 +567,7 @@ const accesoriosSubcategories = allSubcategories?.filter(s => s.parent_category 
       ) : (
         <>
           <div class="product-cards-list">
-            {ropaProducts.map(product => (
+            {ropaProducts.map((product: any) => (
               <div class="product-mobile-card" x-show={`activeSubcategory === 'all' || activeSubcategory === '${product.subcategory_id}'`} x-transition:enter.duration.200ms>
                 <div class="pmc-header">
                   <div>
@@ -352,6 +578,85 @@ const accesoriosSubcategories = allSubcategories?.filter(s => s.parent_category 
                     {product.is_active ? 'Activo' : 'Oculto'}
                   </span>
                 </div>
+
+                <!-- Stock Mobile Info -->
+                <div 
+                    data-variants={JSON.stringify((product.variants || []).map((v: any) => ({size: v.size, stock_qty: v.stock_quantity})))}
+                    x-data="{ 
+                        open: false, 
+                        isEditing: false, 
+                        localVariants: [],
+                        availableSizes: ['XS','S','M','L','XL','XXL','UNICO'],
+                        newSize: 'XS',
+                        init() {
+                            this.localVariants = JSON.parse($el.getAttribute('data-variants') || '[]');
+                        },
+                        saveStock() {
+                            const form = document.createElement('form');
+                            form.method = 'POST';
+                            form.innerHTML = `
+                                <input type='hidden' name='id' value='${product.id}'>
+                                <input type='hidden' name='action' value='update-stock'>
+                                <input type='hidden' name='variants' value='${JSON.stringify(this.localVariants)}'>
+                            `;
+                            document.body.appendChild(form);
+                            form.submit();
+                        }
+                    }" 
+                    @click.away="open = false; isEditing = false" style="margin-top: 0.5rem; position: relative;">
+                    
+                    <div @click="open = !open" 
+                         style="display: flex; align-items:center; gap:0.5rem; font-size:9px; color:#B8860B; font-weight:700; cursor:pointer; background:rgba(184,134,11,0.05); padding:6px 10px; border-radius:6px; width:fit-content; border:1px solid rgba(184,134,11,0.1);">
+                        <span>✦ {(product.variants?.reduce((acc: number, v: any) => acc + v.stock_quantity, 0) || 0)} Unidades Disponibles</span>
+                    </div>
+                    
+                    <div x-show="open" 
+                         x-cloak
+                         x-transition:enter="transition ease-out duration-200"
+                         x-transition:enter-start="opacity-0 translate-y-2"
+                         x-transition:enter-end="opacity-100 translate-y-0"
+                         style="position: absolute; top: calc(100% + 5px); left: 0; background: white; border: 1px solid #111; padding: 0.75rem; z-index: 50; min-width: 180px; box-shadow: 0 10px 25px rgba(0,0,0,0.2);">
+                        
+                        <div x-show="!isEditing">
+                            <span class="tooltip-header">Stock por Talla</span>
+                            <template x-for="(v, index) in localVariants" :key="v.size">
+                                <div class="tooltip-row">
+                                    <span class="tooltip-size" x-text="v.size"></span>
+                                    <span class="tooltip-qty" :class="{ 'low': v.stock_qty <= 1 }" x-text="v.stock_qty"></span>
+                                </div>
+                            </template>
+                            <button @click="isEditing = true" class="edit-stock-btn">✏ Editar Inventario</button>
+                        </div>
+
+                        <div x-show="isEditing" x-cloak>
+                            <span class="tooltip-header">Editando Tallas</span>
+                            <template x-for="(v, index) in localVariants" :key="index">
+                                <div class="tooltip-row" style="margin-bottom:8px;">
+                                    <div style="display:flex; align-items:center; gap:8px;">
+                                        <button @click="localVariants.splice(index, 1)" class="btn-remove-variant">×</button>
+                                        <span class="tooltip-size" style="width:30px;" x-text="v.size"></span>
+                                    </div>
+                                    <input type="number" x-model="v.stock_qty" class="stock-input" min="0">
+                                </div>
+                            </template>
+                            
+                            <div class="add-size-row">
+                                <select x-model="newSize" class="add-size-select">
+                                    <template x-for="s in availableSizes" :key="s">
+                                        <option :value="s" x-text="s" :disabled="localVariants.find(v => v.size === s)"></option>
+                                    </template>
+                                </select>
+                                <button @click="localVariants.push({size: newSize, stock_qty: 0})" class="btn-add-variant">+</button>
+                            </div>
+
+                            <div class="tooltip-actions">
+                                <button @click="isEditing = false" class="btn-stock-cancel">X</button>
+                                <button @click="saveStock()" class="btn-stock-save">Guardar</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="pmc-footer">
                   <span class="pmc-price">${product.price}</span>
                   <div class="actions-group">
@@ -379,21 +684,85 @@ const accesoriosSubcategories = allSubcategories?.filter(s => s.parent_category 
                 </tr>
               </thead>
               <tbody>
-                {ropaProducts.map(product => (
+                {ropaProducts.map((product: any) => (
                   <tr x-show={`activeSubcategory === 'all' || activeSubcategory === '${product.subcategory_id}'`}>
                     <td>
                       <p style="font-family:'Playfair Display',serif; font-weight:800; font-style:italic; font-size:14px; color:#111;">{product.name}</p>
                       <p style="font-size:10px; color:#bbb;">{product.collections?.name} · {product.subcategories?.name}</p>
                     </td>
                     <td><span style="font-family:'Playfair Display',serif; font-weight:800; font-style:italic; color:#B8860B;">${product.price}</span></td>
-                    <td>
-                      <div class="variants-pills">
-                        {product.variants?.map((v: any) => (
-                          <span class={`variant-pill ${v.stock_quantity <= 1 ? 'low' : 'ok'}`}>
-                            {v.size}: {v.stock_quantity}
-                          </span>
-                        ))}
-                      </div>
+                    <td 
+                        data-variants={JSON.stringify((product.variants || []).map((v: any) => ({size: v.size, stock_qty: v.stock_quantity})))}
+                        x-data="{ 
+                            open: false, 
+                            isEditing: false, 
+                            localVariants: [],
+                            availableSizes: ['XS','S','M','L','XL','XXL','UNICO'],
+                            newSize: 'XS',
+                            init() {
+                                this.localVariants = JSON.parse($el.getAttribute('data-variants') || '[]');
+                            },
+                            saveStock() {
+                                const form = document.createElement('form');
+                                form.method = 'POST';
+                                form.innerHTML = `
+                                    <input type='hidden' name='id' value='${product.id}'>
+                                    <input type='hidden' name='action' value='update-stock'>
+                                    <input type='hidden' name='variants' value='${JSON.stringify(this.localVariants)}'>
+                                `;
+                                document.body.appendChild(form);
+                                form.submit();
+                            }
+                        }" 
+                        @click.away="open = false; isEditing = false"
+                        class="stock-td"
+                    >
+                        <div class="stock-trigger" @click="open = !open" :class="{ 'bg-[#B8860B] text-white': open }">
+                            <span>{(product.variants?.reduce((acc: number, v: any) => acc + v.stock_quantity, 0) || 0)} Unidades</span>
+                            <small>✦</small>
+                        </div>
+                        
+                        <div class="stock-tooltip" x-show="open" :class="{ 'stock-tooltip-active': open }" x-cloak>
+                            
+                            <div x-show="!isEditing">
+                                <span class="tooltip-header">Desglose por Talla</span>
+                                <template x-for="(v, index) in localVariants" :key="v.size">
+                                    <div class="tooltip-row">
+                                        <span class="tooltip-size" x-text="v.size"></span>
+                                        <span class="tooltip-qty" :class="{ 'low': v.stock_qty <= 1 }" x-text="v.stock_qty"></span>
+                                    </div>
+                                </template>
+                                <button @click="isEditing = true" class="edit-stock-btn">✏ Editar Inventario</button>
+                            </div>
+
+                            <!-- Edición Form -->
+                            <div x-show="isEditing" x-cloak>
+                                <span class="tooltip-header">Editando Tallas</span>
+                                <template x-for="(v, index) in localVariants" :key="index">
+                                    <div class="tooltip-row" style="margin-bottom:8px;">
+                                        <div style="display:flex; align-items:center; gap:8px;">
+                                            <button @click="localVariants.splice(index, 1)" class="btn-remove-variant">×</button>
+                                            <span class="tooltip-size" style="width:30px;" x-text="v.size"></span>
+                                        </div>
+                                        <input type="number" x-model="v.stock_qty" class="stock-input" min="0">
+                                    </div>
+                                </template>
+                                
+                                <div class="add-size-row">
+                                    <select x-model="newSize" class="add-size-select">
+                                        <template x-for="s in availableSizes" :key="s">
+                                            <option :value="s" x-text="s" :disabled="localVariants.find(v => v.size === s)"></option>
+                                        </template>
+                                    </select>
+                                    <button @click="localVariants.push({size: newSize, stock_qty: 0})" class="btn-add-variant">+</button>
+                                </div>
+
+                                <div class="tooltip-actions">
+                                    <button @click="isEditing = false" class="btn-stock-cancel">X</button>
+                                    <button @click="saveStock()" class="btn-stock-save">Guardar</button>
+                                </div>
+                            </div>
+                        </div>
                     </td>
                     <td>
                       <span class={`status-badge ${product.is_active ? 'active' : 'inactive'}`}>
@@ -429,7 +798,7 @@ const accesoriosSubcategories = allSubcategories?.filter(s => s.parent_category 
       ) : (
         <>
           <div class="product-cards-list">
-            {accesoriosProducts.map(product => (
+            {accesoriosProducts.map((product: any) => (
               <div class="product-mobile-card" x-show={`activeSubcategory === 'all' || activeSubcategory === '${product.subcategory_id}'`} x-transition:enter.duration.200ms>
                 <div class="pmc-header">
                   <div>
@@ -440,6 +809,85 @@ const accesoriosSubcategories = allSubcategories?.filter(s => s.parent_category 
                     {product.is_active ? 'Activo' : 'Oculto'}
                   </span>
                 </div>
+
+                <!-- Stock Mobile Info -->
+                <div 
+                    data-variants={JSON.stringify((product.variants || []).map((v: any) => ({size: v.size, stock_qty: v.stock_quantity})))}
+                    x-data="{ 
+                        open: false, 
+                        isEditing: false, 
+                        localVariants: [],
+                        availableSizes: ['XS','S','M','L','XL','XXL','UNICO'],
+                        newSize: 'XS',
+                        init() {
+                            this.localVariants = JSON.parse($el.getAttribute('data-variants') || '[]');
+                        },
+                        saveStock() {
+                            const form = document.createElement('form');
+                            form.method = 'POST';
+                            form.innerHTML = `
+                                <input type='hidden' name='id' value='${product.id}'>
+                                <input type='hidden' name='action' value='update-stock'>
+                                <input type='hidden' name='variants' value='${JSON.stringify(this.localVariants)}'>
+                            `;
+                            document.body.appendChild(form);
+                            form.submit();
+                        }
+                    }" 
+                    @click.away="open = false; isEditing = false" style="margin-top: 0.5rem; position: relative;">
+                    
+                    <div @click="open = !open" 
+                         style="display: flex; align-items:center; gap:0.5rem; font-size:9px; color:#B8860B; font-weight:700; cursor:pointer; background:rgba(184,134,11,0.05); padding:6px 10px; border-radius:6px; width:fit-content; border:1px solid rgba(184,134,11,0.1);">
+                        <span>✦ {(product.variants?.reduce((acc: number, v: any) => acc + v.stock_quantity, 0) || 0)} Unidades Disponibles</span>
+                    </div>
+                    
+                    <div x-show="open" 
+                         x-cloak
+                         x-transition:enter="transition ease-out duration-200"
+                         x-transition:enter-start="opacity-0 translate-y-2"
+                         x-transition:enter-end="opacity-100 translate-y-0"
+                         style="position: absolute; top: calc(100% + 5px); left: 0; background: white; border: 1px solid #111; padding: 0.75rem; z-index: 50; min-width: 180px; box-shadow: 0 10px 25px rgba(0,0,0,0.2);">
+                        
+                        <div x-show="!isEditing">
+                            <span class="tooltip-header">Stock Disponible</span>
+                            <template x-for="(v, index) in localVariants" :key="v.size">
+                                <div class="tooltip-row">
+                                    <span class="tooltip-size" x-text="v.size"></span>
+                                    <span class="tooltip-qty" :class="{ 'low': v.stock_qty <= 1 }" x-text="v.stock_qty"></span>
+                                </div>
+                            </template>
+                            <button @click="isEditing = true" class="edit-stock-btn">✏ Editar Inventario</button>
+                        </div>
+
+                        <div x-show="isEditing" x-cloak>
+                            <span class="tooltip-header">Editando Tallas</span>
+                            <template x-for="(v, index) in localVariants" :key="index">
+                                <div class="tooltip-row" style="margin-bottom:8px;">
+                                    <div style="display:flex; align-items:center; gap:8px;">
+                                        <button @click="localVariants.splice(index, 1)" class="btn-remove-variant">×</button>
+                                        <span class="tooltip-size" style="width:30px;" x-text="v.size"></span>
+                                    </div>
+                                    <input type="number" x-model="v.stock_qty" class="stock-input" min="0">
+                                </div>
+                            </template>
+                            
+                            <div class="add-size-row">
+                                <select x-model="newSize" class="add-size-select">
+                                    <template x-for="s in availableSizes" :key="s">
+                                        <option :value="s" x-text="s" :disabled="localVariants.find(v => v.size === s)"></option>
+                                    </template>
+                                </select>
+                                <button @click="localVariants.push({size: newSize, stock_qty: 0})" class="btn-add-variant">+</button>
+                            </div>
+
+                            <div class="tooltip-actions">
+                                <button @click="isEditing = false" class="btn-stock-cancel">X</button>
+                                <button @click="saveStock()" class="btn-stock-save">Guardar</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="pmc-footer">
                   <span class="pmc-price">${product.price}</span>
                   <div class="actions-group">
@@ -467,21 +915,85 @@ const accesoriosSubcategories = allSubcategories?.filter(s => s.parent_category 
                 </tr>
               </thead>
               <tbody>
-                {accesoriosProducts.map(product => (
+                {accesoriosProducts.map((product: any) => (
                   <tr x-show={`activeSubcategory === 'all' || activeSubcategory === '${product.subcategory_id}'`}>
                     <td>
                       <p style="font-family:'Playfair Display',serif; font-weight:800; font-style:italic; font-size:14px; color:#111;">{product.name}</p>
                       <p style="font-size:10px; color:#bbb;">{product.collections?.name} · {product.subcategories?.name}</p>
                     </td>
                     <td><span style="font-family:'Playfair Display',serif; font-weight:800; font-style:italic; color:#B8860B;">${product.price}</span></td>
-                    <td>
-                      <div class="variants-pills">
-                        {product.variants?.map((v: any) => (
-                          <span class={`variant-pill ${v.stock_quantity <= 1 ? 'low' : 'ok'}`}>
-                            {v.size}: {v.stock_quantity}
-                          </span>
-                        ))}
-                      </div>
+                    <td 
+                        data-variants={JSON.stringify((product.variants || []).map((v: any) => ({size: v.size, stock_qty: v.stock_quantity})))}
+                        x-data="{ 
+                            open: false, 
+                            isEditing: false, 
+                            localVariants: [],
+                            availableSizes: ['XS','S','M','L','XL','XXL','UNICO'],
+                            newSize: 'XS',
+                            init() {
+                                this.localVariants = JSON.parse($el.getAttribute('data-variants') || '[]');
+                            },
+                            saveStock() {
+                                const form = document.createElement('form');
+                                form.method = 'POST';
+                                form.innerHTML = `
+                                    <input type='hidden' name='id' value='${product.id}'>
+                                    <input type='hidden' name='action' value='update-stock'>
+                                    <input type='hidden' name='variants' value='${JSON.stringify(this.localVariants)}'>
+                                `;
+                                document.body.appendChild(form);
+                                form.submit();
+                            }
+                        }" 
+                        @click.away="open = false; isEditing = false"
+                        class="stock-td"
+                    >
+                        <div class="stock-trigger" @click="open = !open" :class="{ 'bg-[#B8860B] text-white': open }">
+                            <span>{(product.variants?.reduce((acc: number, v: any) => acc + v.stock_quantity, 0) || 0)} Unidades</span>
+                            <small>✦</small>
+                        </div>
+                        
+                        <div class="stock-tooltip" x-show="open" :class="{ 'stock-tooltip-active': open }" x-cloak>
+                            
+                            <div x-show="!isEditing">
+                                <span class="tooltip-header">Stock Disponible</span>
+                                <template x-for="(v, index) in localVariants" :key="v.size">
+                                    <div class="tooltip-row">
+                                        <span class="tooltip-size" x-text="v.size"></span>
+                                        <span class="tooltip-qty" :class="{ 'low': v.stock_qty <= 1 }" x-text="v.stock_qty"></span>
+                                    </div>
+                                </template>
+                                <button @click="isEditing = true" class="edit-stock-btn">✏ Editar Inventario</button>
+                            </div>
+
+                            <!-- Edición Form -->
+                            <div x-show="isEditing" x-cloak>
+                                <span class="tooltip-header">Editando Tallas</span>
+                                <template x-for="(v, index) in localVariants" :key="index">
+                                    <div class="tooltip-row" style="margin-bottom:8px;">
+                                        <div style="display:flex; align-items:center; gap:8px;">
+                                            <button @click="localVariants.splice(index, 1)" class="btn-remove-variant">×</button>
+                                            <span class="tooltip-size" style="width:30px;" x-text="v.size"></span>
+                                        </div>
+                                        <input type="number" x-model="v.stock_qty" class="stock-input" min="0">
+                                    </div>
+                                </template>
+                                
+                                <div class="add-size-row">
+                                    <select x-model="newSize" class="add-size-select">
+                                        <template x-for="s in availableSizes" :key="s">
+                                            <option :value="s" x-text="s" :disabled="localVariants.find(v => v.size === s)"></option>
+                                        </template>
+                                    </select>
+                                    <button @click="localVariants.push({size: newSize, stock_qty: 0})" class="btn-add-variant">+</button>
+                                </div>
+
+                                <div class="tooltip-actions">
+                                    <button @click="isEditing = false" class="btn-stock-cancel">X</button>
+                                    <button @click="saveStock()" class="btn-stock-save">Guardar</button>
+                                </div>
+                            </div>
+                        </div>
                     </td>
                     <td>
                       <span class={`status-badge ${product.is_active ? 'active' : 'inactive'}`}>

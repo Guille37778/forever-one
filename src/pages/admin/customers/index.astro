@@ -1,0 +1,391 @@
+---
+import AdminLayout from '../../../layouts/AdminLayout.astro';
+import { supabase, supabaseAdmin } from '../../../lib/supabase';
+
+const accessToken = Astro.cookies.get('sb-access-token')?.value;
+if (!accessToken) return Astro.redirect('/admin/login');
+
+let user = null;
+try {
+  const { data: userData, error: authError } = await supabase.auth.getUser(accessToken);
+  if (authError || !userData?.user) return Astro.redirect('/admin/login');
+  user = userData.user;
+} catch (e) {
+  console.error('[Customers] Auth Error:', e);
+  return Astro.redirect('/admin/login');
+}
+
+// Cargar datos en paralelo para máxima eficiencia
+const [customersResponse, ordersResponse] = await Promise.all([
+  supabaseAdmin.from('profiles').select('*', { count: 'exact' }).order('created_at', { ascending: false }),
+  supabaseAdmin.from('orders').select('profile_id, created_at, status, order_code').order('created_at', { ascending: false })
+]);
+
+const customers = customersResponse.data;
+const totalCustomers = customersResponse.count;
+const allOrders = ordersResponse.data;
+
+// Crear mapa enriquecido de pedidos por cliente
+const orderDataMap: Record<string, { count: number; lastDate: string | null; lastStatus: string | null; lastCode: string | null }> = {};
+if (allOrders) {
+  for (const o of allOrders) {
+    if (o.profile_id) {
+      if (!orderDataMap[o.profile_id]) {
+        orderDataMap[o.profile_id] = { count: 0, lastDate: o.created_at, lastStatus: o.status, lastCode: o.order_code };
+      }
+      orderDataMap[o.profile_id].count++;
+    }
+  }
+}
+
+const clientList = (customers || []).map((c: any) => ({
+  ...c,
+  order_count: orderDataMap[c.id]?.count || 0,
+  last_order_date: orderDataMap[c.id]?.lastDate || null,
+  last_order_status: orderDataMap[c.id]?.lastStatus || null,
+  last_order_code: orderDataMap[c.id]?.lastCode || null,
+}));
+
+// Estadísticas rápidas
+const activeCustomers = clientList.filter((c: any) => c.order_count > 0).length;
+const newThisMonth = clientList.filter((c: any) => {
+  const created = new Date(c.created_at);
+  const now = new Date();
+  return created.getMonth() === now.getMonth() && created.getFullYear() === now.getFullYear();
+}).length;
+---
+
+<AdminLayout title="Clientes" activeNav="customers" user={{ email: user?.email || '' }}>
+
+  <style>
+    .page-header {
+      margin-bottom: 2rem;
+    }
+    .page-header h2 {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.5rem;
+      font-weight: 700;
+      font-style: italic;
+      color: #111;
+      margin-bottom: 0.25rem;
+    }
+    .page-header p {
+      font-size: 10px;
+      color: #999;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      font-weight: 600;
+    }
+
+    /* Stats rápidas */
+    .quick-stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+    @media (max-width: 640px) { .quick-stats { grid-template-columns: 1fr; } }
+
+    .qs-card {
+      background: white;
+      border: 1px solid rgba(184,134,11,0.08);
+      border-radius: 14px;
+      padding: 1.25rem 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 1.25rem;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.02);
+      transition: all 0.3s;
+    }
+    .qs-card:hover { transform: translateY(-3px); box-shadow: 0 8px 20px rgba(0,0,0,0.05); border-color: rgba(184,134,11,0.2); }
+    .qs-icon { width: 48px; height: 48px; background: #fdfaf0; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: #B8860B; flex-shrink: 0; }
+    .qs-icon svg { width: 22px; height: 22px; }
+    .qs-label { font-size: 8px; letter-spacing: 0.25em; text-transform: uppercase; color: #aaa; font-weight: 700; margin-bottom: 2px; }
+    .qs-value { font-family: 'Playfair Display', serif; font-size: 2rem; font-weight: 900; font-style: italic; color: #111; line-height: 1; }
+
+    /* Tabla */
+    .table-wrapper {
+      background: white;
+      border: 1px solid rgba(0,0,0,0.06);
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.03);
+    }
+    .table-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      padding: 1.25rem 1.5rem;
+      border-bottom: 1px solid #f0f0f0;
+      flex-wrap: wrap;
+    }
+    .table-top-title {
+      font-size: 9px;
+      text-transform: uppercase;
+      letter-spacing: 0.35em;
+      font-weight: 800;
+      color: #111;
+    }
+    .search-box {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      background: #f8f8f8;
+      border: 1px solid #efefef;
+      border-radius: 8px;
+      padding: 0.5rem 1rem;
+      transition: all 0.3s;
+    }
+    .search-box:focus-within {
+      border-color: #B8860B;
+      box-shadow: 0 0 0 3px rgba(184,134,11,0.08);
+    }
+    .search-box svg { width: 14px; height: 14px; color: #bbb; }
+    .search-box input {
+      border: none;
+      background: transparent;
+      font-size: 11px;
+      font-family: inherit;
+      outline: none;
+      color: #333;
+      width: 180px;
+    }
+
+    table { width: 100%; border-collapse: collapse; }
+    thead { background: #fafafa; }
+    th {
+      text-align: left;
+      padding: 0.875rem 1.25rem;
+      font-size: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.3em;
+      font-weight: 800;
+      color: #aaa;
+      border-bottom: 1px solid #f0f0f0;
+      white-space: nowrap;
+    }
+    td {
+      padding: 1rem 1.25rem;
+      border-bottom: 1px solid #f9f9f9;
+      font-size: 12px;
+      color: #444;
+      vertical-align: middle;
+    }
+    tr:last-child td { border-bottom: none; }
+    tbody tr { transition: background 0.2s; }
+    tbody tr:hover { background: #fdfaf0; }
+
+    .avatar-cell {
+      display: flex;
+      align-items: center;
+      gap: 0.875rem;
+    }
+    .avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      border: 1.5px solid rgba(184,134,11,0.3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(184,134,11,0.06);
+      color: #B8860B;
+      font-size: 13px;
+      font-weight: 900;
+      flex-shrink: 0;
+      font-family: 'Playfair Display', serif;
+      font-style: italic;
+    }
+    .client-name {
+      font-weight: 700;
+      color: #111;
+      font-size: 12px;
+    }
+    .client-email {
+      font-size: 10px;
+      color: #aaa;
+      margin-top: 1px;
+    }
+    .order-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 10px;
+      font-weight: 800;
+    }
+    .order-badge.has-orders {
+      background: rgba(184,134,11,0.1);
+      color: #B8860B;
+      border: 1px solid rgba(184,134,11,0.2);
+    }
+    .order-badge.no-orders {
+      background: #f5f5f5;
+      color: #bbb;
+    }
+    .date-cell { font-size: 10px; color: #888; }
+    .empty-state {
+      padding: 4rem 2rem;
+      text-align: center;
+    }
+    .empty-state p {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.3em;
+      color: #ccc;
+      font-weight: 700;
+    }
+  </style>
+
+  <!-- Page Header -->
+  <div class="page-header">
+    <h2>Directorio de Clientes</h2>
+    <p>Registro de todos los clientes que se han registrado en el sistema</p>
+  </div>
+
+  <!-- Quick Stats -->
+  <div class="quick-stats">
+    <div class="qs-card">
+      <div class="qs-icon">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
+        </svg>
+      </div>
+      <div>
+        <p class="qs-label">Total Clientes</p>
+        <p class="qs-value">{totalCustomers || 0}</p>
+      </div>
+    </div>
+    <div class="qs-card">
+      <div class="qs-icon">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/>
+        </svg>
+      </div>
+      <div>
+        <p class="qs-label">Con Pedidos</p>
+        <p class="qs-value">{activeCustomers}</p>
+      </div>
+    </div>
+    <div class="qs-card">
+      <div class="qs-icon">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+      </div>
+      <div>
+        <p class="qs-label">Nuevos Este Mes</p>
+        <p class="qs-value">{newThisMonth}</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Customers Table -->
+  <div class="table-wrapper">
+    <div class="table-top">
+      <span class="table-top-title">Registro Completo</span>
+      <div class="search-box">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+        </svg>
+        <input type="text" placeholder="Buscar cliente..." id="customer-search-input">
+      </div>
+    </div>
+
+    {clientList.length === 0 ? (
+      <div class="empty-state">
+        <p>Aún no hay clientes registrados</p>
+      </div>
+    ) : (
+      <div style="overflow-x:auto;">
+        <table>
+          <thead>
+            <tr>
+              <th>Cliente</th>
+              <th>Registro</th>
+              <th>Pedidos</th>
+              <th>Último Pedido</th>
+              <th>Ciudad</th>
+            </tr>
+          </thead>
+          <tbody id="customers-tbody">
+            {clientList.map((client: any) => {
+              const sc = client.last_order_status ? {
+                verificando: { bg: 'rgba(251,191,36,0.1)',  text: '#b45309' },
+                preparando:  { bg: 'rgba(59,130,246,0.1)',  text: '#1d4ed8' },
+                enviado:     { bg: 'rgba(139,92,246,0.1)',  text: '#6d28d9' },
+                entregado:   { bg: 'rgba(34,197,94,0.1)',   text: '#15803d' },
+                cancelado:   { bg: 'rgba(239,68,68,0.1)',   text: '#b91c1c' },
+              }[client.last_order_status as string] || { bg: '#f5f5f5', text: '#aaa' } : null;
+              return (
+              <tr data-name={(client.full_name || '').toLowerCase()} data-email={(client.email || '').toLowerCase()}>
+                <td>
+                  <div class="avatar-cell">
+                    <div class="avatar">
+                      {(client.full_name || client.email || 'C')[0]?.toUpperCase()}
+                    </div>
+                    <div>
+                      <div class="client-name">{client.full_name || '—'}</div>
+                      <div class="client-email">{client.email}</div>
+                    </div>
+                  </div>
+                </td>
+                <td class="date-cell">
+                  {new Date(client.created_at).toLocaleDateString('es-VE', { day: '2-digit', month: 'short', year: 'numeric' })}
+                </td>
+                <td>
+                  {client.order_count > 0 ? (
+                    <span class="order-badge has-orders">
+                      <svg width="10" height="10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/>
+                      </svg>
+                      {client.order_count} {client.order_count === 1 ? 'pedido' : 'pedidos'}
+                    </span>
+                  ) : (
+                    <span class="order-badge no-orders">Sin pedidos</span>
+                  )}
+                </td>
+                <td>
+                  {client.last_order_date && sc ? (
+                    <div>
+                      <div class="date-cell" style="margin-bottom:4px;">
+                        {new Date(client.last_order_date).toLocaleDateString('es-VE', { day: '2-digit', month: 'short', year: 'numeric' })}
+                      </div>
+                      <span style={`font-size:7.5px; font-weight:800; text-transform:uppercase; letter-spacing:0.1em; padding:2px 8px; border-radius:4px; background:${sc.bg}; color:${sc.text};`}>
+                        {client.last_order_status}
+                      </span>
+                    </div>
+                  ) : (
+                    <span class="date-cell">—</span>
+                  )}
+                </td>
+                <td class="date-cell">{client.city || '—'}</td>
+              </tr>
+            );
+            })}
+          </tbody>
+        </table>
+      </div>
+    )}
+  </div>
+
+  <script is:inline>
+    const searchInput = document.getElementById('customer-search-input');
+    const rows = document.querySelectorAll('#customers-tbody tr');
+
+    if (searchInput) {
+      searchInput.addEventListener('input', function() {
+        const q = this.value.toLowerCase().trim();
+        rows.forEach(function(row) {
+          const name = row.getAttribute('data-name') || '';
+          const email = row.getAttribute('data-email') || '';
+          const matches = !q || name.includes(q) || email.includes(q);
+          row.style.display = matches ? '' : 'none';
+        });
+      });
+    }
+  </script>
+
+</AdminLayout>

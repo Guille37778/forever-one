@@ -4,27 +4,32 @@ import { supabase, supabaseAdmin } from '../../lib/supabase';
 
 const accessToken = Astro.cookies.get('sb-access-token')?.value;
 if (!accessToken) return Astro.redirect('/admin/login');
-const { data: { user }, error } = await supabase.auth.getUser(accessToken);
-if (error || !user) return Astro.redirect('/admin/login');
 
-const { data: analyticsData } = await supabaseAdmin
-  .from('product_stats')
-  .select('*, products(name, price)')
-  .order('views', { ascending: false });
+let user = null;
+try {
+  const { data: userData, error: authError } = await supabase.auth.getUser(accessToken);
+  if (authError || !userData?.user) return Astro.redirect('/admin/login');
+  user = userData.user;
+} catch (e) {
+  console.error('[Analytics] Auth Error:', e);
+  return Astro.redirect('/admin/login');
+}
 
-// Obtener datos de órdenes reales
-const { data: ordersData } = await supabaseAdmin
-  .from('orders')
-  .select('total_usd');
+// Cargar todos los datos analíticos en paralelo para eficiencia máxima
+const [analyticsResponse, ordersResponse, orderItemsResponse] = await Promise.all([
+  supabaseAdmin.from('product_stats').select('*, products(name, price)').order('views', { ascending: false }),
+  supabaseAdmin.from('orders').select('total_usd'),
+  supabaseAdmin.from('order_items').select('product_id, product_name, quantity')
+]);
 
-const { data: orderItemsData } = await supabaseAdmin
-  .from('order_items')
-  .select('product_id, product_name, quantity');
+const analyticsData = analyticsResponse.data;
+const ordersData = ordersResponse.data;
+const orderItemsData = orderItemsResponse.data;
 
 // Procesar KPIs
-const totalViews = analyticsData?.reduce((s, i) => s + (i.views || 0), 0) || 0;
-const totalWA    = analyticsData?.reduce((s, i) => s + (i.whatsapp_clicks || 0), 0) || 0;
-const totalRevenue = ordersData?.reduce((s, i) => s + Number(i.total_usd || 0), 0) || 0;
+const totalViews = analyticsData?.reduce((s: any, i: any) => s + (i.views || 0), 0) || 0;
+const totalWA    = analyticsData?.reduce((s: any, i: any) => s + (i.whatsapp_clicks || 0), 0) || 0;
+const totalRevenue = ordersData?.reduce((s: any, i: any) => s + Number(i.total_usd || 0), 0) || 0;
 const totalOrders = ordersData?.length || 0;
 
 // Agrupar ventas y estadísticas
@@ -43,11 +48,11 @@ analyticsData?.forEach((item: any) => {
 
 // Combinar IDs para asegurar que todos los productos (con vistas O con compras) se reflejen
 const allProductIds = Array.from(new Set([
-  ...(analyticsData?.map(i => i.product_id) || []),
-  ...(orderItemsData?.map(i => i.product_id) || [])
+  ...(analyticsData?.map((i: any) => i.product_id) || []),
+  ...(orderItemsData?.map((i: any) => i.product_id) || [])
 ]));
 
-const processedData = allProductIds.map(id => {
+const processedData = allProductIds.map((id: any) => {
   const stat = statsMap[id] || {};
   const sales = salesMap[id] || 0;
   return {
@@ -137,7 +142,7 @@ const processedData = allProductIds.map(id => {
         </svg>
       </div>
       <p class="kpi-label">Ingresos Totales</p>
-      <p class="kpi-value">${totalRevenue.toLocaleString('en-US', { minimumFractionDigits: 2 })}</p>
+      <p class="kpi-value">{totalRevenue.toLocaleString('en-US', { minimumFractionDigits: 2 })}</p>
       <p class="kpi-sub">Ventas confirmadas (USD)</p>
     </div>
     <div class="kpi-card">
@@ -236,7 +241,7 @@ const processedData = allProductIds.map(id => {
         const res = await fetch('/api/stats/reset', { method: 'POST' });
         if (res.ok) window.location.reload();
         else alert('Error al reiniciar analíticas');
-      } catch (e) {
+      } catch (_e) {
         alert('Error de conexión');
       }
     }
@@ -250,9 +255,9 @@ const processedData = allProductIds.map(id => {
     if (!data.length) return;
 
     const palette = ['#B8860B','#f3cf7a','#8B6508','#FFD700','#CDA333'];
-    const labels = data.map(d => d.products?.name || 'Prenda');
-    const views  = data.map(d => d.views || 0);
-    const wa     = data.map(d => d.whatsapp_clicks || 0);
+    const labels = data.map((d) => d.products?.name || 'Prenda');
+    const views  = data.map((d) => d.views || 0);
+    const wa     = data.map((d) => d.whatsapp_clicks || 0);
 
     const barCtx = document.getElementById('viewsBarChart')?.getContext('2d');
     if (barCtx) {

@@ -1,0 +1,133 @@
+---
+// /src/pages/auth/callback.astro
+// Esta página recibe el redirect de Google OAuth (PKCE flow)
+// y procesa el intercambio del código de autorización
+---
+<!doctype html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width" />
+    <title>Verificando acceso... — Forever One</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            min-height: 100vh;
+            background: #0a0a0a;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Georgia', serif;
+            color: #B8860B;
+        }
+        .logo {
+            font-size: 1.5rem;
+            font-style: italic;
+            font-weight: 900;
+            margin-bottom: 2rem;
+            letter-spacing: 0.05em;
+        }
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 2px solid rgba(184,134,11,0.2);
+            border-top-color: #B8860B;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin-bottom: 1.5rem;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .msg {
+            font-size: 9px;
+            text-transform: uppercase;
+            letter-spacing: 0.4em;
+            color: rgba(184,134,11,0.6);
+        }
+        .error-msg {
+            color: #f87171;
+            font-size: 12px;
+            max-width: 300px;
+            text-align: center;
+            line-height: 1.6;
+            margin-top: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="logo">Forever One</div>
+    <div class="spinner" id="spinner"></div>
+    <p class="msg" id="msg">Verificando acceso...</p>
+    <p class="error-msg" id="error-msg" style="display:none;"></p>
+
+    <script>
+        import { supabase } from '../../lib/supabase';
+
+        async function handleCallback() {
+            const msgEl = document.getElementById('msg');
+            const errorEl = document.getElementById('error-msg');
+            const spinnerEl = document.getElementById('spinner');
+
+            try {
+                // Obtener la sesión — Supabase detecta automáticamente el código en la URL
+                const { data, error } = await supabase.auth.getSession();
+
+                if (error) {
+                    console.error('[callback] getSession error:', error);
+                    throw error;
+                }
+
+                if (data.session) {
+                    // Sesión obtenida exitosamente
+                    if (msgEl) msgEl.textContent = '✓ Acceso concedido';
+                    
+                    // Redirigir a la página de perfil (o a donde vino)
+                    const returnTo = new URLSearchParams(window.location.search).get('returnTo') || '/perfil';
+                    setTimeout(() => {
+                        window.location.href = returnTo;
+                    }, 500);
+                } else {
+                    // No hay sesión todavía — puede ser que el código aún no fue procesado
+                    // Esperar a que el evento SIGNED_IN llegue
+                    let timeout: any = null;
+                    
+                    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+                        if (event === 'SIGNED_IN' && session) {
+                            clearTimeout(timeout);
+                            subscription.unsubscribe();
+                            if (msgEl) msgEl.textContent = '✓ Acceso concedido';
+                            
+                            const returnTo = new URLSearchParams(window.location.search).get('returnTo') || '/perfil';
+                            setTimeout(() => {
+                                window.location.href = returnTo;
+                            }, 500);
+                        }
+                    });
+
+                    // Timeout de seguridad: 8 segundos
+                    timeout = setTimeout(() => {
+                        subscription.unsubscribe();
+                        if (spinnerEl) spinnerEl.style.display = 'none';
+                        if (msgEl) msgEl.textContent = 'No se pudo verificar el acceso';
+                        if (errorEl) {
+                            errorEl.style.display = 'block';
+                            errorEl.textContent = 'El enlace expiró o fue usado anteriormente. Vuelve al inicio e intenta de nuevo.';
+                        }
+                        setTimeout(() => { window.location.href = '/'; }, 4000);
+                    }, 8000);
+                }
+            } catch (e: any) {
+                if (spinnerEl) spinnerEl.style.display = 'none';
+                if (msgEl) msgEl.textContent = 'Error de autenticación';
+                if (errorEl) {
+                    errorEl.style.display = 'block';
+                    errorEl.textContent = e.message || 'Error inesperado. Inténtalo de nuevo.';
+                }
+                setTimeout(() => { window.location.href = '/'; }, 4000);
+            }
+        }
+
+        handleCallback();
+    </script>
+</body>
+</html>

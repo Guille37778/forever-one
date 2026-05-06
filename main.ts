@@ -1,3 +1,2 @@
-import { handle } from "./dist/server/entry.mjs";
-
-Deno.serve(handle);
+// import { handle } from "./dist/server/entry.mjs";
+// if (typeof Deno !== 'undefined') Deno.serve(handle);

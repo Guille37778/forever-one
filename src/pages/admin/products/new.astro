@@ -63,10 +63,13 @@ if (Astro.request.method === 'POST') {
                 }));
                 await supabaseAdmin.from('variants').insert(variants);
             }
-            successMessage = `✦ "${name}" añadida al catálogo exitosamente.`;
+            return Astro.redirect('/admin/products?created=true');
         }
     }
 }
+
+const created = Astro.url.searchParams.get('created') === 'true';
+if (created) successMessage = '✦ Prenda añadida al catálogo exitosamente.';
 ---
 
 <AdminLayout title="Nueva Prenda" activeNav="products" user={{ email: user?.email || '' }}>
@@ -359,7 +362,7 @@ if (Astro.request.method === 'POST') {
   {successMessage && <div class="message success">{successMessage}</div>}
   {errorMessage && <div class="message error">{errorMessage}</div>}
 
-  <form method="POST" class="form-card" enctype="multipart/form-data">
+  <form method="POST" class="form-card" enctype="multipart/form-data" id="productForm">
     <!-- Info Básica -->
     <div class="form-section">
       <p class="section-label">✦ Información de la Prenda</p>
@@ -387,7 +390,7 @@ if (Astro.request.method === 'POST') {
           <label for="subcategory_id">Subcategoría</label>
           <select id="subcategory_id" name="subcategory_id">
             <option value="">Sin subcategoría</option>
-            {allSubcategories?.map(s => (
+            {allSubcategories?.map((s: any) => (
               <option value={s.id} data-parent={s.parent_category}>{s.name}</option>
             ))}
           </select>
@@ -396,7 +399,7 @@ if (Astro.request.method === 'POST') {
           <label for="collection_id">Colección / Drop</label>
           <select id="collection_id" name="collection_id">
             <option value="">Sin colección</option>
-            {collections?.map(c => (
+            {collections?.map((c: any) => (
               <option value={c.id}>{c.name}</option>
             ))}
           </select>
@@ -449,7 +452,7 @@ if (Astro.request.method === 'POST') {
     <!-- Footer -->
     <div class="form-footer">
       <a href="/admin/products" class="cancel-link">Cancelar</a>
-      <button type="submit" class="submit-btn">✦ Guardar en Catálogo</button>
+      <button type="submit" class="submit-btn" id="submitBtn">✦ Guardar en Catálogo</button>
     </div>
   </form>
 
@@ -539,5 +542,15 @@ if (Astro.request.method === 'POST') {
         reader.readAsDataURL(file);
       });
     }
+  });
+
+  // Double-submit protection
+  const form = document.getElementById('productForm') as HTMLFormElement;
+  const submitBtn = document.getElementById('submitBtn') as HTMLButtonElement;
+
+  form?.addEventListener('submit', () => {
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '✦ GUARDANDO...';
+    submitBtn.style.opacity = '0.5';
   });
 </script>

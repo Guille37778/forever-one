@@ -16,6 +16,7 @@ const deliveryZones = settingsData?.find((s: any) => s.key === 'delivery_zones')
      FULL-PAGE CART DRAWER
 ═══════════════════════════════════════════════════════════ -->
 <div id="cart-drawer"
+     data-rate={dollarRate}
      style="display:none; position:fixed; inset:0; z-index:3000; background:#F9F8F6;
             overflow-y:auto; opacity:0; transition:opacity 0.4s ease;">
 
@@ -130,7 +131,7 @@ const deliveryZones = settingsData?.find((s: any) => s.key === 'delivery_zones')
                            class="cart-input">
                     <div class="cart-input-grid">
                         <input type="tel" id="cust-phone"
-                               placeholder="Teléfono (ej: 0412-1234567)"
+                               placeholder="Teléfono (ej: 0412-4683230 → +58412...)"
                                class="cart-input">
                         <input type="email" id="cust-email"
                                placeholder="Correo electrónico"
@@ -194,8 +195,8 @@ const deliveryZones = settingsData?.find((s: any) => s.key === 'delivery_zones')
                            placeholder="Código o número de agencia (ej: 0452)"
                            class="cart-input">
                     <textarea id="ship-address" rows="2"
-                              placeholder="Estado y ciudad destino (ej: Carabobo, Valencia centro)"
-                              class="cart-input" style="resize:none;"></textarea>
+                               placeholder="Estado y ciudad destino (ej: Carabobo, Valencia centro)"
+                               class="cart-input" style="resize:none;"></textarea>
                 </div>
 
                 <div id="delivery-local-fields" class="hidden" style="display:none; flex-direction:column; gap:0.875rem;">
@@ -204,15 +205,15 @@ const deliveryZones = settingsData?.find((s: any) => s.key === 'delivery_zones')
                         <option value="">— Selecciona tu zona —</option>
                     </select>
                     <textarea id="delivery-address" rows="2"
-                              placeholder="Dirección exacta de entrega (calle, edificio, referencia)"
-                              class="cart-input" style="resize:none;"></textarea>
+                               placeholder="Dirección exacta de entrega (calle, edificio, referencia)"
+                               class="cart-input" style="resize:none;"></textarea>
                 </div>
 
                 <div id="retiro-fields"
                      style="background:rgba(184,134,11,0.06); border:1px solid rgba(184,134,11,0.2);
                             padding:1.25rem 1.5rem; border-radius:2px;">
                     <p style="font-size:10px; color:#B8860B; font-weight:700; text-transform:uppercase;
-                              letter-spacing:0.3em; margin-bottom:0.5rem;">📍 Punto de Retiro</p>
+                               letter-spacing:0.3em; margin-bottom:0.5rem;">📍 Punto de Retiro</p>
                     <p style="font-size:12px; color:#555; font-style:italic; line-height:1.6;">
                         Una vez confirmada tu orden, te informaremos la dirección exacta para retirar tu pedido.
                         Disponible de lunes a sábado.
@@ -392,288 +393,242 @@ const deliveryZones = settingsData?.find((s: any) => s.key === 'delivery_zones')
     }
 </style>
 
-<script is:inline define:vars={{ initialDollarRate: dollarRate, deliveryZonesRaw: deliveryZones, initialDeliveryEnabled: deliveryEnabled }}>
-(function() {
-    const WHATSAPP_NUMBER = '584244557693';
-    let cart = [];
-    let dollarRate = initialDollarRate;
-    let deliveryEnabled = initialDeliveryEnabled;
-    let deliveryZones = (deliveryZonesRaw || '').split(',').map(z => z.trim()).filter(z => z);
-    let selectedMethod = 'retiro';
-    let selectedCourier = 'Zoom';
+<script>
+    import { loadCart, syncCartWithDB, cartTotal } from '../lib/cart';
 
-    function el(id) { return document.getElementById(id); }
+    (function() {
+        const el = (id: string) => document.getElementById(id);
 
-    function saveCart() { localStorage.setItem('fo1_cart', JSON.stringify(cart)); }
-    function loadCart() {
-        try {
-            const raw = JSON.parse(localStorage.getItem('fo1_cart') || '[]');
-            cart = raw.map(i => ({ ...i, precio: parseFloat(String(i.precio || '0').replace(',', '.')), qty: parseInt(i.qty) || 1 }))
-                       .filter(i => i.nombre && i.id);
-        } catch(e) { cart = []; }
-    }
+        const getAuth = () => {
+            const Alpine = (window as any).Alpine;
+            if (!Alpine) return { isLoggedIn: false };
+            return Alpine.store('auth') || { isLoggedIn: false };
+        };
 
-    function fmtPrice(n) { return '$' + n.toFixed(2); }
-    function cartTotal() { return cart.reduce((s, i) => s + (i.precio * i.qty), 0); }
+        // UI SPECIFIC LOGIC (Rendering)
+        (window as any).__renderCart = function() {
+            const list = el('products-list');
+            const totalUSD = el('cart-total-usd');
+            const totalBS = el('cart-total-bs');
+            const badge = el('cart-count-badge');
+            const label = el('cart-count-label');
 
-    window.__openCart = function() {
-        const d = el('cart-drawer');
-        if(!d) return;
-        d.style.display = 'block';
-        document.body.style.overflow = 'hidden';
-        d.scrollTo(0,0);
-        requestAnimationFrame(() => d.style.opacity = '1');
-    };
+            const cart = (window as any).__getCart?.() || [];
+            const drawer = el('cart-drawer');
+            const dollarRate = parseFloat(drawer?.dataset.rate || '0');
 
-    window.__closeCart = function() {
-        const d = el('cart-drawer');
-        if(!d) return;
-        d.style.opacity = '0';
-        document.body.style.overflow = '';
-        setTimeout(() => d.style.display = 'none', 400);
-    };
+            // Auto-fill fields if logged in
+            const auth = getAuth();
+            if (auth.isLoggedIn && auth.profile) {
+                const nameField = el('cust-name') as HTMLInputElement;
+                if (nameField && !nameField.value) nameField.value = auth.profile.full_name || '';
+                const emailField = el('cust-email') as HTMLInputElement;
+                if (emailField && !emailField.value) emailField.value = auth.user.email || '';
+            }
 
-    window.__addToCart = function(product) {
-        if(!product || parseInt(product.stock) <= 0) return;
-        const existing = cart.find(i => i.id === product.id && i.size === (product.selectedSize || ''));
-        if(existing) {
-            if(existing.qty >= parseInt(product.stock)) { alert('Stock máximo alcanzado'); return; }
-            existing.qty++;
-        } else {
-            cart.push({ ...product, qty: 1, size: product.selectedSize || '' });
-        }
-        saveCart();
-        window.__renderCart();
-        // showToast is replaced by shared logic in future, for now local
-        let t = el('fo1-toast');
-        if(!t) {
-            t = document.createElement('div');
-            t.id = 'fo1-toast';
-            t.style = 'position:fixed; z-index:9000; bottom:40px; left:50%; transform:translateX(-50%); background:rgba(10,10,10,0.95); color:#f3cf7a; padding:16px 32px; font-size:11px; font-weight:900; text-transform:uppercase; letter-spacing:0.35em; border:1px solid rgba(184,134,11,0.5); pointer-events:none; transition:opacity 0.5s; opacity:0;';
-            document.body.appendChild(t);
-        }
-        t.textContent = '✓ Producto añadido';
-        t.style.opacity = '1';
-        setTimeout(() => t.style.opacity = '0', 2500);
-    };
+            const total = cartTotal();
+            const count = cart.reduce((s: number, i: any) => s + i.qty, 0);
 
-    window.__removeFromCart = function(productId) {
-        cart = cart.filter(i => i.id !== productId);
-        saveCart();
-        window.__renderCart();
-    };
+            if(badge) { badge.textContent = count.toString(); badge.style.display = count > 0 ? 'flex' : 'none'; }
+            if(label) label.textContent = count + (count === 1 ? ' prenda' : ' prendas');
+            if(totalUSD) totalUSD.textContent = '$' + total.toFixed(2);
+            if(totalBS) totalBS.textContent = 'Bs. ' + (total * dollarRate).toLocaleString('es-VE', { minimumFractionDigits: 2 });
 
-    window.__updateQty = function(productId, delta) {
-        const item = cart.find(i => i.id === productId);
-        if(!item) return;
-        const newQty = item.qty + delta;
-        if(newQty <= 0) { window.__removeFromCart(productId); return; }
-        item.qty = newQty;
-        saveCart();
-        window.__renderCart();
-    };
+            const hasItems = cart.length > 0;
+            const form = el('checkout-form-container');
+            const empty = el('cart-empty-msg');
+            if(empty) empty.style.display = hasItems ? 'none' : 'flex';
+            if(form) form.style.display = hasItems ? 'grid' : 'none';
 
-    window.__setDeliveryMethod = function(meth) {
-        selectedMethod = meth;
-        window.__updateDeliveryUI();
-    };
+            const checkoutBtn = el('checkout-btn') as HTMLButtonElement;
+            if(checkoutBtn) {
+                checkoutBtn.style.opacity = hasItems ? '1' : '0.4';
+                checkoutBtn.style.pointerEvents = hasItems ? 'auto' : 'none';
+                checkoutBtn.style.cursor = hasItems ? 'pointer' : 'not-allowed';
+            }
 
-    window.__setCourier = function(cour) {
-        selectedCourier = cour;
-        window.__updateDeliveryUI();
-    };
-
-    window.__updateDeliveryUI = function() {
-        document.querySelectorAll('.meth-card').forEach(b => b.classList.toggle('active-meth', b.id === 'btn-meth-' + selectedMethod));
-        const env = el('envio-fields'); if(env) env.style.display = selectedMethod === 'envio' ? 'flex' : 'none';
-        const del = el('delivery-local-fields'); if(del) del.style.display = selectedMethod === 'delivery' ? 'flex' : 'none';
-        const ret = el('retiro-fields'); if(ret) ret.style.display = selectedMethod === 'retiro' ? 'block' : 'none';
-        document.querySelectorAll('.cour-btn-card').forEach(b => b.classList.toggle('active-cour', b.id === 'btn-courier-' + selectedCourier.toLowerCase()));
-        
-        const zoneSelect = el('delivery-zone-select');
-        if(zoneSelect && zoneSelect.options.length <= 1 && deliveryZones.length > 0) {
-            deliveryZones.forEach(z => { const opt = document.createElement('option'); opt.value = z; opt.textContent = z; zoneSelect.appendChild(opt); });
-        }
-    };
-
-    window.__renderCart = function() {
-        const list = el('products-list');
-        const form = el('checkout-form-container');
-        const empty = el('cart-empty-msg');
-        const totalUSD = el('cart-total-usd');
-        const totalBS = el('cart-total-bs');
-        const badge = el('cart-count-badge');
-        const label = el('cart-count-label');
-
-        const total = cartTotal();
-        const count = cart.reduce((s, i) => s + i.qty, 0);
-
-        if(badge) { badge.textContent = count; badge.style.display = count > 0 ? 'flex' : 'none'; }
-        if(label) label.textContent = count + (count === 1 ? ' prenda' : ' prendas');
-        if(totalUSD) totalUSD.textContent = '$' + total.toFixed(2);
-        if(totalBS) totalBS.textContent = 'Bs. ' + (total * dollarRate).toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-
-        const hasItems = cart.length > 0;
-        if(empty) empty.style.display = hasItems ? 'none' : 'flex';
-        if(form) form.style.display = hasItems ? 'grid' : 'none';
-        
-        const btn = el('checkout-btn');
-        if(btn) { 
-            btn.style.opacity = hasItems ? '1' : '0.4'; 
-            btn.style.pointerEvents = hasItems ? 'auto' : 'none';
-            btn.style.cursor = hasItems ? 'pointer' : 'not-allowed';
-        }
-
-        if(!hasItems) { if(list) list.innerHTML = ''; return; }
-
-        if(list) list.innerHTML = cart.map(item => `
-            <div class="cart-item-card">
-                <img src="${item.imagen}" style="width:70px; height:90px; object-fit:cover; flex-shrink:0;">
-                <div style="flex:1; min-width:0;">
-                    <div style="display:flex; justify-content:space-between; align-items:flex-start;">
-                        <div style="min-width:0;">
-                            <div style="font-size:9px; text-transform:uppercase; letter-spacing:0.3em; font-weight:900; color:#111; margin-bottom:4px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${item.nombre}</div>
-                            ${item.size ? `<div style="font-size:8px; color:#B8860B; text-transform:uppercase; letter-spacing:0.2em; font-weight:700; background:rgba(184,134,11,0.08); padding:2px 8px; display:inline-block;">${item.size}</div>` : ''}
+            if(list) list.innerHTML = cart.map((item: any) => `
+                <div class="cart-item-card" style="display:flex; gap:16px; margin-bottom:16px; padding:12px; background:white; border:1px solid #f0f0f0;">
+                    <img src="${item.image_url || (item.imagenes && item.imagenes[0]) || '/placeholder.png'}" style="width:70px; height:90px; object-fit:cover; flex-shrink:0;" onerror="this.src='/placeholder.png'">
+                    <div style="flex:1; min-width:0;">
+                        <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+                            <div style="min-width:0;">
+                                <div style="font-size:9px; text-transform:uppercase; letter-spacing:0.3em; font-weight:900; color:#111; margin-bottom:4px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${item.nombre}</div>
+                                ${item.size ? `<div style="font-size:8px; color:#B8860B; text-transform:uppercase; letter-spacing:0.2em; font-weight:700; background:rgba(184,134,11,0.08); padding:2px 8px; display:inline-block;">${item.size}</div>` : ''}
+                            </div>
+                            <button onclick="window.__removeFromCart('${item.id}', '${item.size || ''}')" style="color:#ccc; font-size:18px; border:none; background:none; cursor:pointer;">×</button>
                         </div>
-                        <button onclick="window.__removeFromCart('${item.id}')" style="color:#ccc; font-size:18px; border:none; background:none; cursor:pointer;">×</button>
-                    </div>
-                    <div style="display:flex; align-items:center; justify-content:space-between; margin-top:12px;">
-                        <div style="display:flex; align-items:center; border:1px solid #eee;">
-                            <button onclick="window.__updateQty('${item.id}', -1)" style="width:28px; height:28px; border:none; background:#fafafa; cursor:pointer; color:#111;">−</button>
-                            <span style="font-size:11px; font-weight:900; min-width:24px; text-align:center; color:#111;">${item.qty}</span>
-                            <button onclick="window.__updateQty('${item.id}', 1)" style="width:28px; height:28px; border:none; background:#fafafa; cursor:pointer; color:#111;">+</button>
-                        </div>
-                        <div style="text-align:right;">
-                            <div style="font-family:'Playfair Display',serif; font-size:1rem; font-weight:900; font-style:italic; color:#111;">$${(item.precio * item.qty).toFixed(2)}</div>
-                            <div style="font-size:8px; color:#B8860B; font-weight:700;">Bs. ${(item.precio * item.qty * dollarRate).toLocaleString('es-VE',{minimumFractionDigits:2,maximumFractionDigits:2})}</div>
+                        <div style="display:flex; align-items:center; justify-content:space-between; margin-top:12px;">
+                            <div style="display:flex; align-items:center; border:1px solid #eee;">
+                                <button onclick="window.__updateQty('${item.id}', -1, '${item.size || ''}')" style="width:28px; height:28px; border:none; background:#fafafa; cursor:pointer; color:#111;">−</button>
+                                <span style="font-size:11px; font-weight:900; min-width:24px; text-align:center; color:#111;">${item.qty}</span>
+                                <button onclick="window.__updateQty('${item.id}', 1, '${item.size || ''}')" style="width:28px; height:28px; border:none; background:#fafafa; cursor:pointer; color:#111;">+</button>
+                            </div>
+                            <div style="text-align:right;">
+                                <div style="font-family:'Playfair Display',serif; font-size:1rem; font-weight:900; font-style:italic; color:#111;">$${(item.precio * item.qty).toFixed(2)}</div>
+                                <div style="font-size:8px; color:#B8860B; font-weight:700;">Bs. ${(item.precio * item.qty * dollarRate).toLocaleString('es-VE',{minimumFractionDigits:2,maximumFractionDigits:2})}</div>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
-        `).join('');
-    };
-
-    window.__checkout = async function() {
-        if(cart.length === 0) return;
-        const btn = el('checkout-btn');
-        
-        // Recopilar datos básicos
-        const vals = {
-            name: el('cust-name').value.trim(),
-            id: el('cust-id').value.trim(),
-            phone: el('cust-phone').value.trim(),
-            email: el('cust-email').value.trim(),
-            payRef: el('pay-reference').value.trim()
+            `).join('');
         };
 
-        // Validación de campos obligatorios
-        if(!vals.name || !vals.id || !vals.phone || !vals.email || !vals.payRef) {
-            alert('❌ POR FAVOR, COMPLETE TODOS LOS CAMPOS OBLIGATORIOS');
-            return;
-        }
+        (window as any).__openCart = function() {
+            const d = el('cart-drawer');
+            if(!d) return;
+            d.style.display = 'block';
+            document.body.style.overflow = 'hidden';
+            d.scrollTo(0,0);
+            requestAnimationFrame(() => d.style.opacity = '1');
+        };
 
-        let orderCode = 'PENDIENTE';
-        btn.disabled = true; 
-        btn.textContent = '⏱ PROCESANDO...';
+        (window as any).__closeCart = function() {
+            const d = el('cart-drawer');
+            if(!d) return;
+            d.style.opacity = '0';
+            document.body.style.overflow = '';
+            setTimeout(() => d.style.display = 'none', 400);
+        };
 
-        try {
-            const total = cartTotal();
-            const orderData = {
-                customer: { 
-                    name: vals.name, 
-                    email: vals.email, 
-                    phone: vals.phone, 
-                    id: vals.id,
-                    city: selectedMethod === 'delivery' ? el('delivery-zone-select').value : (selectedMethod === 'envio' ? el('ship-address').value : 'Tienda'), 
-                    paymentReference: vals.payRef 
-                },
-                items: cart.map(i => ({ 
-                    productId: i.id, 
-                    variantId: i.variantId || null, 
-                    name: i.nombre, 
-                    size: i.size || 'ÚNICO', 
-                    price: i.precio, 
-                    qty: i.qty 
-                })),
-                total: total, 
-                courier: selectedMethod === 'envio' ? selectedCourier : (selectedMethod === 'delivery' ? 'Delivery Local' : 'Retiro en Tienda')
+        (window as any).__updateDeliveryUI = function() {
+            const { selectedMethod, selectedCourier } = (window as any).__getDeliveryData?.() || { selectedMethod: 'retiro', selectedCourier: 'Zoom' };
+            
+            document.querySelectorAll('.meth-card').forEach(b => b.classList.toggle('active-meth', b.id === 'btn-meth-' + selectedMethod));
+            const env = el('envio-fields'); if(env) env.style.display = selectedMethod === 'envio' ? 'flex' : 'none';
+            const del = el('delivery-local-fields'); if(del) del.style.display = selectedMethod === 'delivery' ? 'flex' : 'none';
+            const ret = el('retiro-fields'); if(ret) ret.style.display = selectedMethod === 'retiro' ? 'block' : 'none';
+            document.querySelectorAll('.cour-btn-card').forEach(b => b.classList.toggle('active-cour', b.id === 'btn-courier-' + selectedCourier.toLowerCase()));
+            
+            const zones = (el('cart-drawer')?.dataset.zones || '').split(',').filter(z => z);
+            const zoneSelect = el('delivery-zone-select') as HTMLSelectElement;
+            if(zoneSelect && zoneSelect.options.length <= 1 && zones.length > 0) {
+                zones.forEach(z => { const opt = document.createElement('option'); opt.value = z; opt.textContent = z; zoneSelect.appendChild(opt); });
+            }
+        };
+
+        (window as any).__checkout = async function() {
+            const auth = getAuth();
+            if (!auth.isLoggedIn) {
+                auth.toggleModal?.(true);
+                return;
+            }
+
+            const cart = (window as any).__getCart?.() || [];
+            if(cart.length === 0) return;
+            const btn = el('checkout-btn') as HTMLButtonElement;
+            
+            // Normaliza número venezolano → +58XXXXXXXXX
+            const normalizePhone = (raw: string): string => {
+                let p = raw.replace(/[\s\-\.()]/g, ''); // quitar espacios, guiones, puntos
+                if (p.startsWith('+58')) return p;       // ya está bien
+                if (p.startsWith('58'))  return '+' + p; // falta el +
+                if (p.startsWith('0'))   return '+58' + p.slice(1); // 0412... → +58412...
+                return '+58' + p;                        // caso genérico
             };
 
-            // Intentar registrar en base de datos
-            const res = await fetch('/api/orders', { 
-                method: 'POST', 
-                headers: { 'Content-Type': 'application/json' }, 
-                body: JSON.stringify(orderData)
-            });
-            
-            if(res.ok) {
-                const data = await res.json();
-                orderCode = data.orderCode || 'REGISTRADA';
+            const vals = {
+                name: (el('cust-name') as HTMLInputElement).value.trim(),
+                id: (el('cust-id') as HTMLInputElement).value.trim(),
+                phone: normalizePhone((el('cust-phone') as HTMLInputElement).value.trim()),
+                email: (el('cust-email') as HTMLInputElement).value.trim(),
+                payRef: (el('pay-reference') as HTMLInputElement).value.trim(),
+                profileId: auth.user?.id
+            };
+
+            if(!vals.name || !vals.id || !vals.phone || !vals.email || !vals.payRef) {
+                alert('❌ POR FAVOR, COMPLETE TODOS LOS CAMPOS OBLIGATORIOS');
+                return;
             }
-        } catch(e) {
-            console.warn('Registro interno fallido, procediendo solo con WhatsApp:', e);
-        }
 
-        // GENERACIÓN DEL REPORTE DETALLADO PARA WHATSAPP
-        const totalUSD = cartTotal();
-        const totalBS = totalUSD * dollarRate;
-        
-        let deliveryDetail = '';
-        if (selectedMethod === 'retiro') {
-            deliveryDetail = '📍 RETIRO EN TIENDA';
-        } else if (selectedMethod === 'envio') {
-            deliveryDetail = `📦 ENVÍO NACIONAL\n   Empresa: ${selectedCourier}\n   Destino: ${el('ship-address').value}\n   Agencia: ${el('ship-agency-code').value || 'S/N'}`;
-        } else if (selectedMethod === 'delivery') {
-            deliveryDetail = `🛵 DELIVERY LOCAL\n   Zona: ${el('delivery-zone-select').value}\n   Dirección: ${el('delivery-address').value}`;
-        }
+            const { selectedMethod, selectedCourier } = (window as any). __getDeliveryData?.() || {};
+            const shipAgency = (el('ship-agency-code') as HTMLInputElement)?.value.trim();
+            const shipAddr = (el('ship-address') as HTMLTextAreaElement)?.value.trim();
+            const delAddr = (el('delivery-address') as HTMLTextAreaElement)?.value.trim();
+            const delZone = (el('delivery-zone-select') as HTMLSelectElement)?.value;
 
-        let msg = `✦ *FOREVER ONE - ATELIER EXCLUSIVO* ✦\n`;
-        msg += `✨ *ORDEN DE COMPRA: #${orderCode}*\n`;
-        msg += `────────────────────────\n\n`;
+            btn.disabled = true; 
+            btn.textContent = '⏱ PROCESANDO...';
+
+            let orderCode = 'PENDIENTE';
+            try {
+                const total = cartTotal();
+                const res = await fetch('/api/orders', { 
+                    method: 'POST', 
+                    headers: { 'Content-Type': 'application/json' }, 
+                    body: JSON.stringify({ 
+                        items: cart, 
+                        total, 
+                        customer: vals,
+                        delivery: {
+                            method: selectedMethod,
+                            courier: selectedCourier,
+                            agency: shipAgency,
+                            shipAddress: shipAddr,
+                            delAddress: delAddr,
+                            delZone: delZone
+                        }
+                    })
+                });
+                if(res.ok) {
+                    const data = await res.json();
+                    orderCode = data.orderCode || 'REGISTRADA';
+                }
+            } catch(e) {}
+            const drawer = el('cart-drawer');
+            const dollarRate = parseFloat(drawer?.dataset.rate || '0');
+            const totalUSD = cartTotal();
+            const totalBS = totalUSD * dollarRate;
+            const now = new Date();
+            const dateStr = now.toLocaleDateString('es-VE') + ' ' + now.toLocaleTimeString('es-VE', { hour: '2-digit', minute: '2-digit' });
+
+            let deliverySummary = '';
+            if (selectedMethod === 'retiro') {
+                deliverySummary = '• MÉTODO: Retiro en Tienda';
+            } else if (selectedMethod === 'envio') {
+                deliverySummary = `• MÉTODO: Envío Nacional\n• COURIER: ${selectedCourier}\n• AGENCIA: ${shipAgency}\n• DESTINO: ${shipAddr}`;
+            } else if (selectedMethod === 'delivery') {
+                deliverySummary = `• MÉTODO: Delivery Local\n• ZONA: ${delZone}\n• DIRECCIÓN: ${delAddr}`;
+            }
+
+            const itemsSummary = cart.map((i: any) => `  - ${i.qty}x ${i.nombre}${i.size ? ` (${i.size})` : ''}: $${(i.precio * i.qty).toFixed(2)}`).join('\n');
+
+            const msg = `✦ *RESUMEN DE COMPRA — FOREVER ONE* ✦
+----------------------------------
+📦 *ORDEN:* #${orderCode}
+📅 *FECHA:* ${dateStr}
+
+👤 *CLIENTE:*
+• Nombre: ${vals.name}
+• Cédula: ${vals.id}
+• Teléfono: ${vals.phone}
+
+🛍️ *PEDIDO:*
+${itemsSummary}
+
+🚚 *ENTREGA:*
+${deliverySummary}
+
+💰 *PAGO:*
+• Referencia: ${vals.payRef}
+• *TOTAL USD:* $${totalUSD.toFixed(2)}
+• *TOTAL Bs:* ${totalBS.toLocaleString('es-VE', { minimumFractionDigits: 2 })} (Tasa: ${dollarRate})
+----------------------------------
+_Confirmando mi pedido en el Atelier..._`;
+
+            window.open(`https://wa.me/584244557693?text=${encodeURIComponent(msg)}`, '_blank');
+            
+            localStorage.removeItem('fo1_cart'); 
+            setTimeout(() => window.location.reload(), 1000);
+        };
+
+        // INITIALIZE
+        loadCart();
+        (window as any).__renderCart();
         
-        msg += `👤 *DATOS DEL CLIENTE*\n`;
-        msg += `   Nombre: ${vals.name}\n`;
-        msg += `   Cédula: ${vals.id}\n`;
-        msg += `   Teléfono: ${vals.phone}\n`;
-        msg += `   Email: ${vals.email}\n\n`;
-        
-        msg += `🛍️ *DETALLE DEL PEDIDO*\n`;
-        cart.forEach(i => {
-            msg += `▪️ ${i.nombre}\n`;
-            msg += `   Talla: ${i.size || 'ÚNICO'} | Cant: ${i.qty}\n`;
-            msg += `   Precio: $${i.precio.toFixed(2)} c/u\n`;
+        document.addEventListener('astro:after-swap', () => {
+            loadCart();
+            (window as any).__renderCart();
         });
-        msg += `\n`;
-        
-        msg += `🚚 *MÉTODO DE ENTREGA*\n`;
-        msg += `   ${deliveryDetail}\n\n`;
-        
-        msg += `💳 *INFORMACIÓN DE PAGO*\n`;
-        msg += `   Referencia: ${vals.payRef}\n`;
-        msg += `   Monto USD: $${totalUSD.toFixed(2)}\n`;
-        msg += `   Monto Bs: ${totalBS.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}\n`;
-        msg += `   (Tasa: Bs. ${dollarRate.toFixed(2)})\n\n`;
-        
-        msg += `────────────────────────\n`;
-        msg += `_Gracias por elegir la elegancia de Forever One._`;
-
-        // Abrir WhatsApp siempre
-        window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(msg)}`, '_blank');
-        
-        // Limpiar carrito y cerrar
-        cart = []; 
-        saveCart(); 
-        window.__renderCart(); 
-        window.__closeCart();
-        
-        btn.disabled = false; 
-        btn.textContent = '✦ FINALIZAR POR WHATSAPP';
-    };
-
-    loadCart();
-    window.__renderCart();
-    window.__updateDeliveryUI();
-
-    document.addEventListener('astro:after-swap', () => { loadCart(); window.__renderCart(); window.__updateDeliveryUI(); });
-})();
+    })();
 </script>

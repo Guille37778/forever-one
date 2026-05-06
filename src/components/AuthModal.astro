@@ -1,0 +1,447 @@
+---
+// AuthModal.astro — Flujo principal: Google OAuth
+// Email+contraseña como opción secundaria (sin verificación por código)
+const base = (import.meta.env.BASE_URL || '/').replace(/\/$/, '');
+---
+
+<style>
+  /* Forzar texto oscuro en todos los inputs del modal */
+  [x-data="authModal()"] input {
+    color: #111111 !important;
+  }
+  [x-data="authModal()"] input::placeholder {
+    color: rgba(0, 0, 0, 0.35) !important;
+  }
+  [x-data="authModal()"] input:-webkit-autofill,
+  [x-data="authModal()"] input:-webkit-autofill:hover,
+  [x-data="authModal()"] input:-webkit-autofill:focus {
+    -webkit-text-fill-color: #111111 !important;
+    -webkit-box-shadow: 0 0 0px 1000px #ffffff inset !important;
+  }
+</style>
+
+<div x-data="authModal()"
+     x-show="$store.auth.showModal"
+     class="fixed inset-0 z-[5000] flex items-center justify-center p-4"
+     x-cloak>
+
+    <!-- Backdrop -->
+    <div x-transition:enter="transition ease-out duration-300"
+         x-transition:enter-start="opacity-0"
+         x-transition:enter-end="opacity-100"
+         x-transition:leave="transition ease-in duration-200"
+         x-transition:leave-start="opacity-100"
+         x-transition:leave-end="opacity-0"
+         class="absolute inset-0 bg-black/80 backdrop-blur-md"
+         @click="close()">
+    </div>
+
+    <!-- Modal Panel -->
+    <div x-transition:enter="transition ease-out duration-300"
+         x-transition:enter-start="opacity-0 scale-95 translate-y-8"
+         x-transition:enter-end="opacity-100 scale-100 translate-y-0"
+         x-transition:leave="transition ease-in duration-200"
+         x-transition:leave-start="opacity-100 scale-100 translate-y-0"
+         x-transition:leave-end="opacity-0 scale-95 translate-y-8"
+         class="relative w-full max-w-md bg-[#F9F8F6] rounded-3xl overflow-hidden shadow-2xl border border-[rgba(184,134,11,0.2)]"
+         @click.stop>
+
+        <!-- Decoración de fondo -->
+        <div class="absolute top-0 right-0 w-48 h-48 rounded-full -mr-24 -mt-24 blur-3xl pointer-events-none"
+             style="background: radial-gradient(circle, rgba(184,134,11,0.1), transparent);"></div>
+        <div class="absolute bottom-0 left-0 w-36 h-36 rounded-full -ml-18 -mb-18 blur-3xl pointer-events-none"
+             style="background: radial-gradient(circle, rgba(184,134,11,0.07), transparent);"></div>
+
+        <div class="relative p-8 md:p-10">
+
+            <!-- Botón cerrar -->
+            <button @click="close()"
+                    class="absolute top-5 right-5 w-8 h-8 flex items-center justify-center rounded-full bg-black/5 hover:bg-black/10 text-slate-400 hover:text-black transition-all">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
+
+            <!-- Logo Forever One -->
+            <div class="flex flex-col items-center mb-8">
+                <div class="mb-4" style="width:60px; height:60px;">
+                    <div style={`width:60px; height:60px; background: linear-gradient(135deg,#B8860B,#f3cf7a,#B8860B); -webkit-mask-image: url(${base}/logo_circular.png); -webkit-mask-size: contain; -webkit-mask-repeat: no-repeat; -webkit-mask-position: center; mask-image: url(${base}/logo_circular.png); mask-size: contain; mask-repeat: no-repeat; mask-position: center; box-shadow: 0 0 24px rgba(184,134,11,0.35);`}
+                         aria-hidden="true"></div>
+                </div>
+                <div style="font-family:'Playfair Display',serif; font-size:1.25rem; font-weight:900; font-style:italic; color:#0a0a0a; line-height:1.1; text-align:center;">
+                    Forever <span style="background:linear-gradient(135deg,#B8860B,#f3cf7a,#B8860B); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;">One</span>
+                </div>
+                <div style="font-size:7.5px; letter-spacing:0.45em; text-transform:uppercase; color:rgba(184,134,11,0.65); font-weight:700; margin-top:3px;">Atelier Privado</div>
+            </div>
+
+            <!-- ─────────── VISTA PRINCIPAL ─────────── -->
+            <div x-show="view === 'main'" x-transition>
+
+                <!-- Tabs -->
+                <div style="display:grid; grid-template-columns:1fr 1fr; border:1px solid rgba(184,134,11,0.2); border-radius:10px; overflow:hidden; margin-bottom:1.75rem;">
+                    <button @click="switchTab('login')"
+                            :style="tab==='login' ? 'background:#0a0a0a; color:#f3cf7a;' : 'background:transparent; color:rgba(0,0,0,0.35);'"
+                            style="padding:0.65rem; font-size:8px; font-weight:900; text-transform:uppercase; letter-spacing:0.3em; border:none; cursor:pointer; transition:all 0.2s;">
+                        Iniciar Sesión
+                    </button>
+                    <button @click="switchTab('register')"
+                            :style="tab==='register' ? 'background:#0a0a0a; color:#f3cf7a;' : 'background:transparent; color:rgba(0,0,0,0.35);'"
+                            style="padding:0.65rem; font-size:8px; font-weight:900; text-transform:uppercase; letter-spacing:0.3em; border:none; cursor:pointer; transition:all 0.2s;">
+                        Registrarse
+                    </button>
+                </div>
+
+                <!-- ══════ TAB: LOGIN ══════ -->
+                <div x-show="tab==='login'" x-transition>
+
+                    <!-- GOOGLE — Botón principal destacado -->
+                    <button @click="loginGoogle()" :disabled="loading"
+                            style="width:100%; display:flex; align-items:center; justify-content:center; gap:14px; background:#0a0a0a; color:#f9f8f6; border:none; border-radius:14px; padding:1rem 1.5rem; font-size:9px; font-weight:900; text-transform:uppercase; letter-spacing:0.3em; cursor:pointer; transition:all 0.25s; box-shadow:0 4px 20px rgba(0,0,0,0.15); margin-bottom:0.85rem; position:relative; overflow:hidden;"
+                            onmouseenter="this.style.background='#B8860B'; this.style.boxShadow='0 6px 24px rgba(184,134,11,0.35)'"
+                            onmouseleave="this.style.background='#0a0a0a'; this.style.boxShadow='0 4px 20px rgba(0,0,0,0.15)'">
+                        <svg width="20" height="20" viewBox="0 0 24 24">
+                            <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+                            <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                            <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+                            <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+                        </svg>
+                        <span x-show="!loading">Continuar con Google</span>
+                        <span x-show="loading">Conectando...</span>
+                    </button>
+                    <p style="text-align:center; font-size:8.5px; color:rgba(0,0,0,0.3); margin-bottom:1.25rem; letter-spacing:0.05em;">
+                        La forma más rápida y segura ✦
+                    </p>
+
+                    <!-- Divisor -->
+                    <div style="display:flex; align-items:center; gap:1rem; margin-bottom:1.1rem;">
+                        <div style="flex:1; height:1px; background:rgba(0,0,0,0.07);"></div>
+                        <span style="font-size:7.5px; text-transform:uppercase; letter-spacing:0.3em; color:rgba(0,0,0,0.2); font-weight:700;">o con correo</span>
+                        <div style="flex:1; height:1px; background:rgba(0,0,0,0.07);"></div>
+                    </div>
+
+                    <!-- Email + Contraseña -->
+                    <form @submit.prevent="loginEmail()" style="display:flex; flex-direction:column; gap:0.65rem;">
+                        <input x-model="email" type="email" placeholder="Correo electrónico" required autocomplete="email"
+                               style="width:100%; box-sizing:border-box; padding:0.75rem 1rem; border:1px solid rgba(0,0,0,0.1); border-radius:8px; font-size:12px; background:#fff; outline:none; font-family:inherit; transition:border-color 0.2s;"
+                               onfocus="this.style.borderColor='#B8860B'"
+                               onblur="this.style.borderColor='rgba(0,0,0,0.1)'">
+                        <div style="position:relative;">
+                            <input x-model="password" :type="showPass?'text':'password'" placeholder="Contraseña" required autocomplete="current-password"
+                                   style="width:100%; box-sizing:border-box; padding:0.75rem 2.5rem 0.75rem 1rem; border:1px solid rgba(0,0,0,0.1); border-radius:8px; font-size:12px; background:#fff; outline:none; font-family:inherit; transition:border-color 0.2s;"
+                                   onfocus="this.style.borderColor='#B8860B'"
+                                   onblur="this.style.borderColor='rgba(0,0,0,0.1)'">
+                            <button type="button" @click="showPass=!showPass" tabindex="-1"
+                                    style="position:absolute; right:10px; top:50%; transform:translateY(-50%); background:none; border:none; cursor:pointer; color:rgba(0,0,0,0.25); padding:2px; line-height:0;">
+                                <svg x-show="!showPass" width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                                <svg x-show="showPass" width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"/></svg>
+                            </button>
+                        </div>
+                        <button type="submit" :disabled="loading"
+                                style="width:100%; padding:0.8rem; background:#fff; color:#0a0a0a; font-size:8px; font-weight:900; text-transform:uppercase; letter-spacing:0.3em; border:1px solid rgba(0,0,0,0.12); border-radius:8px; cursor:pointer; transition:all 0.2s;"
+                                onmouseenter="this.style.borderColor='#B8860B'; this.style.background='rgba(184,134,11,0.05)'"
+                                onmouseleave="this.style.borderColor='rgba(0,0,0,0.12)'; this.style.background='#fff'">
+                            <span x-show="!loading">Ingresar</span>
+                            <span x-show="loading">Verificando...</span>
+                        </button>
+                    </form>
+
+                    <div style="text-align:center; margin-top:0.85rem;">
+                        <button @click="view='forgot'; msg=''"
+                                style="font-size:8.5px; color:rgba(184,134,11,0.7); font-weight:700; text-transform:uppercase; letter-spacing:0.15em; background:none; border:none; cursor:pointer; text-decoration:underline; text-underline-offset:3px;">
+                            ¿Olvidaste tu contraseña?
+                        </button>
+                    </div>
+                </div>
+
+                <!-- ══════ TAB: REGISTRO ══════ -->
+                <div x-show="tab==='register'" x-transition>
+
+                    <!-- GOOGLE — Botón principal -->
+                    <button @click="loginGoogle()" :disabled="loading"
+                            style="width:100%; display:flex; align-items:center; justify-content:center; gap:14px; background:#0a0a0a; color:#f9f8f6; border:none; border-radius:14px; padding:1rem 1.5rem; font-size:9px; font-weight:900; text-transform:uppercase; letter-spacing:0.3em; cursor:pointer; transition:all 0.25s; box-shadow:0 4px 20px rgba(0,0,0,0.15); margin-bottom:0.85rem;"
+                            onmouseenter="this.style.background='#B8860B'; this.style.boxShadow='0 6px 24px rgba(184,134,11,0.35)'"
+                            onmouseleave="this.style.background='#0a0a0a'; this.style.boxShadow='0 4px 20px rgba(0,0,0,0.15)'">
+                        <svg width="20" height="20" viewBox="0 0 24 24">
+                            <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+                            <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                            <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+                            <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+                        </svg>
+                        <span x-show="!loading">Registrarse con Google</span>
+                        <span x-show="loading">Conectando...</span>
+                    </button>
+                    <p style="text-align:center; font-size:8.5px; color:rgba(0,0,0,0.3); margin-bottom:1.25rem; letter-spacing:0.05em;">
+                        Rápido, seguro y sin contraseñas ✦
+                    </p>
+
+                    <!-- Divisor -->
+                    <div style="display:flex; align-items:center; gap:1rem; margin-bottom:1.1rem;">
+                        <div style="flex:1; height:1px; background:rgba(0,0,0,0.07);"></div>
+                        <span style="font-size:7.5px; text-transform:uppercase; letter-spacing:0.3em; color:rgba(0,0,0,0.2); font-weight:700;">o con correo</span>
+                        <div style="flex:1; height:1px; background:rgba(0,0,0,0.07);"></div>
+                    </div>
+
+                    <!-- Registro: Nombre + Email + Contraseña → directo, sin código -->
+                    <form @submit.prevent="registerEmail()" style="display:flex; flex-direction:column; gap:0.65rem;">
+                        <input x-model="fullName" type="text" placeholder="Tu nombre completo" required autocomplete="name"
+                               style="width:100%; box-sizing:border-box; padding:0.75rem 1rem; border:1px solid rgba(0,0,0,0.1); border-radius:8px; font-size:12px; background:#fff; outline:none; font-family:inherit; transition:border-color 0.2s;"
+                               onfocus="this.style.borderColor='#B8860B'"
+                               onblur="this.style.borderColor='rgba(0,0,0,0.1)'">
+                        <input x-model="email" type="email" placeholder="Correo electrónico" required autocomplete="email"
+                               style="width:100%; box-sizing:border-box; padding:0.75rem 1rem; border:1px solid rgba(0,0,0,0.1); border-radius:8px; font-size:12px; background:#fff; outline:none; font-family:inherit; transition:border-color 0.2s;"
+                               onfocus="this.style.borderColor='#B8860B'"
+                               onblur="this.style.borderColor='rgba(0,0,0,0.1)'">
+                        <div style="position:relative;">
+                            <input x-model="password" :type="showPass?'text':'password'" placeholder="Contraseña (mín. 8 caracteres)" required autocomplete="new-password" minlength="8"
+                                   style="width:100%; box-sizing:border-box; padding:0.75rem 2.5rem 0.75rem 1rem; border:1px solid rgba(0,0,0,0.1); border-radius:8px; font-size:12px; background:#fff; outline:none; font-family:inherit; transition:border-color 0.2s;"
+                                   onfocus="this.style.borderColor='#B8860B'"
+                                   onblur="this.style.borderColor='rgba(0,0,0,0.1)'">
+                            <button type="button" @click="showPass=!showPass" tabindex="-1"
+                                    style="position:absolute; right:10px; top:50%; transform:translateY(-50%); background:none; border:none; cursor:pointer; color:rgba(0,0,0,0.25); padding:2px; line-height:0;">
+                                <svg x-show="!showPass" width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                                <svg x-show="showPass" width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"/></svg>
+                            </button>
+                        </div>
+                        <button type="submit" :disabled="loading"
+                                style="width:100%; padding:0.8rem; background:#fff; color:#0a0a0a; font-size:8px; font-weight:900; text-transform:uppercase; letter-spacing:0.3em; border:1px solid rgba(0,0,0,0.12); border-radius:8px; cursor:pointer; transition:all 0.2s;"
+                                onmouseenter="this.style.borderColor='#B8860B'; this.style.background='rgba(184,134,11,0.05)'"
+                                onmouseleave="this.style.borderColor='rgba(0,0,0,0.12)'; this.style.background='#fff'">
+                            <span x-show="!loading">✦ Crear cuenta</span>
+                            <span x-show="loading">Creando cuenta...</span>
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Mensajes error/éxito -->
+                <div x-show="msg" x-transition
+                     :style="msgType==='error' ? 'background:rgba(239,68,68,0.07); border:1px solid rgba(239,68,68,0.18); color:#b91c1c;' : 'background:rgba(34,197,94,0.07); border:1px solid rgba(34,197,94,0.18); color:#15803d;'"
+                     style="margin-top:1rem; padding:0.7rem 1rem; border-radius:8px; font-size:10px; font-weight:600; text-align:center;"
+                     x-text="msg">
+                </div>
+            </div>
+
+            <!-- ─────────── VISTA: RECUPERAR CONTRASEÑA ─────────── -->
+            <div x-show="view === 'forgot'" x-transition>
+                <div style="text-align:center; margin-bottom:1.5rem;">
+                    <div style="font-size:2rem; margin-bottom:0.5rem;">🔑</div>
+                    <p style="font-size:14px; font-weight:700; color:#0a0a0a; margin-bottom:0.4rem; font-family:'Playfair Display',serif;">Recuperar acceso</p>
+                    <p style="font-size:10px; color:rgba(0,0,0,0.4); line-height:1.5;">
+                        Ingresa tu correo y te enviaremos un enlace para restablecer tu contraseña.
+                    </p>
+                </div>
+                <form @submit.prevent="sendForgot()" style="display:flex; flex-direction:column; gap:0.75rem;">
+                    <input x-model="email" type="email" placeholder="Correo electrónico" required
+                           style="width:100%; box-sizing:border-box; padding:0.75rem 1rem; border:1px solid rgba(0,0,0,0.1); border-radius:8px; font-size:12px; background:#fff; outline:none; font-family:inherit; transition:border-color 0.2s;"
+                           onfocus="this.style.borderColor='#B8860B'"
+                           onblur="this.style.borderColor='rgba(0,0,0,0.1)'">
+                    <button type="submit" :disabled="loading"
+                            style="width:100%; padding:0.875rem; background:#0a0a0a; color:#f3cf7a; font-size:8px; font-weight:900; text-transform:uppercase; letter-spacing:0.35em; border:none; border-radius:8px; cursor:pointer; transition:all 0.2s;"
+                            onmouseenter="this.style.background='#B8860B'; this.style.color='#fff'"
+                            onmouseleave="this.style.background='#0a0a0a'; this.style.color='#f3cf7a'">
+                        <span x-show="!loading">✦ Enviar enlace</span>
+                        <span x-show="loading">Enviando...</span>
+                    </button>
+                </form>
+                <div style="text-align:center; margin-top:1rem;">
+                    <button @click="view='main'; msg=''"
+                            style="font-size:9px; color:rgba(0,0,0,0.3); font-weight:600; background:none; border:none; cursor:pointer;">
+                        ← Volver
+                    </button>
+                </div>
+                <div x-show="msg" x-transition
+                     :style="msgType==='error' ? 'background:rgba(239,68,68,0.07); border:1px solid rgba(239,68,68,0.18); color:#b91c1c;' : 'background:rgba(34,197,94,0.07); border:1px solid rgba(34,197,94,0.18); color:#15803d;'"
+                     style="margin-top:1rem; padding:0.7rem 1rem; border-radius:8px; font-size:10px; font-weight:600; text-align:center;"
+                     x-text="msg">
+                </div>
+            </div>
+
+        </div><!-- /p-8 -->
+    </div><!-- /modal panel -->
+</div>
+
+<script>
+    import { supabase } from '../lib/supabase';
+
+    function authModal() {
+        return {
+            view: 'main',
+            tab: 'login',
+            email: '',
+            password: '',
+            fullName: '',
+            showPass: false,
+            loading: false,
+            msg: '',
+            msgType: 'success',
+
+            switchTab(t: string) {
+                this.tab = t;
+                this.msg = '';
+                this.password = '';
+                this.email = '';
+                this.fullName = '';
+                this.showPass = false;
+            },
+
+            close() {
+                (window as any).Alpine?.store('auth')?.toggleModal(false);
+                setTimeout(() => {
+                    this.view = 'main';
+                    this.tab = 'login';
+                    this.email = '';
+                    this.password = '';
+                    this.fullName = '';
+                    this.msg = '';
+                    this.loading = false;
+                    this.showPass = false;
+                }, 300);
+            },
+
+            showMsg(text: string, type: 'success' | 'error' = 'success') {
+                this.msg = text;
+                this.msgType = type;
+                if (type === 'success') setTimeout(() => { this.msg = ''; }, 5000);
+            },
+
+            // ══════════════════════════════════════
+            //  GOOGLE — Flujo principal
+            //  Google maneja todo: si no hay sesión
+            //  en el navegador, pide email y contraseña
+            // ══════════════════════════════════════
+            async loginGoogle() {
+                this.loading = true;
+                this.msg = '';
+                try {
+                    const { error } = await supabase.auth.signInWithOAuth({
+                        provider: 'google',
+                        options: {
+                            redirectTo: window.location.origin + '/auth/callback'
+                        }
+                    });
+                    if (error) {
+                        this.showMsg('Error al conectar con Google: ' + error.message, 'error');
+                        this.loading = false;
+                    }
+                    // Sin error → la página redirige a Google
+                } catch (e: any) {
+                    this.showMsg('Error inesperado. Intenta con tu correo.', 'error');
+                    this.loading = false;
+                }
+            },
+
+            // ══════════════════════════════════════
+            //  LOGIN CON EMAIL + CONTRASEÑA
+            // ══════════════════════════════════════
+            async loginEmail() {
+                if (!this.email.includes('@')) {
+                    this.showMsg('Ingresa un correo válido.', 'error'); return;
+                }
+                if (!this.password) {
+                    this.showMsg('Ingresa tu contraseña.', 'error'); return;
+                }
+                this.loading = true;
+                this.msg = '';
+                try {
+                    const { data, error } = await supabase.auth.signInWithPassword({
+                        email: this.email.trim().toLowerCase(),
+                        password: this.password
+                    });
+                    if (error) {
+                        if (error.message.includes('Invalid login credentials') || error.message.includes('invalid_credentials')) {
+                            this.showMsg('Correo o contraseña incorrectos.', 'error');
+                        } else if (error.message.includes('Email not confirmed')) {
+                            this.showMsg('Confirma tu correo antes de ingresar.', 'error');
+                        } else {
+                            this.showMsg('Error: ' + error.message, 'error');
+                        }
+                    } else if (data.session) {
+                        this.showMsg('¡Bienvenido! ✦', 'success');
+                        setTimeout(() => this.close(), 900);
+                    }
+                } catch (e: any) {
+                    this.showMsg('Error inesperado. Intenta nuevamente.', 'error');
+                } finally {
+                    this.loading = false;
+                }
+            },
+
+            // ══════════════════════════════════════
+            //  REGISTRO CON EMAIL — Sin verificación
+            //  (Confirm email desactivado en Supabase)
+            //  El usuario entra directo después de crear cuenta
+            // ══════════════════════════════════════
+            async registerEmail() {
+                if (!this.fullName || this.fullName.trim().length < 2) {
+                    this.showMsg('Ingresa tu nombre completo.', 'error'); return;
+                }
+                if (!this.email.includes('@')) {
+                    this.showMsg('Ingresa un correo válido.', 'error'); return;
+                }
+                if (!this.password || this.password.length < 8) {
+                    this.showMsg('La contraseña debe tener al menos 8 caracteres.', 'error'); return;
+                }
+                this.loading = true;
+                this.msg = '';
+                try {
+                    const { data, error } = await supabase.auth.signUp({
+                        email: this.email.trim().toLowerCase(),
+                        password: this.password,
+                        options: {
+                            data: { full_name: this.fullName.trim() }
+                        }
+                    });
+                    if (error) {
+                        if (error.message.includes('User already registered') || error.message.includes('already been registered')) {
+                            this.showMsg('Ya existe una cuenta con ese correo. Inicia sesión.', 'error');
+                        } else if (error.message.includes('rate limit')) {
+                            this.showMsg('Demasiados intentos. Espera unos minutos.', 'error');
+                        } else {
+                            this.showMsg('Error: ' + error.message, 'error');
+                        }
+                    } else if (data.session) {
+                        // Confirm email desactivado → sesión inmediata
+                        this.showMsg('¡Cuenta creada! Bienvenido a Forever One ✦', 'success');
+                        setTimeout(() => this.close(), 1000);
+                    } else if (data.user && !data.session) {
+                        // Confirm email activado → notificar al usuario
+                        this.showMsg('✓ Revisa tu correo para confirmar tu cuenta.', 'success');
+                    }
+                } catch (e: any) {
+                    this.showMsg('Error al crear la cuenta. Intenta nuevamente.', 'error');
+                } finally {
+                    this.loading = false;
+                }
+            },
+
+            // ══════════════════════════════════════
+            //  RECUPERAR CONTRASEÑA
+            // ══════════════════════════════════════
+            async sendForgot() {
+                if (!this.email.includes('@')) {
+                    this.showMsg('Ingresa un correo válido.', 'error'); return;
+                }
+                this.loading = true;
+                this.msg = '';
+                try {
+                    const { error } = await supabase.auth.resetPasswordForEmail(
+                        this.email.trim().toLowerCase(),
+                        { redirectTo: window.location.origin + '/perfil' }
+                    );
+                    if (error) {
+                        this.showMsg('Error: ' + error.message, 'error');
+                    } else {
+                        this.showMsg('✓ Revisa tu correo — te enviamos el enlace.', 'success');
+                    }
+                } catch (e: any) {
+                    this.showMsg('Error al enviar. Intenta nuevamente.', 'error');
+                } finally {
+                    this.loading = false;
+                }
+            }
+        };
+    }
+
+    document.addEventListener('alpine:init', () => {
+        (window as any).Alpine.data('authModal', authModal);
+    });
+</script>

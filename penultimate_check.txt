@@ -1,0 +1,144 @@
+(node:247040) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+[2m11:03:42[22m [34m[@astrojs/cloudflare][39m Enabling sessions with Cloudflare KV with the "SESSION" KV binding.
+[2m11:03:42[22m [34m[@astrojs/cloudflare][39m If you see the error "Invalid binding `SESSION`" in your build output, you need to add the binding to your wrangler config file.
+[33m[1m11:03:42[22m [WARN] [adapter][39m Cloudflare does not support sharp at runtime. However, you can configure `imageService: "compile"` to optimize images with sharp on prerendered pages during build time.
+[2m11:03:42[22m [34m[content][39m Syncing content
+[2m11:03:42[22m [34m[content][39m Synced content
+[2m11:03:42[22m [34m[types][39m Generated [2m145ms[22m
+[2m11:03:42[22m [34m[check][39m Getting diagnostics for Astro files in C:\Users\Usuario\Desktop\proyectos reales\forever-one...
+[96msrc/components/CartDrawer.astro[0m:[93m12[0m:[93m7[0m - [93mwarning[0m[90m ts(6133): [0m'deliveryZones' is declared but its value is never read.
+
+[7m12[0m const deliveryZones = settingsData?.find((s: any) => s.key === 'delivery_zones')?.value || '';
+[7m  [0m [93m      ~~~~~~~~~~~~~[0m
+[96msrc/components/CartDrawer.astro[0m:[93m397[0m:[93m24[0m - [93mwarning[0m[90m ts(6133): [0m'syncCartWithDB' is declared but its value is never read.
+
+[7m397[0m     import { loadCart, syncCartWithDB, cartTotal } from '../lib/cart';
+[7m   [0m [93m                       ~~~~~~~~~~~~~~[0m
+
+[96msrc/lib/cart.ts[0m:[93m10[0m:[93m5[0m - [93mwarning[0m[90m ts(6133): [0m'dollarRate' is declared but its value is never read.
+
+[7m10[0m let dollarRate = 0;
+[7m  [0m [93m    ~~~~~~~~~~[0m
+
+[96msrc/lib/supabase.ts[0m:[93m87[0m:[93m11[0m - [93mwarning[0m[90m ts(6133): [0m'target' is declared but its value is never read.
+
+[7m87[0m     get: (target, prop) => {
+[7m  [0m [93m          ~~~~~~[0m
+[96msrc/lib/supabase.ts[0m:[93m75[0m:[93m11[0m - [93mwarning[0m[90m ts(6133): [0m'target' is declared but its value is never read.
+
+[7m75[0m     get: (target, prop) => {
+[7m  [0m [93m          ~~~~~~[0m
+
+[96msrc/pages/admin/analytics.astro[0m:[93m26[0m:[93m7[0m - [93mwarning[0m[90m ts(6133): [0m'totalWA' is declared but its value is never read.
+
+[7m26[0m const totalWA    = analyticsData?.reduce((s: any, i: any) => s + (i.whatsapp_clicks || 0), 0) || 0;
+[7m  [0m [93m      ~~~~~~~[0m
+[96msrc/pages/admin/analytics.astro[0m:[93m255[0m:[93m33[0m - [91merror[0m[90m ts(8010): [0mType annotations can only be used in TypeScript files.
+
+[7m255[0m     const wa     = data.map((d: any) => d.whatsapp_clicks || 0);
+[7m   [0m [91m                                ~~~[0m
+[96msrc/pages/admin/analytics.astro[0m:[93m254[0m:[93m33[0m - [91merror[0m[90m ts(8010): [0mType annotations can only be used in TypeScript files.
+
+[7m254[0m     const views  = data.map((d: any) => d.views || 0);
+[7m   [0m [91m                                ~~~[0m
+[96msrc/pages/admin/analytics.astro[0m:[93m253[0m:[93m33[0m - [91merror[0m[90m ts(8010): [0mType annotations can only be used in TypeScript files.
+
+[7m253[0m     const labels = data.map((d: any) => d.products?.name || 'Prenda');
+[7m   [0m [91m                                ~~~[0m
+[96msrc/pages/admin/analytics.astro[0m:[93m239[0m:[93m20[0m - [91merror[0m[90m ts(8010): [0mType annotations can only be used in TypeScript files.
+
+[7m239[0m       } catch (_e: any) {
+[7m   [0m [91m                   ~~~[0m
+[96msrc/pages/admin/analytics.astro[0m:[93m231[0m:[93m9[0m - [93mwarning[0m[90m astro(4000): [0mThis script will be treated as if it has the `is:inline` directive because it contains an attribute. Therefore, features that require processing (e.g. using TypeScript or npm packages in the script) are unavailable.
+
+See docs for more details: https://docs.astro.build/en/guides/client-side-scripts/#script-processing.
+
+Add the `is:inline` directive explicitly to silence this hint.
+
+[7m231[0m <script define:vars={{ analyticsData: processedData }}>
+[7m   [0m [93m        ~~~~~~~~~~~[0m
+
+[96msrc/pages/admin/register.astro[0m:[93m2[0m:[93m1[0m - [93mwarning[0m[90m ts(6133): [0m'Layout' is declared but its value is never read.
+
+[7m2[0m import Layout from '../../layouts/Layout.astro';
+[7m [0m [93m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+[96msrc/pages/admin/customers/index.astro[0m:[93m300[0m:[93m29[0m - [91merror[0m[90m ts(7006): [0mParameter 'client' implicitly has an 'any' type.
+
+[7m300[0m             {clientList.map(client => (
+[7m   [0m [91m                            ~~~~~~[0m
+[96msrc/pages/admin/customers/index.astro[0m:[93m38[0m:[93m40[0m - [91merror[0m[90m ts(7006): [0mParameter 'c' implicitly has an 'any' type.
+
+[7m38[0m const newThisMonth = clientList.filter(c => {
+[7m  [0m [91m                                       ~[0m
+[96msrc/pages/admin/customers/index.astro[0m:[93m37[0m:[93m43[0m - [91merror[0m[90m ts(7006): [0mParameter 'c' implicitly has an 'any' type.
+
+[7m37[0m const activeCustomers = clientList.filter(c => c.order_count > 0).length;
+[7m  [0m [91m                                          ~[0m
+[96msrc/pages/admin/customers/index.astro[0m:[93m31[0m:[93m42[0m - [91merror[0m[90m ts(7006): [0mParameter 'c' implicitly has an 'any' type.
+
+[7m31[0m const clientList = (customers || []).map(c => ({
+[7m  [0m [91m                                         ~[0m
+
+[96msrc/pages/admin/orders/index.astro[0m:[93m223[0m:[93m18[0m - [93mwarning[0m[90m ts(6133): [0m'handleStatus' is declared but its value is never read.
+
+[7m223[0m   async function handleStatus(orderId, newStatus) {
+[7m   [0m [93m                 ~~~~~~~~~~~~[0m
+
+[96msrc/pages/admin/products/[id].astro[0m:[93m45[0m:[93m27[0m - [93mwarning[0m[90m ts(6133): [0m'uploadData' is declared but its value is never read.
+
+[7m45[0m             const { data: uploadData, error: uploadError } = await supabaseAdmin.storage
+[7m  [0m [93m                          ~~~~~~~~~~[0m
+
+[96msrc/pages/admin/products/index.astro[0m:[93m470[0m:[93m41[0m - [91merror[0m[90m ts(7006): [0mParameter 'product' implicitly has an 'any' type.
+
+[7m470[0m                 {accesoriosProducts.map(product => (
+[7m   [0m [91m                                        ~~~~~~~[0m
+[96msrc/pages/admin/products/index.astro[0m:[93m382[0m:[93m35[0m - [91merror[0m[90m ts(7006): [0mParameter 'product' implicitly has an 'any' type.
+
+[7m382[0m                 {ropaProducts.map(product => (
+[7m   [0m [91m                                  ~~~~~~~[0m
+[96msrc/pages/admin/products/index.astro[0m:[93m323[0m:[93m36[0m - [91merror[0m[90m ts(7006): [0mParameter 'sub' implicitly has an 'any' type.
+
+[7m323[0m       {accesoriosSubcategories.map(sub => (
+[7m   [0m [91m                                   ~~~[0m
+[96msrc/pages/admin/products/index.astro[0m:[93m308[0m:[93m68[0m - [91merror[0m[90m ts(7006): [0mParameter 'p' implicitly has an 'any' type.
+
+[7m308[0m           {sub.name} <span class="pill-count">{ropaProducts.filter(p => p.subcategory_id === sub.id).length}</span>
+[7m   [0m [91m                                                                   ~[0m
+[96msrc/pages/admin/products/index.astro[0m:[93m302[0m:[93m30[0m - [91merror[0m[90m ts(7006): [0mParameter 'sub' implicitly has an 'any' type.
+
+[7m302[0m       {ropaSubcategories.map(sub => (
+[7m   [0m [91m                             ~~~[0m
+[96msrc/pages/admin/products/index.astro[0m:[93m359[0m:[93m148[0m - [93mwarning[0m[90m ts(7027): [0mUnreachable code detected.
+
+[7m359[0m                     <form method="POST" style="display:inline" onsubmit="return confirm('¿Seguro que deseas eliminar esta pieza permanentemente?')">
+[7m   [0m [93m                                                                                                                                                   ~[0m
+[7m360[0m                         <input type="hidden" name="id" value={product.id} />
+[7m   [0m [93m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+[7m...[0m 
+[7m493[0m                         <a href={`/admin/products/${product.id}`} class="edit-btn-pro" title="Editar">✦ Editar</a>
+[7m   [0m [93m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+[7m494[0m                         <form method="POST" style="display:inline" onsubmit="return confirm('¿Seguro que deseas eliminar esta pieza permanentemente?')">
+[7m   [0m [93m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+[96msrc/pages/admin/products/new.astro[0m:[93m32[0m:[93m23[0m - [93mwarning[0m[90m ts(6133): [0m'uploadData' is declared but its value is never read.
+
+[7m32[0m         const { data: uploadData, error: uploadError } = await supabaseAdmin.storage
+[7m  [0m [93m                      ~~~~~~~~~~[0m
+[96msrc/pages/admin/products/new.astro[0m:[93m469[0m:[93m9[0m - [93mwarning[0m[90m ts(6133): [0m'sizeSection' is declared but its value is never read.
+
+[7m469[0m   const sizeSection = document.getElementById('sizeSelection');
+[7m   [0m [93m        ~~~~~~~~~~~[0m
+
+[96msrc/pages/admin/subcategories/index.astro[0m:[93m263[0m:[93m45[0m - [93mwarning[0m[90m ts(7027): [0mUnreachable code detected.
+
+[7m263[0m               <form method="POST" onsubmit="return confirm('¿Eliminar esta subcategoría?')">
+[7m   [0m [93m                                            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+Result (59 files): 
+- 13 errors
+- 0 warnings
+- 14 hints
+

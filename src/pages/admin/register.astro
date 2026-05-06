@@ -35,6 +35,16 @@ if (Astro.request.method === 'POST') {
       messageType = 'success';
     } else {
       // Si la confirmación automática está activa (poco probable con límites)
+      // Acción Maestra: Crear perfil inmediatamente para evitar que quede en el limbo
+      const { data: { user: newUser } } = await supabase.auth.getUser(session.access_token);
+      if (newUser) {
+        await supabase.from('profiles').upsert({
+          id: newUser.id,
+          email: newUser.email,
+          full_name: newUser.email?.split('@')[0] || 'Nuevo Admin'
+        }, { onConflict: 'id' });
+      }
+
       Astro.cookies.set('sb-access-token', session.access_token, {
         path: '/', httpOnly: true, sameSite: 'lax',
         secure: Astro.url.protocol === 'https:',

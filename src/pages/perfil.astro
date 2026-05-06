@@ -1,0 +1,513 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+
+// Esta página usa contenido dinámico en el cliente via Alpine.js
+// No requiere autenticación SSR — la redirección se maneja en el cliente
+---
+
+<Layout title="Mi Perfil — Forever One" description="Tu perfil, historial de pedidos y datos de cliente en Forever One.">
+    <Header isBlack={true} />
+
+    <main style="min-height:100vh; background:#F9F8F6; width:100%; overflow-x:hidden;">
+
+        <!-- HERO SECTION (vista cuando no está logueado) — REDISEÑO AESTHETIC Centrado Bruto -->
+        <div x-data x-show="!$store.auth?.isLoggedIn && !$store.auth?.isLoading"
+             x-cloak
+             style="display:flex; flex-direction:column; align-items:center; justify-content:center; width:100%; min-height:85vh; text-align:center; padding:120px 2rem 5rem; position:relative; background:#FAF9F6;">
+            
+            <!-- Decoración Lux Loop -->
+            <div class="lux-bg-circle" style="position:absolute; top:-10%; right:-10%; width:600px; height:600px; border-radius:50%; background:radial-gradient(circle, rgba(184,134,11,0.05) 0%, transparent 70%);"></div>
+            <div class="lux-bg-circle" style="position:absolute; bottom:-10%; left:-10%; width:400px; height:400px; border-radius:50%; background:radial-gradient(circle, rgba(184,134,11,0.03) 0%, transparent 70%);"></div>
+
+            <!-- Contenido Centrado -->
+            <div style="position:relative; z-index:10; width:100%; max-width:800px; margin:0 auto; display:flex; flex-direction:column; align-items:center; justify-content:center;">
+                
+                <div style="font-size:9px; letter-spacing:0.6em; text-transform:uppercase; color:rgba(184,134,11,0.7); font-weight:800; margin-bottom:1.5rem; animation:fadeInUp 1s ease; text-align:center;">
+                    Atelier Privado
+                </div>
+
+                <div style="font-family:'Playfair Display',serif; font-size:clamp(2.5rem, 8vw, 4.5rem); font-weight:900; font-style:italic; 
+                            background:linear-gradient(135deg,#8B6508 0%, #B8860B 30%, #f3cf7a 50%, #B8860B 70%, #8B6508 100%); 
+                            background-size:200% auto; -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;
+                            animation:shine 6s linear infinite, fadeInUp 1.2s ease; line-height:1; margin-bottom:1.5rem; text-align:center;">
+                    Acceso Exclusivo
+                </div>
+
+                <div style="width:40px; height:1px; background:rgba(184,134,11,0.4); margin-bottom:1.5rem; animation:fadeInUp 1.4s ease;"></div>
+
+                <div style="width:100%; max-width:450px; margin: 0 auto 3rem;">
+                    <p style="font-size:11px; text-transform:uppercase; letter-spacing:0.3em; color:rgba(0,0,0,0.5); 
+                              font-weight:600; line-height:2.2; animation:fadeInUp 1.6s ease; text-align:center;">
+                        Inicia sesión para descubrir tu <span style="color:#B8860B;">historial de piezas exclusivas</span> y gestionar tu experiencia personalizada en Forever One.
+                    </p>
+                </div>
+
+                <button x-data @click="$store.auth.toggleModal(true)"
+                        class="lux-btn-hover"
+                        style="position:relative; padding:1.25rem 3.5rem; background:#0a0a0a;
+                               color:#f3cf7a; font-size:10px; font-weight:900; text-transform:uppercase; 
+                               letter-spacing:0.45em; border:none; cursor:pointer; transition:all 0.4s cubic-bezier(0.2,1,0.3,1);
+                               box-shadow:0 10px 40px rgba(0,0,0,0.15); animation:fadeInUp 1.8s ease;">
+                    ✦ Iniciar Sesión ✦
+                </button>
+
+                <div style="margin-top:2.5rem; font-size:8px; color:rgba(0,0,0,0.25); letter-spacing:0.2em; text-transform:uppercase; animation:fadeInUp 2s ease; text-align:center;">
+                    Luxury Experience & Excellence
+                </div>
+            </div>
+        </div>
+
+        <style>
+            @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+            .lux-btn-hover:hover { 
+                background: #B8860B !important; 
+                color: #fff !important; 
+                transform: translateY(-5px); 
+                box-shadow: 0 15px 50px rgba(184,134,11,0.3) !important;
+            }
+        </style>
+
+        <!-- LOADING -->
+        <div x-data x-show="$store.auth?.isLoading" x-cloak
+             style="display:flex; align-items:center; justify-content:center; min-height:70vh;">
+            <div style="width:40px; height:40px; border:2px solid rgba(184,134,11,0.2); border-top-color:#B8860B; 
+                        border-radius:50%; animation:spin 1s linear infinite;"></div>
+        </div>
+
+        <!-- PERFIL PRINCIPAL (cuando está logueado) -->
+        <div x-data="profilePage()" 
+             x-show="$store.auth?.isLoggedIn && !$store.auth?.isLoading"
+             x-init="init()"
+             x-cloak
+             style="max-width:1100px; margin:0 auto; padding:7rem 1rem 5rem;">
+
+            <!-- HEADER DEL PERFIL -->
+            <div style="display:flex; flex-direction:column; gap:2rem; margin-bottom:3rem; 
+                        padding-bottom:2rem; border-bottom:1px solid rgba(184,134,11,0.15);">
+
+                <!-- Avatar + Nombre -->
+                <div style="display:flex; align-items:center; gap:1.5rem; flex-wrap:wrap;">
+                    <!-- Avatar -->
+                    <div style="width:72px; height:72px; border-radius:50%; border:2px solid #B8860B; 
+                                display:flex; align-items:center; justify-content:center; 
+                                background:rgba(184,134,11,0.08); flex-shrink:0;
+                                box-shadow:0 0 30px rgba(184,134,11,0.15);">
+                        <span x-text="($store.auth?.profile?.full_name || $store.auth?.user?.email || 'C')[0]?.toUpperCase()"
+                              style="font-family:'Playfair Display',serif; font-size:1.75rem; font-weight:900; 
+                                     font-style:italic; color:#B8860B;"></span>
+                    </div>
+
+                    <div style="flex:1; min-width:200px;">
+                        <div style="font-size:8px; text-transform:uppercase; letter-spacing:0.4em; 
+                                    color:rgba(184,134,11,0.6); font-weight:700; margin-bottom:0.5rem;">
+                            Cliente Forever One
+                        </div>
+                        <div x-text="$store.auth?.profile?.full_name || $store.auth?.user?.email || ''"
+                             style="font-family:'Playfair Display',serif; font-size:1.5rem; font-weight:900; 
+                                    font-style:italic; color:#0a0a0a; line-height:1.2;"></div>
+                        <div x-text="$store.auth?.user?.email || ''"
+                             style="font-size:11px; color:rgba(0,0,0,0.4); margin-top:0.25rem;"></div>
+                    </div>
+
+                    <!-- Stats -->
+                    <div style="display:flex; gap:1.5rem; flex-wrap:wrap;">
+                        <div style="text-align:center;">
+                            <div x-text="orders.length"
+                                 style="font-family:'Playfair Display',serif; font-size:1.75rem; font-weight:900;
+                                        font-style:italic; color:#B8860B; line-height:1;"></div>
+                            <div style="font-size:8px; text-transform:uppercase; letter-spacing:0.3em; 
+                                        color:rgba(0,0,0,0.4); font-weight:700; margin-top:4px;">Pedidos</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- HISTORIAL DE PEDIDOS -->
+            <div>
+                <p style="font-size:8px; text-transform:uppercase; letter-spacing:0.5em; color:rgba(0,0,0,0.3);
+                           font-weight:700; margin-bottom:1.5rem; display:flex; align-items:center; gap:1rem;">
+                    Historial de Pedidos
+                    <span style="flex:1; height:1px; background:rgba(0,0,0,0.1);"></span>
+                </p>
+
+                <!-- Loading pedidos -->
+                <div x-show="isLoadingOrders" style="text-align:center; padding:3rem; color:rgba(0,0,0,0.3);">
+                    <div style="width:32px; height:32px; border:2px solid rgba(184,134,11,0.2); border-top-color:#B8860B; 
+                                border-radius:50%; animation:spin 1s linear infinite; margin:0 auto 1rem;"></div>
+                    <p style="font-size:9px; text-transform:uppercase; letter-spacing:0.3em;">Cargando pedidos...</p>
+                </div>
+
+                <!-- Sin pedidos -->
+                <div x-show="!isLoadingOrders && orders.length === 0"
+                     style="text-align:center; padding:4rem 2rem; border:1px solid rgba(184,134,11,0.1); 
+                            background:rgba(184,134,11,0.02);">
+                    <svg width="48" height="48" fill="none" stroke="rgba(184,134,11,0.3)" viewBox="0 0 24 24" style="margin:0 auto 1.5rem;">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/>
+                    </svg>
+                    <p style="font-size:10px; text-transform:uppercase; letter-spacing:0.4em; color:rgba(0,0,0,0.3); font-weight:700; margin-bottom:1rem;">
+                        Aún no tienes pedidos
+                    </p>
+                    <a href="/ropas" style="font-size:9px; text-transform:uppercase; letter-spacing:0.3em; color:#B8860B; font-weight:700; text-decoration:underline; text-underline-offset:4px;">
+                        Explorar Catálogo
+                    </a>
+                </div>
+
+                <!-- Lista de pedidos -->
+                <div x-show="!isLoadingOrders && orders.length > 0" style="display:flex; flex-direction:column; gap:1rem;">
+                    <template x-for="order in orders" :key="order.id">
+                        <div style="background:#fff; border:1px solid rgba(0,0,0,0.08); overflow:hidden; transition:border-color 0.3s;"
+                             onmouseenter="this.style.borderColor='rgba(184,134,11,0.4)'"
+                             onmouseleave="this.style.borderColor='rgba(0,0,0,0.08)'">
+
+                            <!-- Cabecera del pedido -->
+                            <div style="padding:1.25rem 1.5rem; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:1rem; cursor:pointer;"
+                                 @click="order._open = !order._open">
+
+                                <div style="display:flex; align-items:center; gap:1.25rem; flex-wrap:wrap;">
+                                    <!-- Código de pedido -->
+                                    <div>
+                                        <span style="font-size:8px; text-transform:uppercase; letter-spacing:0.3em; color:rgba(184,134,11,0.6); font-weight:700;">Pedido</span>
+                                        <div x-text="order.order_code" 
+                                             style="font-family:'Playfair Display',serif; font-size:1rem; font-weight:900; font-style:italic; color:#B8860B;"></div>
+                                    </div>
+                                    <!-- Fecha -->
+                                    <div>
+                                        <span style="font-size:8px; text-transform:uppercase; letter-spacing:0.3em; color:rgba(0,0,0,0.3); font-weight:700;">Fecha y Hora</span>
+                                        <div x-text="new Date(order.created_at).toLocaleDateString('es-VE', {day:'2-digit', month:'short', year:'numeric'}) + ', ' + new Date(order.created_at).toLocaleTimeString('es-VE', {hour:'2-digit', minute:'2-digit', hour12:true})"
+                                             style="font-size:11px; color:rgba(0,0,0,0.6); font-weight:600;"></div>
+                                    </div>
+                                    <!-- Estado -->
+                                    <div>
+                                        <span style="font-size:8px; text-transform:uppercase; letter-spacing:0.3em; color:rgba(0,0,0,0.3); font-weight:700;">Estado</span>
+                                        <div style="margin-top:2px;">
+                                            <span x-text="getStatusLabel(order.status)"
+                                                  :style="getStatusStyle(order.status)"
+                                                  style="font-size:8px; text-transform:uppercase; letter-spacing:0.2em; font-weight:900; padding:3px 10px; border-radius:2px;"></span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div style="display:flex; align-items:center; gap:1.5rem;">
+                                    <!-- Total -->
+                                    <div style="text-align:right;">
+                                        <span style="font-size:8px; text-transform:uppercase; letter-spacing:0.3em; color:rgba(0,0,0,0.3); font-weight:700;">Total</span>
+                                        <div x-text="'$' + parseFloat(order.total_usd).toFixed(2)"
+                                             style="font-family:'Playfair Display',serif; font-size:1.1rem; font-weight:900; font-style:italic; color:#0a0a0a;"></div>
+                                    </div>
+                                    <!-- Chevron -->
+                                    <svg :style="order._open ? 'transform:rotate(180deg)' : ''"
+                                         style="transition:transform 0.3s; flex-shrink:0;"
+                                         width="16" height="16" fill="none" stroke="rgba(184,134,11,0.5)" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                                    </svg>
+                                </div>
+                            </div>
+
+                            <!-- Detalle del pedido (expandible) -->
+                            <div x-show="order._open" x-transition
+                                 style="border-top:1px solid rgba(184,134,11,0.08); padding:1.25rem 1.5rem; background:rgba(184,134,11,0.02);">
+
+                                <!-- Items del pedido -->
+                                <p style="font-size:8px; text-transform:uppercase; letter-spacing:0.4em; color:rgba(0,0,0,0.3); font-weight:700; margin-bottom:1rem;">Prendas</p>
+                                <div style="display:flex; flex-direction:column; gap:0.75rem; margin-bottom:1.5rem;">
+                                    <template x-for="item in (order.order_items || [])" :key="item.id">
+                                        <div style="display:flex; align-items:center; justify-content:space-between; gap:1rem; flex-wrap:wrap;
+                                                    padding:0.75rem; background:#fff; border:1px solid rgba(0,0,0,0.05);">
+                                            <div style="display:flex; align-items:center; gap:0.75rem;">
+                                                <img :src="(item.products && Array.isArray(item.products) ? item.products[0]?.image_urls?.[0] : item.products?.image_urls?.[0]) || '/placeholder.png'" 
+                                                     style="width:40px; height:50px; object-fit:cover; border:1px solid rgba(184,134,11,0.2);">
+                                                <div>
+                                                    <div x-text="item.product_name" style="font-size:10px; text-transform:uppercase; letter-spacing:0.2em; font-weight:700; color:#0a0a0a;"></div>
+                                                    <div x-text="item.products && Array.isArray(item.products) ? item.products[0]?.description : item.products?.description" 
+                                                         x-show="item.products" style="font-size:9px; color:rgba(0,0,0,0.5); margin-top:2px; line-height:1.4; max-width:400px;"></div>
+                                                    <div x-show="item.size" style="margin-top:4px;">
+                                                        <span x-text="'Talla: ' + item.size"
+                                                              style="font-size:8px; color:#B8860B; font-weight:700; letter-spacing:0.2em; text-transform:uppercase;"></span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div style="text-align:right;">
+                                                <span x-text="'x' + item.quantity" style="font-size:9px; color:rgba(0,0,0,0.3); font-weight:700;"></span>
+                                                <div x-text="'$' + (parseFloat(item.price_usd) * item.quantity).toFixed(2)"
+                                                     style="font-family:'Playfair Display',serif; font-size:0.9rem; font-weight:900; font-style:italic; color:#0a0a0a;"></div>
+                                            </div>
+                                        </div>
+                                    </template>
+                                    <div x-show="!order.order_items || order.order_items.length === 0" style="padding:1rem; text-align:center; font-size:9px; color:rgba(0,0,0,0.3); text-transform:uppercase; letter-spacing:0.1em;">
+                                        Detalles de prendas no disponibles
+                                    </div>
+                                </div>
+
+                                <!-- Info adicional: método de entrega y pago -->
+                                <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:1.5rem; border-top:1px solid rgba(0,0,0,0.05); padding-top:1.5rem;">
+                                    <!-- Envío -->
+                                    <div>
+                                        <p style="font-size:8px; text-transform:uppercase; letter-spacing:0.3em; color:rgba(0,0,0,0.3); font-weight:700; display:block; margin-bottom:8px;">Detalles de Entrega</p>
+                                        <div style="display:flex; flex-direction:column; gap:0.5rem;">
+                                            <div style="display:flex; align-items:flex-start; gap:0.5rem;">
+                                                <span style="font-size:12px;">📍</span>
+                                                <div>
+                                                    <div x-text="order.city || 'Ciudad por definir'" style="font-size:10px; color:#0a0a0a; font-weight:700; text-transform:uppercase; letter-spacing:0.05em;"></div>
+                                                    <div x-text="order.courier ? 'Vía ' + order.courier.toUpperCase() : 'Método de envío pendiente'" style="font-size:9px; color:rgba(0,0,0,0.5); margin-top:1px;"></div>
+                                                </div>
+                                            </div>
+                                            
+                                            <!-- Número de Guía -->
+                                            <div x-show="order.tracking_number" style="margin-top:0.25rem; padding:0.5rem; background:rgba(34,197,94,0.05); border:1px dashed rgba(34,197,94,0.3); border-radius:4px;">
+                                                <span style="font-size:7px; text-transform:uppercase; letter-spacing:0.1em; color:#15803d; font-weight:800; display:block; margin-bottom:2px;">Número de Guía / Rastreo</span>
+                                                <code x-text="order.tracking_number" style="font-size:11px; color:#15803d; font-weight:900; letter-spacing:0.05em;"></code>
+                                            </div>
+
+                                            <div x-show="order.notes?.includes('|')" style="font-size:9px; color:rgba(0,0,0,0.5); line-height:1.6; font-style:italic; margin-top:0.5rem; border-left:2px solid rgba(184,134,11,0.2); padding-left:0.75rem;">
+                                                <template x-for="part in order.notes.split('|').slice(1)" :key="part">
+                                                    <div x-text="part.trim()"></div>
+                                                </template>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Pago -->
+                                    <div>
+                                        <p style="font-size:8px; text-transform:uppercase; letter-spacing:0.3em; color:rgba(0,0,0,0.3); font-weight:700; display:block; margin-bottom:8px;">Referencia de Pago</p>
+                                        <div style="display:flex; align-items:center; gap:0.5rem; padding:0.75rem; background:#fff; border:1px solid rgba(0,0,0,0.05); border-radius:6px;">
+                                            <span style="font-size:12px;">💳</span>
+                                            <span x-text="order.payment_reference || 'Pendiente por validar'" 
+                                                  :style="order.payment_reference ? 'color:#0a0a0a; font-weight:700;' : 'color:rgba(0,0,0,0.3); font-style:italic;'"
+                                                  style="font-size:10px; text-transform:uppercase; letter-spacing:0.1em;"></span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                        </div>
+                    </template>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <Footer />
+</Layout>
+
+<style>
+    @keyframes shine { to { background-position: 200% center; } }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    [x-cloak] { display: none !important; }
+</style>
+
+<script>
+    import { supabase } from '../lib/supabase';
+
+    function profilePage() {
+        return {
+            orders: [] as any[],
+            isLoadingOrders: true,
+            hasLoaded: false,
+            _realtimeChannel: null as any,
+
+            async init() {
+                // Wait for Alpine to be ready
+                if (!(window as any).Alpine) return;
+
+                const startLoading = async () => {
+                    const auth = (window as any).Alpine?.store?.('auth');
+                    
+                    if (this.hasLoaded || (window as any).__profileLoading) return;
+                    
+                    // Si el store no está listo, esperamos
+                    if (!auth || auth.isLoading) {
+                        setTimeout(() => startLoading(), 100);
+                        return;
+                    }
+
+                    if (auth.isLoggedIn && auth.user?.id) {
+                        (window as any).__profileLoading = true;
+                        try {
+                            this.hasLoaded = true;
+                            await this.loadOrders(auth.user.id);
+                            this.setupRealtime(auth.user.id);
+                        } catch (e) {
+                            console.error("Error al cargar perfil:", e);
+                        } finally {
+                            (window as any).__profileLoading = false;
+                            this.isLoadingOrders = false;
+                        }
+                    } else {
+                        this.isLoadingOrders = false;
+                    }
+                };
+
+                // Watchers
+                (window as any).Alpine?.store?.('auth')?.$watch?.('isLoading', async (val: boolean) => {
+                    if (!val) await startLoading();
+                });
+
+                (window as any).Alpine?.store?.('auth')?.$watch?.('isLoggedIn', async (val: boolean) => {
+                    if (val) {
+                        await startLoading();
+                    } else {
+                        this.orders = [];
+                        this.hasLoaded = false;
+                        this.isLoadingOrders = false;
+                        (window as any).__profileLoading = false;
+                        // Limpiar canal de realtime al cerrar sesión
+                        if (this._realtimeChannel) {
+                            supabase.removeChannel(this._realtimeChannel);
+                            this._realtimeChannel = null;
+                        }
+                    }
+                });
+
+                // Ejecución inmediata
+                await startLoading();
+            },
+
+            setupRealtime(userId: string) {
+                // Limpiar canal previo si existe
+                if (this._realtimeChannel) {
+                    supabase.removeChannel(this._realtimeChannel);
+                }
+
+                // Suscribirse a cambios de estado en los pedidos del usuario
+                console.log('[Realtime] Suscribiendo a pedidos del usuario:', userId);
+                this._realtimeChannel = supabase
+                    .channel(`profile-orders-${userId}`)
+                    .on('postgres_changes', { 
+                        event: 'UPDATE', 
+                        schema: 'public', 
+                        table: 'orders',
+                        filter: `profile_id=eq.${userId}`
+                    }, (payload: any) => {
+                        console.log('[Realtime] Pedido actualizado:', payload.new.order_code, payload.new.status);
+                        // Actualizar solo los campos del pedido preservando order_items
+                        const idx = this.orders.findIndex((o: any) => o.id === payload.new.id);
+                        if (idx !== -1) {
+                            // Preservar order_items (no vienen en el payload de Realtime)
+                            const existingItems = this.orders[idx].order_items;
+                            const wasOpen = this.orders[idx]._open;
+                            this.orders[idx] = { 
+                                ...this.orders[idx], 
+                                ...payload.new,
+                                order_items: existingItems,
+                                _open: wasOpen
+                            };
+                        }
+                    })
+                    .on('postgres_changes', {
+                        event: 'INSERT',
+                        schema: 'public',
+                        table: 'orders',
+                        filter: `profile_id=eq.${userId}`
+                    }, async (payload: any) => {
+                        console.log('[Realtime] Nuevo pedido detectado:', payload.new.order_code);
+                        // Nuevo pedido: recargar la lista completa para obtener order_items
+                        await this.loadOrders(userId);
+                    })
+                    .subscribe((status: string) => {
+                        console.log('[Realtime] Estado de suscripción:', status);
+                    });
+            },
+
+            async loadOrders(userId: string) {
+                this.isLoadingOrders = true;
+                console.log('[loadOrders] Iniciando carga para:', userId);
+                
+                const timer = setTimeout(() => {
+                    if (this.isLoadingOrders) this.isLoadingOrders = false;
+                }, 12000);
+
+                try {
+                    // 1. Cargar pedidos con join preventivo
+                    const { data: ordersData, error: ordersError } = await supabase
+                        .from('orders')
+                        .select('*, order_items(id, order_id, product_id, product_name, quantity, price_usd, size, products(id, name, image_urls, description))')
+                        .eq('profile_id', userId)
+                        .order('created_at', { ascending: false });
+
+                    if (ordersError) {
+                        console.error('[loadOrders] Error en query principal:', ordersError);
+                        this.isLoadingOrders = false;
+                        return;
+                    }
+
+                    if (!ordersData || ordersData.length === 0) {
+                        console.log('[loadOrders] No se encontraron pedidos.');
+                        this.orders = [];
+                        return;
+                    }
+
+                    // 2. Fallback agresivo si el join vino vacío (común por RLS en Supabase)
+                    const needsItemsFetch = ordersData.filter(o => !o.order_items || o.order_items.length === 0);
+                    
+                    if (needsItemsFetch.length > 0) {
+                        console.log(`[loadOrders] Re-intentando carga de items para ${needsItemsFetch.length} pedidos...`);
+                        const orderIds = needsItemsFetch.map(o => o.id);
+                        
+                        // Buscamos los items directamente (sin join primero para ver si es RLS del join)
+                        const { data: itemsData, error: itemsError } = await supabase
+                            .from('order_items')
+                            .select('*, products(id, name, image_urls, description)')
+                            .in('order_id', orderIds);
+
+                        if (itemsError) {
+                            console.error('[loadOrders] Error en fallback de items:', itemsError);
+                        } else if (itemsData) {
+                            console.log(`[loadOrders] Fallback exitoso: ${itemsData.length} items recuperados.`);
+                            ordersData.forEach(order => {
+                                if (!order.order_items || order.order_items.length === 0) {
+                                    order.order_items = itemsData.filter(i => i.order_id === order.id);
+                                }
+                            });
+                        }
+                    }
+
+                    // 3. Formatear y asignar
+                    this.orders = ordersData.map(o => ({
+                        ...o,
+                        _open: false,
+                        // Normalizar items para que siempre tengan un array
+                        order_items: Array.isArray(o.order_items) ? o.order_items : []
+                    }));
+
+                    console.log('[loadOrders] Carga completada. Total pedidos:', this.orders.length);
+
+                } catch(e) {
+                    console.error('[loadOrders] Error CRÍTICO:', e);
+                } finally {
+                    clearTimeout(timer);
+                    this.isLoadingOrders = false;
+                }
+            },
+
+
+            getStatusLabel(status: string) {
+                const labels: Record<string, string> = {
+                    'verificando': '✦ Verificando pago',
+                    'preparando': '✦ Pago confirmado — En preparación',
+                    'enviado': '🚚 Su paquete está en camino',
+                    'entregado': '✅ Recibido satisfactoriamente',
+                    'cancelado': '❌ Cancelado'
+                };
+                return labels[status] || status;
+            },
+
+            getStatusStyle(status: string) {
+                const styles: Record<string, string> = {
+                    'verificando': 'background:rgba(251,191,36,0.15); color:#b45309; border:1px solid rgba(251,191,36,0.4);',
+                    'preparando': 'background:rgba(59,130,246,0.12); color:#1d4ed8; border:1px solid rgba(59,130,246,0.3);',
+                    'enviado': 'background:rgba(139,92,246,0.12); color:#6d28d9; border:1px solid rgba(139,92,246,0.3);',
+                    'entregado': 'background:rgba(34,197,94,0.12); color:#15803d; border:1px solid rgba(34,197,94,0.3);',
+                    'cancelado': 'background:rgba(239,68,68,0.12); color:#b91c1c; border:1px solid rgba(239,68,68,0.3);',
+                };
+                return styles[status] || 'background:rgba(0,0,0,0.05); color:rgba(0,0,0,0.5);';
+            }
+        };
+    }
+
+    // Register the component
+    document.addEventListener('alpine:init', () => {
+        (window as any).Alpine.data('profilePage', profilePage);
+    });
+</script>
