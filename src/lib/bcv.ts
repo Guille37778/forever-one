@@ -26,7 +26,7 @@ export async function getBcvRate(): Promise<number> {
     
     // Regex to find the dollar rate in the HTML structure: <div id="dolar"> ... <strong> 47,40598000 </strong>
     // Made more flexible with optional spaces and tags
-    const dolarMatch = html.match(/id=['"]dolar['"][^>]*>[\s\S]*?<strong>\s*([\d,.]+)\s*<\/strong>/i);
+    const dolarMatch = html.match(/id=['"]dolar['"][^>]*>[\s\S]*?<strong[^>]*>\s*([\d,.]+)\s*<\/strong>/i);
     
     if (!dolarMatch || !dolarMatch[1]) {
       throw new Error('Could not find USD rate in BCV HTML');
