@@ -2,20 +2,13 @@ import { supabase } from './supabase';
 
 /**
  * ATELIER CART SYSTEM (BETA)
- * Centralized logic for cart management and Supabase synchronization.
+ * Centralized logic for cart management.
  */
 
 let cart: any[] = [];
-let isSyncing = false;
 let dollarRate = 0;
 
 const el = (id: string) => document.getElementById(id);
-
-const getAuth = () => {
-    const Alpine = (window as any).Alpine;
-    if (!Alpine) return { isLoggedIn: false };
-    return Alpine.store('auth') || { isLoggedIn: false };
-};
 
 export const loadCart = () => {
     try {
@@ -30,120 +23,15 @@ export const loadCart = () => {
     }
 };
 
-export const saveCart = (fromSync = false) => {
+export const saveCart = (_fromSync = false) => {
     localStorage.setItem('fo1_cart', JSON.stringify(cart));
-    
-    if (!fromSync) {
-        const auth = getAuth();
-        if (auth.isLoggedIn && auth.user) {
-            syncCartWithDB();
-        }
-    }
 };
 
 export const cartTotal = () => cart.reduce((s, i) => s + (i.precio * i.qty), 0);
 
-export const syncCartWithDB = async () => {
-    if (isSyncing) return;
-    const auth = getAuth();
-    if (!auth.isLoggedIn || !auth.user) return;
-
-    isSyncing = true;
-    try {
-        // 1. Get current local state
-        const localCart = [...cart];
-        
-        // PRUNING: Remove items from DB that are not in local cart
-        const { data: dbItemsBefore, error: pullBeforeError } = await supabase
-            .from('cart_items')
-            .select('product_id, size')
-            .eq('user_id', auth.user.id);
-
-        if (!pullBeforeError && dbItemsBefore) {
-            for (const dbItem of dbItemsBefore) {
-                const stillExists = localCart.find(lc => lc.id === dbItem.product_id && lc.size === dbItem.size);
-                if (!stillExists) {
-                    await supabase.from('cart_items')
-                        .delete()
-                        .eq('user_id', auth.user.id)
-                        .eq('product_id', dbItem.product_id)
-                        .eq('size', dbItem.size);
-                }
-            }
-        }
-
-        if (localCart.length > 0) {
-            const upsertData = localCart.map(item => ({
-                user_id: auth.user.id,
-                product_id: item.id,
-                variant_id: item.variantId || null,
-                name: item.nombre,
-                size: item.size || '',
-                price: item.precio,
-                qty: item.qty,
-                image_url: item.image_url || (item.imagenes?.[0]) || ''
-            }));
-
-            // Batch upsert to DB
-            const { error: upsertError } = await supabase
-                .from('cart_items')
-                .upsert(upsertData, { onConflict: 'user_id,product_id,size' });
-            
-            if (upsertError) throw upsertError;
-        }
-
-        // 2. Pull final state to merge any other devices' data
-        const { data: dbItems, error: pullError } = await supabase
-            .from('cart_items')
-            .select('*')
-            .eq('user_id', auth.user.id);
-
-        if (pullError) throw pullError;
-
-        if (dbItems) {
-            // MERGE LOGIC: Prefer local higher quantity or newer items if possible
-            // But for now, simple overwrite from DB is standard for "Sync" 
-            // BUT only if local hasn't changed *during* this async call.
-            
-            const syncedCart = dbItems.map((i: any) => ({
-                id: i.product_id,
-                variantId: i.variant_id,
-                nombre: i.name,
-                size: i.size || 'UNICO',
-                precio: i.price,
-                qty: i.qty,
-                image_url: i.image_url
-            }));
-
-            // Check if local cart changed since we started
-            const currentLocalRaw = JSON.stringify(cart);
-            const startedLocalRaw = JSON.stringify(localCart);
-            
-            if (currentLocalRaw === startedLocalRaw) {
-                cart = syncedCart;
-                saveCart(true); 
-                (window as any).__renderCart?.();
-            } else {
-                // If local changed, we trigger another sync soon or just let the next one handle it
-                console.log('Cart changed during sync, skipping overwrite to avoid state loss');
-            }
-        }
-    } catch (e) {
-        console.error('Cart Sync Error:', e);
-    } finally {
-        isSyncing = false;
-    }
-};
-
 // Global Exposure for templates
 if (typeof window !== 'undefined') {
     (window as any).__addToCart = (product: any) => {
-        const auth = getAuth();
-        if (!auth.isLoggedIn) {
-            auth.toggleModal?.(true);
-            return;
-        }
-
         if(!product || parseInt(product.stock) <= 0) return;
         
         const size = product.selectedSize || 'UNICO';
@@ -175,25 +63,10 @@ if (typeof window !== 'undefined') {
         setTimeout(() => t!.style.opacity = '0', 2500);
     };
 
-    (window as any).__removeFromCart = async (productId: string, size: string = '') => {
+    (window as any).__removeFromCart = (productId: string, size: string = '') => {
         cart = cart.filter(i => !(i.id === productId && i.size === size));
         saveCart();
         (window as any).__renderCart?.();
-
-        // Sync deletion to DB if logged in
-        const auth = getAuth();
-        if (auth.isLoggedIn && auth.user) {
-            try {
-                await supabase
-                    .from('cart_items')
-                    .delete()
-                    .eq('user_id', auth.user.id)
-                    .eq('product_id', productId)
-                    .eq('size', size);
-            } catch (e) {
-                console.error('Delete Sync Error:', e);
-            }
-        }
     };
 
     (window as any).__updateQty = (productId: string, delta: number, size: string = '') => {
@@ -206,7 +79,6 @@ if (typeof window !== 'undefined') {
         (window as any).__renderCart?.();
     };
 
-    (window as any).__syncCartWithDB = syncCartWithDB;
     (window as any).__getCartTotal = cartTotal;
     (window as any).__getCart = () => cart;
     (window as any).__setDollarRate = (rate: number) => { dollarRate = rate; };

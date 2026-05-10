@@ -399,12 +399,6 @@ const deliveryZones = settingsData?.find((s: any) => s.key === 'delivery_zones')
     (function() {
         const el = (id: string) => document.getElementById(id);
 
-        const getAuth = () => {
-            const Alpine = (window as any).Alpine;
-            if (!Alpine) return { isLoggedIn: false };
-            return Alpine.store('auth') || { isLoggedIn: false };
-        };
-
         // UI SPECIFIC LOGIC (Rendering)
         (window as any).__renderCart = function() {
             const list = el('products-list');
@@ -416,15 +410,6 @@ const deliveryZones = settingsData?.find((s: any) => s.key === 'delivery_zones')
             const cart = (window as any).__getCart?.() || [];
             const drawer = el('cart-drawer');
             const dollarRate = parseFloat(drawer?.dataset.rate || '0');
-
-            // Auto-fill fields if logged in
-            const auth = getAuth();
-            if (auth.isLoggedIn && auth.profile) {
-                const nameField = el('cust-name') as HTMLInputElement;
-                if (nameField && !nameField.value) nameField.value = auth.profile.full_name || '';
-                const emailField = el('cust-email') as HTMLInputElement;
-                if (emailField && !emailField.value) emailField.value = auth.user.email || '';
-            }
 
             const total = cartTotal();
             const count = cart.reduce((s: number, i: any) => s + i.qty, 0);
@@ -508,12 +493,6 @@ const deliveryZones = settingsData?.find((s: any) => s.key === 'delivery_zones')
         };
 
         (window as any).__checkout = async function() {
-            const auth = getAuth();
-            if (!auth.isLoggedIn) {
-                auth.toggleModal?.(true);
-                return;
-            }
-
             const cart = (window as any).__getCart?.() || [];
             if(cart.length === 0) return;
             const btn = el('checkout-btn') as HTMLButtonElement;
@@ -532,8 +511,7 @@ const deliveryZones = settingsData?.find((s: any) => s.key === 'delivery_zones')
                 id: (el('cust-id') as HTMLInputElement).value.trim(),
                 phone: normalizePhone((el('cust-phone') as HTMLInputElement).value.trim()),
                 email: (el('cust-email') as HTMLInputElement).value.trim(),
-                payRef: (el('pay-reference') as HTMLInputElement).value.trim(),
-                profileId: auth.user?.id
+                payRef: (el('pay-reference') as HTMLInputElement).value.trim()
             };
 
             if(!vals.name || !vals.id || !vals.phone || !vals.email || !vals.payRef) {

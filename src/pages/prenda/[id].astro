@@ -504,15 +504,6 @@ const productInfo = {
                 if (!btn) return;
 
                 btn.addEventListener('click', function() {
-                    // Auth Check
-                    if (window.Alpine) {
-                        const auth = window.Alpine.store('auth');
-                        if (!auth.isLoggedIn) {
-                            auth.toggleModal(true);
-                            return;
-                        }
-                    }
-
                     try {
                         const productData = JSON.parse(btn.getAttribute('data-product') || '{}');
                         
