@@ -415,6 +415,10 @@ const fiveStarCount = reviews.filter(r => r.rating === 5).length;
     </div>
   </div>
 
+  <script is:inline define:vars={{ reviews }}>
+    window.allReviews = reviews;
+  </script>
+
   <!-- Table and Modals wrapped in Alpine.js component -->
   <div x-data="{ 
     showEditModal: false, 
@@ -422,14 +426,20 @@ const fiveStarCount = reviews.filter(r => r.rating === 5).length;
     isSubmitting: false,
     activeReview: { id: '', reviewer_name: '', rating: 5, comment: '', product_name: '' },
     
-    openEdit(review) {
-      this.activeReview = { ...review };
-      this.showEditModal = true;
+    openEdit(reviewId) {
+      const review = window.allReviews.find(r => r.id === reviewId);
+      if (review) {
+        this.activeReview = { ...review };
+        this.showEditModal = true;
+      }
     },
     
-    openDelete(review) {
-      this.activeReview = { ...review };
-      this.showDeleteModal = true;
+    openDelete(reviewId) {
+      const review = window.allReviews.find(r => r.id === reviewId);
+      if (review) {
+        this.activeReview = { ...review };
+        this.showDeleteModal = true;
+      }
     },
     
     async saveReview() {
@@ -550,13 +560,13 @@ const fiveStarCount = reviews.filter(r => r.rating === 5).length;
                     <div class="actions-cell">
                       <button 
                         class="action-btn edit"
-                        @click={`openEdit(${JSON.stringify(review)})`}
+                        @click={`openEdit('${review.id}')`}
                       >
                         Editar
                       </button>
                       <button 
                         class="action-btn delete"
-                        @click={`openDelete(${JSON.stringify(review)})`}
+                        @click={`openDelete('${review.id}')`}
                       >
                         Eliminar
                       </button>
