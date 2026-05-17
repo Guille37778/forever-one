@@ -380,7 +380,7 @@ const productInfo = {
 
                             <form id="review-form" class="flex flex-col gap-8" x-data="{ rating: 5, hoverRating: 0 }">
                                 <input type="hidden" name="product_id" value={productInfo.id} />
-                                <input type="hidden" name="rating" :value="rating" />
+                                <input type="hidden" name="rating" value="5" :value="rating" />
 
                                 <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
                                     <div class="relative">

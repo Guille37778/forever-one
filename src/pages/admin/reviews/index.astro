@@ -1,0 +1,664 @@
+---
+import AdminLayout from '../../../layouts/AdminLayout.astro';
+import { supabase, supabaseAdmin } from '../../../lib/supabase';
+
+const accessToken = Astro.cookies.get('sb-access-token')?.value;
+if (!accessToken) return Astro.redirect('/admin/login');
+
+let user = null;
+try {
+  const { data: userData, error: authError } = await supabase.auth.getUser(accessToken);
+  if (authError || !userData?.user) return Astro.redirect('/admin/login');
+  user = userData.user;
+} catch (e) {
+  console.error('[Reviews] Auth Error:', e);
+  return Astro.redirect('/admin/login');
+}
+
+// Fetch reviews and their associated product names
+const { data: reviewsData, error: rError } = await supabaseAdmin
+  .from('product_reviews')
+  .select('*, products(name)')
+  .order('created_at', { ascending: false });
+
+if (rError) {
+  console.error('[Reviews] Fetch Error:', rError);
+}
+
+const reviews = (reviewsData || []).map((r: any) => ({
+  id: r.id,
+  product_id: r.product_id,
+  product_name: r.products?.name || 'Producto Eliminado',
+  reviewer_name: r.reviewer_name || 'Anónimo',
+  rating: r.rating || 5,
+  comment: r.comment || '',
+  created_at: r.created_at,
+}));
+
+// Quick Stats
+const totalReviews = reviews.length;
+const avgRating = totalReviews > 0
+  ? (reviews.reduce((acc, r) => acc + r.rating, 0) / totalReviews).toFixed(1)
+  : '5.0';
+const fiveStarCount = reviews.filter(r => r.rating === 5).length;
+---
+
+<AdminLayout title="Reseñas" activeNav="reviews" user={{ email: user?.email || '' }}>
+
+  <style>
+    .page-header {
+      margin-bottom: 2rem;
+    }
+    .page-header h2 {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.5rem;
+      font-weight: 700;
+      font-style: italic;
+      color: #111;
+      margin-bottom: 0.25rem;
+    }
+    .page-header p {
+      font-size: 10px;
+      color: #999;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      font-weight: 600;
+    }
+
+    /* Quick Stats */
+    .quick-stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+    @media (max-width: 640px) { .quick-stats { grid-template-columns: 1fr; } }
+
+    .qs-card {
+      background: white;
+      border: 1px solid rgba(184,134,11,0.08);
+      border-radius: 14px;
+      padding: 1.25rem 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 1.25rem;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.02);
+      transition: all 0.3s;
+    }
+    .qs-card:hover { transform: translateY(-3px); box-shadow: 0 8px 20px rgba(0,0,0,0.05); border-color: rgba(184,134,11,0.2); }
+    .qs-icon { width: 48px; height: 48px; background: #fdfaf0; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: #B8860B; flex-shrink: 0; }
+    .qs-icon svg { width: 22px; height: 22px; }
+    .qs-label { font-size: 8px; letter-spacing: 0.25em; text-transform: uppercase; color: #aaa; font-weight: 700; margin-bottom: 2px; }
+    .qs-value { font-family: 'Playfair Display', serif; font-size: 2rem; font-weight: 900; font-style: italic; color: #111; line-height: 1; }
+
+    /* Table */
+    .table-wrapper {
+      background: white;
+      border: 1px solid rgba(0,0,0,0.06);
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.03);
+      margin-bottom: 2rem;
+    }
+    .table-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      padding: 1.25rem 1.5rem;
+      border-bottom: 1px solid #f0f0f0;
+      flex-wrap: wrap;
+    }
+    .table-top-title {
+      font-size: 9px;
+      text-transform: uppercase;
+      letter-spacing: 0.35em;
+      font-weight: 800;
+      color: #111;
+    }
+    .search-box {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      background: #f8f8f8;
+      border: 1px solid #efefef;
+      border-radius: 8px;
+      padding: 0.5rem 1rem;
+      transition: all 0.3s;
+    }
+    .search-box:focus-within {
+      border-color: #B8860B;
+      box-shadow: 0 0 0 3px rgba(184,134,11,0.08);
+    }
+    .search-box svg { width: 14px; height: 14px; color: #bbb; }
+    .search-box input {
+      border: none;
+      background: transparent;
+      font-size: 11px;
+      font-family: inherit;
+      outline: none;
+      color: #333;
+      width: 180px;
+    }
+
+    table { width: 100%; border-collapse: collapse; }
+    thead { background: #fafafa; }
+    th {
+      text-align: left;
+      padding: 0.875rem 1.25rem;
+      font-size: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.3em;
+      font-weight: 800;
+      color: #aaa;
+      border-bottom: 1px solid #f0f0f0;
+      white-space: nowrap;
+    }
+    td {
+      padding: 1rem 1.25rem;
+      border-bottom: 1px solid #f9f9f9;
+      font-size: 12px;
+      color: #444;
+      vertical-align: middle;
+    }
+    tr:last-child td { border-bottom: none; }
+    tbody tr { transition: background 0.2s; }
+    tbody tr:hover { background: #fdfaf0; }
+
+    .avatar-cell {
+      display: flex;
+      align-items: center;
+      gap: 0.875rem;
+    }
+    .avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      border: 1.5px solid rgba(184,134,11,0.3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(184,134,11,0.06);
+      color: #B8860B;
+      font-size: 13px;
+      font-weight: 900;
+      flex-shrink: 0;
+      font-family: 'Playfair Display', serif;
+      font-style: italic;
+    }
+    .reviewer-name {
+      font-weight: 700;
+      color: #111;
+      font-size: 12px;
+    }
+    .product-name {
+      font-size: 10px;
+      color: #aaa;
+      margin-top: 1px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .rating-stars {
+      display: flex;
+      gap: 2px;
+      color: #B8860B;
+    }
+    .rating-stars svg {
+      width: 14px;
+      height: 14px;
+      fill: currentColor;
+    }
+    .comment-text {
+      font-style: italic;
+      color: #555;
+      font-size: 11px;
+      max-width: 320px;
+      word-wrap: break-word;
+      white-space: normal;
+    }
+    .date-cell { font-size: 10px; color: #888; }
+
+    /* Actions */
+    .actions-cell {
+      display: flex;
+      gap: 8px;
+    }
+    .action-btn {
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 9px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      cursor: pointer;
+      border: none;
+      transition: all 0.2s;
+    }
+    .action-btn.edit {
+      background: rgba(184,134,11,0.1);
+      color: #B8860B;
+      border: 1px solid rgba(184,134,11,0.15);
+    }
+    .action-btn.edit:hover {
+      background: #B8860B;
+      color: white;
+    }
+    .action-btn.delete {
+      background: rgba(239,68,68,0.08);
+      color: #ef4444;
+      border: 1px solid rgba(239,68,68,0.12);
+    }
+    .action-btn.delete:hover {
+      background: #ef4444;
+      color: white;
+    }
+
+    .empty-state {
+      padding: 4rem 2rem;
+      text-align: center;
+    }
+    .empty-state p {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.3em;
+      color: #ccc;
+      font-weight: 700;
+    }
+
+    /* Modal Styling */
+    .modal-overlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.6);
+      backdrop-filter: blur(4px);
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+    }
+    .modal-content {
+      background: white;
+      border: 1px solid rgba(184,134,11,0.25);
+      border-radius: 20px;
+      width: 100%;
+      max-width: 480px;
+      box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25);
+      overflow: hidden;
+      animation: modalPop 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+    @keyframes modalPop {
+      from { transform: scale(0.95); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+    .modal-header {
+      padding: 1.5rem;
+      border-bottom: 1px solid rgba(184,134,11,0.1);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #0a0a0a;
+      color: white;
+    }
+    .modal-header h3 {
+      font-family: 'Playfair Display', serif;
+      font-style: italic;
+      font-size: 1.25rem;
+      color: #f3cf7a;
+    }
+    .modal-close {
+      background: none;
+      border: none;
+      color: rgba(255,255,255,0.6);
+      cursor: pointer;
+      font-size: 1.25rem;
+      line-height: 1;
+      padding: 0.25rem;
+      transition: color 0.2s;
+    }
+    .modal-close:hover { color: white; }
+    .modal-body {
+      padding: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+    .modal-footer {
+      padding: 1rem 1.5rem;
+      border-top: 1px solid #f0f0f0;
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      background: #fafafa;
+    }
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .form-group label {
+      font-size: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.2em;
+      color: #888;
+      font-weight: 700;
+    }
+    .form-control {
+      padding: 0.75rem 1rem;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      font-size: 12px;
+      font-family: inherit;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .form-control:focus {
+      border-color: #B8860B;
+    }
+    .star-select-btn {
+      background: none;
+      border: none;
+      padding: 0.25rem;
+      cursor: pointer;
+      color: #ddd;
+      transition: transform 0.2s;
+    }
+    .star-select-btn.active {
+      color: #B8860B;
+    }
+    .star-select-btn:hover {
+      transform: scale(1.15);
+    }
+  </style>
+
+  <!-- Page Header -->
+  <div class="page-header">
+    <h2>Gestión de Reseñas</h2>
+    <p>Modifica, elimina y audita todas las opiniones de producto de la tienda</p>
+  </div>
+
+  <!-- Quick Stats -->
+  <div class="quick-stats">
+    <div class="qs-card">
+      <div class="qs-icon">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/>
+        </svg>
+      </div>
+      <div>
+        <p class="qs-label">Total Opiniones</p>
+        <p class="qs-value">{totalReviews}</p>
+      </div>
+    </div>
+    <div class="qs-card">
+      <div class="qs-icon">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.907c.969 0 1.371 1.24.588 1.81l-3.97 2.883a1 1 0 00-.364 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.971-2.883a1 1 0 00-1.175 0l-3.97 2.883c-.783.57-1.838-.197-1.539-1.118l1.518-4.674a1 1 0 00-.364-1.118L2.49 12.1c-.783-.57-.38-1.81.588-1.81h4.906a1 1 0 00.951-.69l1.519-4.674z"/>
+        </svg>
+      </div>
+      <div>
+        <p class="qs-label">Calificación Media</p>
+        <p class="qs-value">{avgRating}</p>
+      </div>
+    </div>
+    <div class="qs-card">
+      <div class="qs-icon">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"/>
+        </svg>
+      </div>
+      <div>
+        <p class="qs-label">Reseñas de 5 Estrellas</p>
+        <p class="qs-value">{fiveStarCount}</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Table and Modals wrapped in Alpine.js component -->
+  <div x-data="{ 
+    showEditModal: false, 
+    showDeleteModal: false,
+    isSubmitting: false,
+    activeReview: { id: '', reviewer_name: '', rating: 5, comment: '', product_name: '' },
+    
+    openEdit(review) {
+      this.activeReview = { ...review };
+      this.showEditModal = true;
+    },
+    
+    openDelete(review) {
+      this.activeReview = { ...review };
+      this.showDeleteModal = true;
+    },
+    
+    async saveReview() {
+      if (this.isSubmitting) return;
+      this.isSubmitting = true;
+      try {
+        const response = await fetch(`/api/reviews/${this.activeReview.id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            reviewer_name: this.activeReview.reviewer_name,
+            rating: this.activeReview.rating,
+            comment: this.activeReview.comment
+          })
+        });
+        const result = await response.json();
+        if (response.ok) {
+          window.showToast('Reseña actualizada con éxito');
+          this.showEditModal = false;
+          setTimeout(() => window.location.reload(), 1200);
+        } else {
+          window.showToast(result.error || 'Error al actualizar', 'error');
+        }
+      } catch (err) {
+        window.showToast('Error de conexión con el servidor', 'error');
+      } finally {
+        this.isSubmitting = false;
+      }
+    },
+    
+    async deleteReview() {
+      if (this.isSubmitting) return;
+      this.isSubmitting = true;
+      try {
+        const response = await fetch(`/api/reviews/${this.activeReview.id}`, {
+          method: 'DELETE'
+        });
+        const result = await response.json();
+        if (response.ok) {
+          window.showToast('Reseña eliminada de manera definitiva');
+          this.showDeleteModal = false;
+          setTimeout(() => window.location.reload(), 1200);
+        } else {
+          window.showToast(result.error || 'Error al eliminar', 'error');
+        }
+      } catch (err) {
+        window.showToast('Error de conexión con el servidor', 'error');
+      } finally {
+        this.isSubmitting = false;
+      }
+    }
+  }">
+
+    <!-- Table Container -->
+    <div class="table-wrapper">
+      <div class="table-top">
+        <span class="table-top-title">Listado de Opiniones</span>
+        <div class="search-box">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+          </svg>
+          <input type="text" placeholder="Buscar por producto, cliente..." id="review-search-input">
+        </div>
+      </div>
+
+      {reviews.length === 0 ? (
+        <div class="empty-state">
+          <p>Aún no hay reseñas registradas en la tienda</p>
+        </div>
+      ) : (
+        <div style="overflow-x:auto;">
+          <table>
+            <thead>
+              <tr>
+                <th>Cliente y Producto</th>
+                <th>Calificación</th>
+                <th>Comentario</th>
+                <th>Fecha</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="reviews-tbody">
+              {reviews.map((review: any) => (
+                <tr 
+                  data-client={review.reviewer_name.toLowerCase()} 
+                  data-product={review.product_name.toLowerCase()}
+                  data-comment={review.comment.toLowerCase()}
+                >
+                  <td>
+                    <div class="avatar-cell">
+                      <div class="avatar">
+                        {review.reviewer_name[0]?.toUpperCase()}
+                      </div>
+                      <div>
+                        <div class="reviewer-name">{review.reviewer_name}</div>
+                        <div class="product-name">{review.product_name}</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td>
+                    <div class="rating-stars">
+                      {Array.from({ length: 5 }).map((_, idx) => (
+                        <svg class={idx < review.rating ? 'text-gold' : 'text-slate-200'} viewBox="0 0 20 20">
+                          <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+                        </svg>
+                      ))}
+                    </div>
+                  </td>
+                  <td>
+                    <div class="comment-text">
+                      {review.comment ? `"${review.comment}"` : <span class="text-slate-300 font-bold uppercase tracking-widest" style="font-size: 8px;">Sin comentario escrito</span>}
+                    </div>
+                  </td>
+                  <td class="date-cell">
+                    {new Date(review.created_at).toLocaleDateString('es-VE', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                  </td>
+                  <td>
+                    <div class="actions-cell">
+                      <button 
+                        class="action-btn edit"
+                        @click={`openEdit(${JSON.stringify(review)})`}
+                      >
+                        Editar
+                      </button>
+                      <button 
+                        class="action-btn delete"
+                        @click={`openDelete(${JSON.stringify(review)})`}
+                      >
+                        Eliminar
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+
+    <!-- Alpine Edit Modal -->
+    <div x-show="showEditModal" class="modal-overlay" x-cloak>
+      <div class="modal-content" @click.away="showEditModal = false">
+        <div class="modal-header">
+          <h3>Modificar Opinión</h3>
+          <button class="modal-close" @click="showEditModal = false">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div class="form-group">
+            <label>Producto de Referencia</label>
+            <input type="text" class="form-control bg-slate-50 text-slate-400 cursor-not-allowed border-slate-100" :value="activeReview.product_name" readonly disabled />
+          </div>
+          
+          <div class="form-group">
+            <label>Nombre del Comprador</label>
+            <input type="text" class="form-control" x-model="activeReview.reviewer_name" placeholder="Ej: Maria Perez" required />
+          </div>
+
+          <div class="form-group">
+            <label>Calificación General</label>
+            <div class="flex gap-2">
+              <template x-for="i in 5">
+                <button type="button" class="star-select-btn" :class="activeReview.rating >= i ? 'active' : ''" @click="activeReview.rating = i">
+                  <svg class="w-6 h-6 fill-current" viewBox="0 0 20 20">
+                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+                  </svg>
+                </button>
+              </template>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Comentario o Crítica</label>
+            <textarea class="form-control resize-none" rows="4" x-model="activeReview.comment" placeholder="Ingresa los comentarios..."></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="action-btn" style="background:#f5f5f5; color:#555;" @click="showEditModal = false" :disabled="isSubmitting">Cancelar</button>
+          <button class="action-btn" style="background:#0a0a0a; color:#f3cf7a;" @click="saveReview" :disabled="isSubmitting">
+            <span x-text="isSubmitting ? 'Guardando...' : 'Guardar Cambios'"></span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Alpine Delete Modal -->
+    <div x-show="showDeleteModal" class="modal-overlay" x-cloak>
+      <div class="modal-content" @click.away="showDeleteModal = false">
+        <div class="modal-header" style="background:#ef4444;">
+          <h3 style="color:white;">¿Eliminar Opinión?</h3>
+          <button class="modal-close" @click="showDeleteModal = false">&times;</button>
+        </div>
+        <div class="modal-body" style="gap: 10px;">
+          <p style="font-size:12px; color:#444; line-height: 1.6;">
+            ¿Estás seguro de que deseas eliminar permanentemente la reseña de <strong x-text="activeReview.reviewer_name"></strong>?
+          </p>
+          <div style="background:#fef2f2; border:1px solid #fee2e2; padding:12px; border-radius:10px; font-size:11px; color:#991b1b; font-style:italic;" x-text="activeReview.comment"></div>
+          <p style="font-size:9px; text-transform:uppercase; letter-spacing:0.05em; font-weight:700; color:#ef4444; margin-top:5px;">
+            ⚠️ Esta acción es irreversible y afectará a la reputación media de la prenda.
+          </p>
+        </div>
+        <div class="modal-footer">
+          <button class="action-btn" style="background:#f5f5f5; color:#555;" @click="showDeleteModal = false" :disabled="isSubmitting">Cancelar</button>
+          <button class="action-btn" style="background:#ef4444; color:white;" @click="deleteReview" :disabled="isSubmitting">
+            <span x-text="isSubmitting ? 'Eliminando...' : 'Sí, Eliminar permanentemente'"></span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script is:inline>
+    // Live Search Filter logic
+    const searchInput = document.getElementById('review-search-input');
+    const rows = document.querySelectorAll('#reviews-tbody tr');
+
+    if (searchInput) {
+      searchInput.addEventListener('input', function() {
+        const q = this.value.toLowerCase().trim();
+        rows.forEach(function(row) {
+          const client = row.getAttribute('data-client') || '';
+          const product = row.getAttribute('data-product') || '';
+          const comment = row.getAttribute('data-comment') || '';
+          const matches = !q || client.includes(q) || product.includes(q) || comment.includes(q);
+          row.style.display = matches ? '' : 'none';
+        });
+      });
+    }
+  </script>
+
+</AdminLayout>

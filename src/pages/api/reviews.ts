@@ -6,7 +6,9 @@ export const POST: APIRoute = async ({ request }) => {
     const body = await request.json();
     const { product_id, reviewer_name, rating, comment } = body;
 
-    if (!product_id || !reviewer_name || !rating) {
+    const parsedRating = typeof rating === 'number' ? rating : parseInt(rating || '5');
+
+    if (!product_id || !reviewer_name || isNaN(parsedRating)) {
       return new Response(JSON.stringify({ error: 'Faltan campos obligatorios' }), { status: 400 });
     }
 
@@ -16,7 +18,7 @@ export const POST: APIRoute = async ({ request }) => {
         { 
           product_id, 
           reviewer_name, 
-          rating: parseInt(rating), 
+          rating: parsedRating, 
           comment 
         }
       ])
