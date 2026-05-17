@@ -1,12 +1,15 @@
 import type { APIRoute } from 'astro';
-import { supabaseAdmin as supabase } from '../../../lib/supabase';
+import { supabaseAdmin as supabase, initSupabase } from '../../../lib/supabase';
 
 /**
  * Endpoint de Creación de Orden
  * Recibe: cliente {name, email, phone, city}, items {productId, variantId, qty}, courier
  */
-export const POST: APIRoute = async ({ request }) => {
+export const POST: APIRoute = async ({ request, locals }) => {
   try {
+    const env = (locals as any).runtime?.env || {};
+    initSupabase(env);
+
     const { customer, items, total, courier, delivery } = await request.json();
 
     if (!customer || !items || items.length === 0) {

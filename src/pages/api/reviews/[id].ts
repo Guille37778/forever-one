@@ -1,5 +1,5 @@
 import type { APIRoute } from 'astro';
-import { supabaseAdmin } from '../../../lib/supabase';
+import { supabaseAdmin, initSupabase } from '../../../lib/supabase';
 
 /**
  * Handle Admin Review Operations
@@ -7,12 +7,15 @@ import { supabaseAdmin } from '../../../lib/supabase';
  * DELETE /api/reviews/[id] - Delete a review
  * Uses supabaseAdmin to bypass RLS since these are admin-only actions.
  */
-export const PATCH: APIRoute = async ({ request, params }) => {
+export const PATCH: APIRoute = async ({ request, params, locals }) => {
   try {
     const { id } = params;
     if (!id) {
       return new Response(JSON.stringify({ error: 'ID de reseña requerido' }), { status: 400 });
     }
+
+    const env = (locals as any).runtime?.env || {};
+    initSupabase(env);
 
     const { reviewer_name, rating, comment } = await request.json();
 
@@ -53,12 +56,15 @@ export const PATCH: APIRoute = async ({ request, params }) => {
   }
 };
 
-export const DELETE: APIRoute = async ({ params }) => {
+export const DELETE: APIRoute = async ({ params, locals }) => {
   try {
     const { id } = params;
     if (!id) {
       return new Response(JSON.stringify({ error: 'ID de reseña requerido' }), { status: 400 });
     }
+
+    const env = (locals as any).runtime?.env || {};
+    initSupabase(env);
 
     const { data, error } = await supabaseAdmin
       .from('product_reviews')
@@ -83,4 +89,5 @@ export const DELETE: APIRoute = async ({ params }) => {
     return new Response(JSON.stringify({ error: e.message }), { status: 500 });
   }
 };
+
 
