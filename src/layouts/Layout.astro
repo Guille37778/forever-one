@@ -46,7 +46,7 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
 
 		<!-- WhatsApp Floating Button -->
 		<a
-			href="https://wa.me/584121234567"
+			href="https://wa.me/584244557693"
 			target="_blank"
 			rel="noopener noreferrer"
 			aria-label="Contáctanos por WhatsApp"
@@ -76,7 +76,8 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
 	.whatsapp-float {
 		position: fixed;
 		bottom: 2rem;
-		right: 2rem;
+		left: 2rem;
+		right: auto;
 		z-index: 9999;
 		display: flex;
 		align-items: center;
@@ -104,9 +105,11 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
 		animation: none;
 	}
 
+	/* Tooltip sale hacia la DERECHA porque el botón está a la izquierda */
 	.whatsapp-tooltip {
 		position: absolute;
-		right: 72px;
+		left: 72px;
+		right: auto;
 		white-space: nowrap;
 		background: #fff;
 		color: #111;
@@ -119,7 +122,7 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
 		border-radius: 999px;
 		box-shadow: 0 2px 12px rgba(0,0,0,0.18);
 		opacity: 0;
-		transform: translateX(8px);
+		transform: translateX(-8px);
 		transition: opacity 0.25s ease, transform 0.25s ease;
 		pointer-events: none;
 	}
@@ -134,16 +137,20 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
 		50% { box-shadow: 0 4px 32px rgba(37, 211, 102, 0.8), 0 0 0 10px rgba(37, 211, 102, 0.12); }
 	}
 
+	/* ── Móvil: más pequeño y sin tooltip para evitar overflow ── */
 	@media (max-width: 640px) {
 		.whatsapp-float {
-			width: 52px;
-			height: 52px;
-			bottom: 1.25rem;
-			right: 1.25rem;
+			width: 50px;
+			height: 50px;
+			bottom: 1rem;
+			left: 1rem;
 		}
 		.whatsapp-float svg {
-			width: 27px;
-			height: 27px;
+			width: 26px;
+			height: 26px;
+		}
+		.whatsapp-tooltip {
+			display: none;
 		}
 	}
 </style>
