@@ -33,12 +33,20 @@ export const PATCH: APIRoute = async ({ request, params }) => {
         comment
       })
       .eq('id', id)
-      .select()
-      .single();
+      .select();
 
     if (error) throw error;
 
-    return new Response(JSON.stringify({ success: true, review: data }), { status: 200 });
+    if (!data || data.length === 0) {
+      return new Response(
+        JSON.stringify({ 
+          error: 'No se pudo modificar la reseña. Esto ocurre si no tienes permisos de administrador (SUPABASE_SERVICE_ROLE_KEY faltante en producción) o si el registro no existe.' 
+        }), 
+        { status: 403 }
+      );
+    }
+
+    return new Response(JSON.stringify({ success: true, review: data[0] }), { status: 200 });
   } catch (e: any) {
     console.error('[reviews/[id].ts] Error updating review:', e);
     return new Response(JSON.stringify({ error: e.message }), { status: 500 });
@@ -52,12 +60,22 @@ export const DELETE: APIRoute = async ({ params }) => {
       return new Response(JSON.stringify({ error: 'ID de reseña requerido' }), { status: 400 });
     }
 
-    const { error } = await supabaseAdmin
+    const { data, error } = await supabaseAdmin
       .from('product_reviews')
       .delete()
-      .eq('id', id);
+      .eq('id', id)
+      .select();
 
     if (error) throw error;
+
+    if (!data || data.length === 0) {
+      return new Response(
+        JSON.stringify({ 
+          error: 'No se pudo eliminar la reseña. Esto ocurre si no tienes permisos de administrador (SUPABASE_SERVICE_ROLE_KEY faltante en producción) o si el registro no existe.' 
+        }), 
+        { status: 403 }
+      );
+    }
 
     return new Response(JSON.stringify({ success: true }), { status: 200 });
   } catch (e: any) {
@@ -65,3 +83,4 @@ export const DELETE: APIRoute = async ({ params }) => {
     return new Response(JSON.stringify({ error: e.message }), { status: 500 });
   }
 };
+
