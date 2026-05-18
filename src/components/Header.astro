@@ -38,13 +38,21 @@ const { isBlack = false } = Astro.props;
         
         <a href={homeUrl} class="group relative z-[1100] flex items-center gap-4">
             <!-- Dynamic Logo Container using CSS Mask - Permanently Gold -->
-            <div class="metal-gold-bg shadow-[0_0_20px_rgba(184,134,11,0.3)] h-10 md:h-14 w-10 md:w-14 transition-all duration-500 group-hover:scale-110"
+            <div class="metal-gold-bg shadow-[0_0_20px_rgba(184,134,11,0.3)] h-12 md:h-16 w-12 md:w-16 transition-all duration-500 group-hover:scale-110 flex-shrink-0"
                  style={`-webkit-mask-image: url(${base}/logo_circular.png); -webkit-mask-size: contain; -webkit-mask-repeat: no-repeat; -webkit-mask-position: center; mask-image: url(${base}/logo_circular.png); mask-size: contain; mask-repeat: no-repeat; mask-position: center;`}
                  aria-label="Forever One Logo">
             </div>
-            <span class="text-xl md:text-3xl font-serif font-black italic tracking-tighter text-white pr-4">
-                Forever <span class="metal-gold-text inline-block -ml-0.5 md:-ml-2 pr-6">One</span>
-            </span>
+            <div class="flex flex-col justify-center">
+                <span class="text-xl md:text-3xl font-serif font-black italic tracking-tighter text-white leading-none pr-2">
+                    Forever <span class="metal-gold-text inline-block -ml-0.5 md:-ml-2 pr-4">One</span>
+                </span>
+                <div class="flex items-center -mt-1 pl-1 gap-2">
+                    <span class="text-[8px] md:text-[10px] tracking-[0.4em] md:tracking-[0.5em] uppercase text-white/80 font-light">
+                        Fashion
+                    </span>
+                    <span class="h-[1px] flex-1 bg-gradient-to-r from-gold/40 to-transparent"></span>
+                </div>
+            </div>
         </a>
 
         <div class="hidden lg:flex items-center gap-8">

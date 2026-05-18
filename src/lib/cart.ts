@@ -35,16 +35,17 @@ if (typeof window !== 'undefined') {
         if(!product || parseInt(product.stock) <= 0) return;
         
         const size = product.selectedSize || 'UNICO';
+        const qtyToAdd = parseInt(product.qty) || 1;
         const existing = cart.find(i => i.id === product.id && i.size === size);
         
         if(existing) {
-            if(existing.qty >= parseInt(product.stock)) { 
+            if(existing.qty + qtyToAdd > parseInt(product.stock)) { 
                 alert('✦ Stock máximo alcanzado'); 
                 return; 
             }
-            existing.qty++;
+            existing.qty += qtyToAdd;
         } else {
-            cart.push({ ...product, qty: 1, size: size, image_url: product.image_url || product.imagen });
+            cart.push({ ...product, qty: qtyToAdd, size: size, image_url: product.image_url || product.imagen });
         }
         
         saveCart();

@@ -250,16 +250,23 @@ const productInfo = {
                             </div>
                         </div>
 
-                        <!-- Main Action -->
-                        <div class="mb-6">
+                        <!-- Quantity and Main Action -->
+                        <div class="flex gap-4 mb-6">
+                             <!-- Quantity Selector -->
+                             <div class="flex items-center border border-slate-200 rounded-2xl bg-white overflow-hidden h-[60px] w-32 shadow-sm shrink-0">
+                                 <button type="button" class="w-10 h-full flex items-center justify-center text-slate-400 hover:text-[#B8860B] transition-colors" onclick="const q=document.getElementById('product-qty'); q.value=Math.max(1,parseInt(q.value)-1)">−</button>
+                                 <input type="number" id="product-qty" value="1" min="1" data-max={productInfo.stock} class="flex-1 h-full text-center text-sm font-black text-black border-none focus:outline-none bg-transparent" readonly />
+                                 <button type="button" class="w-10 h-full flex items-center justify-center text-slate-400 hover:text-[#B8860B] transition-colors" onclick="const q=document.getElementById('product-qty'); const max=parseInt(q.getAttribute('data-max')||'99'); q.value=Math.min(max,parseInt(q.value)+1)">+</button>
+                             </div>
+
                              <button id="add-to-cart-btn"
                                      data-product={JSON.stringify(productInfo)}
                                      disabled={productInfo.stock <= 0 || (variants !== null && variants.length > 0)}
-                                     class="w-full flex items-center justify-center bg-black text-white py-5 rounded-2xl transition-all hover:bg-[#B8860B] active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed shadow-xl border border-white/10 group gap-3">
+                                     class="flex-1 flex items-center justify-center bg-black text-white rounded-2xl transition-all hover:bg-[#B8860B] active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed shadow-xl border border-white/10 group gap-3 px-4">
                                  <svg class="w-5 h-5 transition-transform group-hover:-translate-y-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path>
                                  </svg>
-                                 <span class="text-[10px] font-black uppercase tracking-[0.4em]">Añadir al Carrito</span>
+                                 <span class="text-[10px] font-black uppercase tracking-[0.2em] md:tracking-[0.4em]">Añadir al Carrito</span>
                              </button>
                         </div>
 
@@ -277,7 +284,7 @@ const productInfo = {
                                         <button 
                                             disabled={v.stock_quantity <= 0}
                                             class={`size-btn min-w-[55px] h-[55px] rounded-lg flex items-center justify-center border-2 text-xs font-black transition-all ${v.stock_quantity > 0 ? 'border-slate-100 hover:border-gold hover:text-gold text-black cursor-pointer' : 'border-slate-50 text-slate-200 cursor-not-allowed bg-slate-50'}`}
-                                            onclick={`window.__selectSize('${v.size}')`}
+                                            onclick={`window.__selectSize('${v.size}', ${v.stock_quantity})`}
                                             data-size={v.size}
                                         >
                                             {v.size}
@@ -515,8 +522,12 @@ const productInfo = {
                         }
 
                         productData.selectedSize = selectedSize;
+                        const qtyInput = document.getElementById('product-qty');
+                        productData.qty = qtyInput ? parseInt(qtyInput.value) : 1;
+
                         if (window.__addToCart) {
                             window.__addToCart(productData);
+                            if (qtyInput) qtyInput.value = '1'; // Reset after adding
                         } else {
                             console.error('__addToCart not available');
                         }
@@ -527,11 +538,19 @@ const productInfo = {
             }
 
             // Handle size selection
-            window.__selectSize = function(size) {
+            window.__selectSize = function(size, maxStock) {
                 selectedSize = size;
                 // Habilitar el botón de añadir al carrito
                 const cartBtn = document.getElementById('add-to-cart-btn');
                 if (cartBtn) cartBtn.disabled = false;
+
+                // Actualizar límite del selector de cantidad
+                const qtyInput = document.getElementById('product-qty');
+                if (qtyInput) {
+                    qtyInput.value = '1';
+                    qtyInput.setAttribute('data-max', maxStock || '99');
+                }
+
                 // Ocultar el texto guía
                 const helper = document.getElementById('size-helper');
                 if (helper) {
