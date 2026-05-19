@@ -32,11 +32,21 @@ export const cartTotal = () => cart.reduce((s, i) => s + (i.precio * i.qty), 0);
 // Global Exposure for templates
 if (typeof window !== 'undefined') {
     (window as any).__addToCart = (product: any) => {
-        if(!product || parseInt(product.stock) <= 0) return;
+        console.log('__addToCart called with:', product);
+        if(!product) {
+            console.log('__addToCart: product is falsy');
+            return;
+        }
+        console.log('product.stock:', product.stock, 'parsed:', parseInt(product.stock));
+        if(parseInt(product.stock) <= 0) {
+            console.log('__addToCart: stock is <= 0, returning');
+            return;
+        }
         
         const size = product.selectedSize || 'UNICO';
+        const color = product.selectedColor || '';
         const qtyToAdd = parseInt(product.qty) || 1;
-        const existing = cart.find(i => i.id === product.id && i.size === size);
+        const existing = cart.find(i => i.id === product.id && i.size === size && (i.color || '') === color);
         
         if(existing) {
             if(existing.qty + qtyToAdd > parseInt(product.stock)) { 
@@ -45,7 +55,7 @@ if (typeof window !== 'undefined') {
             }
             existing.qty += qtyToAdd;
         } else {
-            cart.push({ ...product, qty: qtyToAdd, size: size, image_url: product.image_url || product.imagen });
+            cart.push({ ...product, qty: qtyToAdd, size: size, color: color, image_url: product.image_url || product.imagen });
         }
         
         saveCart();
@@ -64,17 +74,23 @@ if (typeof window !== 'undefined') {
         setTimeout(() => t!.style.opacity = '0', 2500);
     };
 
-    (window as any).__removeFromCart = (productId: string, size: string = '') => {
-        cart = cart.filter(i => !(i.id === productId && i.size === size));
+    (window as any).__removeFromCart = (productId: string, size: string = '', color: string = '') => {
+        cart = cart.filter(i => !(i.id === productId && i.size === size && (i.color || '') === color));
         saveCart();
         (window as any).__renderCart?.();
     };
 
-    (window as any).__updateQty = (productId: string, delta: number, size: string = '') => {
-        const item = cart.find(i => i.id === productId && i.size === size);
+    (window as any).__removeAllOfProduct = (productId: string) => {
+        cart = cart.filter(i => i.id !== productId);
+        saveCart();
+        (window as any).__renderCart?.();
+    };
+
+    (window as any).__updateQty = (productId: string, delta: number, size: string = '', color: string = '') => {
+        const item = cart.find(i => i.id === productId && i.size === size && (i.color || '') === color);
         if(!item) return;
         const newQty = item.qty + delta;
-        if(newQty <= 0) { (window as any).__removeFromCart(productId, size); return; }
+        if(newQty <= 0) { (window as any).__removeFromCart(productId, size, color); return; }
         item.qty = newQty;
         saveCart();
         (window as any).__renderCart?.();

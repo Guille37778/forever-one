@@ -18,11 +18,39 @@ if (error || !product) {
   return Astro.redirect('/404');
 }
 
-// Fetch variants (sizes)
+// Fetch variants (sizes and colors)
 const { data: variants } = await supabase
   .from('variants')
   .select('*')
   .eq('product_id', id);
+
+// Agrupar variantes por talla única para no duplicar botones en la interfaz
+const groupedVariants: Record<string, { size: string; totalStock: number; colorVariants: Array<{ id: string; color: string; stock_quantity: number }> }> = {};
+
+if (variants) {
+  variants.forEach((v: any) => {
+    const size = v.size || 'UNICO';
+    if (!groupedVariants[size]) {
+      groupedVariants[size] = {
+        size: size,
+        totalStock: 0,
+        colorVariants: []
+      };
+    }
+    groupedVariants[size].totalStock += v.stock_quantity || 0;
+    groupedVariants[size].colorVariants.push({
+      id: v.id,
+      color: v.color || '',
+      stock_quantity: v.stock_quantity || 0
+    });
+  });
+}
+
+// Ordenar tallas para mostrarlas de forma elegante
+const sizeOrder = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'UNICO'];
+const sortedUniqueSizes = Object.values(groupedVariants).sort((a, b) => {
+  return sizeOrder.indexOf(a.size) - sizeOrder.indexOf(b.size);
+});
 
 // Fetch recommendations
 let { data: subcategoryRecs } = await supabase
@@ -250,26 +278,6 @@ const productInfo = {
                             </div>
                         </div>
 
-                        <!-- Quantity and Main Action -->
-                        <div class="flex gap-4 mb-6">
-                             <!-- Quantity Selector -->
-                             <div class="flex items-center border border-slate-200 rounded-2xl bg-white overflow-hidden h-[60px] w-32 shadow-sm shrink-0">
-                                 <button type="button" class="w-10 h-full flex items-center justify-center text-slate-400 hover:text-[#B8860B] transition-colors" onclick="const q=document.getElementById('product-qty'); q.value=Math.max(1,parseInt(q.value)-1)">−</button>
-                                 <input type="number" id="product-qty" value="1" min="1" data-max={productInfo.stock} class="flex-1 h-full text-center text-sm font-black text-black border-none focus:outline-none bg-transparent" readonly />
-                                 <button type="button" class="w-10 h-full flex items-center justify-center text-slate-400 hover:text-[#B8860B] transition-colors" onclick="const q=document.getElementById('product-qty'); const max=parseInt(q.getAttribute('data-max')||'99'); q.value=Math.min(max,parseInt(q.value)+1)">+</button>
-                             </div>
-
-                             <button id="add-to-cart-btn"
-                                     data-product={JSON.stringify(productInfo)}
-                                     disabled={productInfo.stock <= 0 || (variants !== null && variants.length > 0)}
-                                     class="flex-1 flex items-center justify-center bg-black text-white rounded-2xl transition-all hover:bg-[#B8860B] active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed shadow-xl border border-white/10 group gap-3 px-4">
-                                 <svg class="w-5 h-5 transition-transform group-hover:-translate-y-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path>
-                                 </svg>
-                                 <span class="text-[10px] font-black uppercase tracking-[0.2em] md:tracking-[0.4em]">Añadir al Carrito</span>
-                             </button>
-                        </div>
-
                         <!-- Sizes -->
                         <div class="mb-10" id="sizes-container">
                             <h3 class="text-[9px] uppercase tracking-[0.4em] font-black text-black mb-5 flex items-center justify-between">
@@ -279,26 +287,128 @@ const productInfo = {
                                )}
                             </h3>
                             <div class="flex flex-wrap gap-3">
-                                {variants && variants.length > 0 ? (
-                                    variants.map((v: any) => (
+                                {sortedUniqueSizes && sortedUniqueSizes.length > 0 ? (
+                                    sortedUniqueSizes.map((g: any) => (
                                         <button 
-                                            disabled={v.stock_quantity <= 0}
-                                            class={`size-btn min-w-[55px] h-[55px] rounded-lg flex items-center justify-center border-2 text-xs font-black transition-all ${v.stock_quantity > 0 ? 'border-slate-100 hover:border-gold hover:text-gold text-black cursor-pointer' : 'border-slate-50 text-slate-200 cursor-not-allowed bg-slate-50'}`}
-                                            onclick={`window.__selectSize('${v.size}', ${v.stock_quantity})`}
-                                            data-size={v.size}
+                                            id={`size-btn-${g.size}`}
+                                            disabled={g.totalStock <= 0}
+                                            class={`size-btn min-w-[70px] h-[70px] rounded-xl flex flex-col items-center justify-center border-2 text-xs font-black transition-all ${g.totalStock > 0 ? 'border-slate-100 hover:border-[#B8860B] hover:text-[#B8860B] text-black cursor-pointer bg-white shadow-sm' : 'border-slate-50 text-slate-200 cursor-not-allowed bg-slate-50'}`}
+                                            onclick={`window.__selectSize('${g.size}')`}
+                                            data-size={g.size}
                                         >
-                                            {v.size}
+                                            <span class="text-sm font-black uppercase tracking-wider">{g.size}</span>
+                                            <span id={`size-qty-${g.size}`} class="text-[9px] font-bold text-[#B8860B] mt-0.5" style="display: none;"></span>
                                         </button>
                                     ))
                                 ) : (
                                     <span class="text-[10px] text-slate-400 font-bold uppercase tracking-widest italic">Talla única</span>
                                 )}
                             </div>
-                            {variants && variants.length > 0 && (
+                            {sortedUniqueSizes && sortedUniqueSizes.length > 0 && (
                                 <p id="size-helper" class="text-[9px] uppercase tracking-[0.3em] font-black text-[#B8860B] mt-4 flex items-center gap-2" style="transition: opacity 0.3s ease;">
                                     ↑ Seleccione una talla para continuar
                                 </p>
                             )}
+                        </div>
+
+                        <!-- Quantity Selector Modal -->
+                        <div id="qty-modal" class="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm opacity-0 pointer-events-none transition-all duration-300" style="display: none;">
+                            <div class="bg-white rounded-3xl max-w-lg w-full p-8 border border-gold/20 shadow-2xl transform scale-95 transition-all duration-300 flex flex-col gap-6">
+                                <div class="text-center">
+                                    <h4 class="font-primary italic font-black text-2xl text-slate-900 uppercase tracking-wide">Seleccionar Variantes</h4>
+                                    <p class="text-[9px] font-black uppercase tracking-[0.3em] text-[#B8860B] mt-1">Elige tus tallas y colores</p>
+                                </div>
+                                
+                                <div id="modal-colors-container" class="flex flex-col gap-4 max-h-[350px] overflow-y-auto pr-1 py-1">
+                                    {sortedUniqueSizes && sortedUniqueSizes.length > 0 ? (
+                                        sortedUniqueSizes.map((g: any) => (
+                                            <div id={`row-${g.size}`} class="flex items-center justify-between border border-slate-100 rounded-2xl p-4 gap-4 transition-all" style="border-width: 2px;">
+                                                <!-- Talla -->
+                                                <div class="flex-shrink-0">
+                                                    <span class="w-11 h-11 bg-slate-100/80 rounded-xl flex items-center justify-center font-black text-slate-800 text-sm tracking-wider uppercase border border-slate-200/50">
+                                                        {g.size}
+                                                    </span>
+                                                </div>
+                                                
+                                                <!-- Color Dropdown -->
+                                                <div class="flex-1 min-w-0">
+                                                    <select 
+                                                        id={`select-color-${g.size}`} 
+                                                        class="color-select w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-black text-slate-700 focus:outline-none focus:border-[#B8860B]"
+                                                        onchange={`window.__onColorChange('${g.size}')`}
+                                                    >
+                                                        {g.colorVariants.map((c: any) => (
+                                                            <option value={c.color} data-stock={c.stock_quantity}>
+                                                                {c.color || 'Único'} ({c.stock_quantity} disp.)
+                                                            </option>
+                                                        ))}
+                                                    </select>
+                                                </div>
+                                                
+                                                <!-- Precio -->
+                                                <div class="text-right flex-shrink-0">
+                                                    <span class="text-xs font-black italic text-[#B8860B] font-primary block leading-none">
+                                                        ${productInfo.precio.toFixed(2)}
+                                                    </span>
+                                                    <span class="text-[8px] font-bold text-slate-400 block mt-1 leading-none">
+                                                        Bs. {(productInfo.precio * dollarRate).toLocaleString('es-VE', { minimumFractionDigits: 2 })}
+                                                    </span>
+                                                </div>
+                                                
+                                                <!-- Cantidad Selector Capsule -->
+                                                <div class="flex items-center bg-slate-100/80 rounded-full p-1 border border-slate-200/40 shadow-inner flex-shrink-0">
+                                                    <button 
+                                                        type="button" 
+                                                        class="w-8 h-8 rounded-full bg-white flex items-center justify-center text-slate-500 hover:text-[#B8860B] text-lg font-bold shadow-sm transition-all active:scale-90 hover:scale-105"
+                                                        onclick={`window.__updateRowQty('${g.size}', -1)`}
+                                                    >
+                                                        −
+                                                    </button>
+                                                    <input 
+                                                        type="number" 
+                                                        id={`input-qty-${g.size}`} 
+                                                        value="0" 
+                                                        min="0" 
+                                                        readonly
+                                                        class="w-10 text-center text-xs font-black text-slate-800 border-none focus:outline-none bg-transparent" 
+                                                    />
+                                                    <button 
+                                                        type="button" 
+                                                        class="w-8 h-8 rounded-full bg-white flex items-center justify-center text-slate-500 hover:text-[#B8860B] text-lg font-bold shadow-sm transition-all active:scale-90 hover:scale-105"
+                                                        onclick={`window.__updateRowQty('${g.size}', 1)`}
+                                                    >
+                                                        +
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        ))
+                                    ) : (
+                                        <p class="text-center text-xs font-bold text-slate-400 py-6 uppercase tracking-wider">No hay tallas disponibles</p>
+                                    )}
+                                </div>
+                                
+                                <div class="flex gap-3 mt-2">
+                                    <button type="button" onclick="window.__closeQtyModal()" class="flex-1 py-4 border border-slate-200 text-slate-500 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-colors hover:bg-slate-50 hover:text-slate-900 active:scale-95">
+                                        Cancelar
+                                    </button>
+                                    <button type="button" onclick="window.__confirmQty()" class="flex-1 py-4 bg-black text-white rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all hover:bg-[#B8860B] active:scale-95 shadow-lg">
+                                        Aceptar
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Main Action -->
+                        <div class="mb-6">
+                             <button id="add-to-cart-btn"
+                                     data-product={JSON.stringify(productInfo)}
+                                     disabled={productInfo.stock <= 0 || (variants !== null && variants.length > 0)}
+                                     class="w-full flex items-center justify-center bg-black text-white py-5 rounded-2xl transition-all hover:bg-[#B8860B] active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed shadow-xl border border-white/10 group gap-3">
+                                 <svg class="w-5 h-5 transition-transform group-hover:-translate-y-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path>
+                                 </svg>
+                                 <span class="text-[10px] font-black uppercase tracking-[0.4em]">Añadir al Carrito</span>
+                             </button>
                         </div>
 
                         <!-- Product Description -->
@@ -506,30 +616,92 @@ const productInfo = {
                 return current;
             };
 
+            let selectedQuantities = {};
+            let activeSizeForModal = '';
+
+            function __updateCartBtnState() {
+                const cartBtn = document.getElementById('add-to-cart-btn');
+                if (cartBtn) {
+                    const totalQty = Object.values(selectedQuantities).reduce((acc, q) => acc + q, 0);
+                    const hasVariants = document.querySelectorAll('.size-btn').length > 0;
+                    if (hasVariants) {
+                        cartBtn.disabled = totalQty === 0;
+                    }
+                }
+            }
+
             function initCartBtn() {
                 const btn = document.getElementById('add-to-cart-btn');
                 if (!btn) return;
 
+                console.log('--- initCartBtn registered successfully ---');
+
                 btn.addEventListener('click', function() {
+                    console.log('--- Add to Cart Button Clicked ---');
                     try {
-                        const productData = JSON.parse(btn.getAttribute('data-product') || '{}');
-                        
-                        // Check if a size is required and selected
+                        const productAttr = btn.getAttribute('data-product') || '{}';
+                        console.log('data-product attribute raw:', productAttr);
+                        const decodedAttr = productAttr.replace(/&quot;/g, '"').replace(/&amp;/g, '&');
+                        const productData = JSON.parse(decodedAttr);
+                        console.log('Parsed productData:', productData);
                         const hasVariants = document.querySelectorAll('.size-btn').length > 0;
-                        if (hasVariants && !selectedSize) {
-                            window.dispatchEvent(new CustomEvent('notify', { detail: { message: 'POR FAVOR, SELECCIONE UNA TALLA' } }));
-                            return;
-                        }
-
-                        productData.selectedSize = selectedSize;
-                        const qtyInput = document.getElementById('product-qty');
-                        productData.qty = qtyInput ? parseInt(qtyInput.value) : 1;
-
-                        if (window.__addToCart) {
-                            window.__addToCart(productData);
-                            if (qtyInput) qtyInput.value = '1'; // Reset after adding
+                        
+                        if (hasVariants) {
+                            const keys = Object.keys(selectedQuantities);
+                            if (keys.length === 0) {
+                                window.dispatchEvent(new CustomEvent('notify', { detail: { message: 'POR FAVOR, SELECCIONE UNA TALLA Y CANTIDAD' } }));
+                                return;
+                            }
+                            
+                            let added = false;
+                            keys.forEach(key => {
+                                const qty = selectedQuantities[key];
+                                if (qty > 0) {
+                                    const parts = key.split('_');
+                                    const size = parts[0];
+                                    const color = parts.slice(1).join('_');
+                                    
+                                    const variantData = { ...productData };
+                                    variantData.selectedSize = size;
+                                    variantData.selectedColor = color;
+                                    variantData.color = color;
+                                    variantData.qty = qty;
+                                    
+                                    // Get variant stock from dropdown option
+                                    const selectEl = document.getElementById(`select-color-${size}`);
+                                    const optionEl = selectEl ? selectEl.options[selectEl.selectedIndex] : null;
+                                    const stockEl = optionEl ? parseInt(optionEl.getAttribute('data-stock') || '999') : 999;
+                                    variantData.stock = stockEl;
+                                    
+                                    if (window.__addToCart) {
+                                        window.__addToCart(variantData);
+                                        added = true;
+                                    }
+                                }
+                            });
+                            
+                            if (added) {
+                                document.querySelectorAll('.size-btn').forEach((sizeBtn) => {
+                                    const size = sizeBtn.getAttribute('data-size');
+                                    const qtySpan = document.getElementById(`size-qty-${size}`);
+                                    if (qtySpan && sizeBtn) {
+                                        qtySpan.textContent = '';
+                                        qtySpan.style.display = 'none';
+                                        sizeBtn.style.borderColor = '';
+                                        sizeBtn.style.color = '';
+                                        sizeBtn.style.backgroundColor = '';
+                                    }
+                                });
+                                selectedQuantities = {};
+                                __updateCartBtnState();
+                            }
                         } else {
-                            console.error('__addToCart not available');
+                            // Talla única
+                            productData.selectedSize = 'UNICO';
+                            productData.qty = 1;
+                            if (window.__addToCart) {
+                                window.__addToCart(productData);
+                            }
                         }
                     } catch(e) {
                         console.error('Error parsing product data', e);
@@ -537,18 +709,83 @@ const productInfo = {
                 });
             }
 
-            // Handle size selection
-            window.__selectSize = function(size, maxStock) {
-                selectedSize = size;
-                // Habilitar el botón de añadir al carrito
-                const cartBtn = document.getElementById('add-to-cart-btn');
-                if (cartBtn) cartBtn.disabled = false;
+            // Handle color selection dropdown change
+            window.__onColorChange = function(size) {
+                const select = document.getElementById(`select-color-${size}`);
+                const input = document.getElementById(`input-qty-${size}`);
+                if (!select || !input) return;
+                
+                const color = select.value || '';
+                const key = `${size}_${color}`;
+                
+                // Load quantity for this size + color
+                const currentQty = selectedQuantities[key] || 0;
+                input.value = currentQty.toString();
+                
+                // Load max stock
+                const option = select.options[select.selectedIndex];
+                const stock = parseInt(option.getAttribute('data-stock') || '0');
+                input.setAttribute('data-max', stock.toString());
+            };
 
-                // Actualizar límite del selector de cantidad
-                const qtyInput = document.getElementById('product-qty');
-                if (qtyInput) {
-                    qtyInput.value = '1';
-                    qtyInput.setAttribute('data-max', maxStock || '99');
+            // Update row quantity based on delta (-1 or +1)
+            window.__updateRowQty = function(size, delta) {
+                const select = document.getElementById(`select-color-${size}`);
+                const input = document.getElementById(`input-qty-${size}`);
+                if (!select || !input) return;
+                
+                const color = select.value || '';
+                const key = `${size}_${color}`;
+                const max = parseInt(input.getAttribute('data-max') || '999');
+                
+                let currentQty = selectedQuantities[key] || 0;
+                let newQty = currentQty + delta;
+                
+                if (newQty < 0) newQty = 0;
+                if (newQty > max) {
+                    alert(`✦ Stock máximo alcanzado para talla ${size} color ${color || 'Único'} (${max} unidades).`);
+                    return;
+                }
+                
+                if (newQty > 0) {
+                    selectedQuantities[key] = newQty;
+                } else {
+                    delete selectedQuantities[key];
+                }
+                
+                input.value = newQty.toString();
+            };
+
+            // Handle opening variants modal
+            window.__selectSize = function(size) {
+                activeSizeForModal = size;
+                
+                const modal = document.getElementById('qty-modal');
+                if (modal) {
+                    // Initialize current selection state for all rows
+                    document.querySelectorAll('.color-select').forEach((select) => {
+                        const rowSize = select.id.replace('select-color-', '');
+                        
+                        // Highlight target clicked size row
+                        const rowElement = document.getElementById(`row-${rowSize}`);
+                        if (rowElement) {
+                            if (rowSize === size) {
+                                rowElement.style.backgroundColor = 'rgba(184,134,11,0.03)';
+                                rowElement.style.borderColor = '#B8860B';
+                            } else {
+                                rowElement.style.backgroundColor = '';
+                                rowElement.style.borderColor = '';
+                            }
+                        }
+                        
+                        window.__onColorChange(rowSize);
+                    });
+                    
+                    modal.style.display = 'flex';
+                    setTimeout(() => {
+                        modal.classList.remove('opacity-0', 'pointer-events-none');
+                        modal.querySelector('div')?.classList.remove('scale-95');
+                    }, 50);
                 }
 
                 // Ocultar el texto guía
@@ -557,18 +794,59 @@ const productInfo = {
                     helper.style.opacity = '0';
                     setTimeout(() => { helper.style.display = 'none'; }, 300);
                 }
-                document.querySelectorAll('.size-btn').forEach(btn => {
-                    const btnSize = btn.getAttribute('data-size');
-                    if (btnSize === size) {
-                        btn.style.borderColor = '#B8860B';
-                        btn.style.color = '#B8860B';
-                        btn.style.backgroundColor = 'rgba(184,134,11,0.05)';
-                    } else {
-                        btn.style.borderColor = '';
-                        btn.style.color = '';
-                        btn.style.backgroundColor = '';
+            };
+
+            window.__closeQtyModal = function() {
+                const modal = document.getElementById('qty-modal');
+                if (modal) {
+                    modal.classList.add('opacity-0', 'pointer-events-none');
+                    modal.querySelector('div')?.classList.add('scale-95');
+                    setTimeout(() => {
+                        modal.style.display = 'none';
+                    }, 300);
+                }
+            };
+
+            window.__confirmQty = function() {
+                // Sum up totals per size to update visual indicators
+                const sizeTotals = {};
+                
+                Object.keys(selectedQuantities).forEach(key => {
+                    const qty = selectedQuantities[key];
+                    const parts = key.split('_');
+                    const size = parts[0];
+                    
+                    sizeTotals[size] = (sizeTotals[size] || 0) + qty;
+                });
+                
+                // Update button displays
+                document.querySelectorAll('.size-btn').forEach((btn) => {
+                    const size = btn.getAttribute('data-size');
+                    const qtySpan = document.getElementById(`size-qty-${size}`);
+                    if (qtySpan && btn) {
+                        const qty = sizeTotals[size] || 0;
+                        if (qty > 0) {
+                            qtySpan.textContent = `x ${qty}`;
+                            qtySpan.style.display = 'block';
+                            
+                            // Active styling
+                            btn.style.borderColor = '#B8860B';
+                            btn.style.color = '#B8860B';
+                            btn.style.backgroundColor = 'rgba(184,134,11,0.05)';
+                        } else {
+                            qtySpan.textContent = '';
+                            qtySpan.style.display = 'none';
+                            
+                            // Standard styling
+                            btn.style.borderColor = '';
+                            btn.style.color = '';
+                            btn.style.backgroundColor = '';
+                        }
                     }
                 });
+                
+                __updateCartBtnState();
+                window.__closeQtyModal();
             };
 
             initCartBtn();

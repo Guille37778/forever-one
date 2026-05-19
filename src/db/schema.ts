@@ -54,6 +54,7 @@ export const variants = pgTable('variants', {
   id: uuid('id').primaryKey().defaultRandom(),
   productId: uuid('product_id').references(() => products.id).notNull(),
   size: sizeEnum('size').notNull(),
+  color: text('color'),
   stockQuantity: integer('stock_quantity').default(0).notNull(),
   updatedAt: timestamp('updated_at').defaultNow(),
 });
@@ -102,6 +103,7 @@ export const orderItems = pgTable('order_items', {
   variantId: uuid('variant_id').references(() => variants.id),
   productName: text('product_name').notNull(),         // Snapshot del nombre
   size: text('size'),
+  color: text('color'),
   priceUsd: numeric('price_usd', { precision: 10, scale: 2 }).notNull(),
   quantity: integer('quantity').default(1).notNull(),
 });

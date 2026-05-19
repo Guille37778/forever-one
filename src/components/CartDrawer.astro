@@ -394,7 +394,7 @@ const deliveryZones = settingsData?.find((s: any) => s.key === 'delivery_zones')
 </style>
 
 <script>
-    import { loadCart, syncCartWithDB, cartTotal } from '../lib/cart';
+    import { loadCart, cartTotal } from '../lib/cart';
 
     (function() {
         const el = (id: string) => document.getElementById(id);
@@ -432,31 +432,66 @@ const deliveryZones = settingsData?.find((s: any) => s.key === 'delivery_zones')
                 checkoutBtn.style.cursor = hasItems ? 'pointer' : 'not-allowed';
             }
 
-            if(list) list.innerHTML = cart.map((item: any) => `
-                <div class="cart-item-card" style="display:flex; gap:16px; margin-bottom:16px; padding:12px; background:white; border:1px solid #f0f0f0;">
-                    <img src="${item.image_url || (item.imagenes && item.imagenes[0]) || '/placeholder.png'}" style="width:70px; height:90px; object-fit:cover; flex-shrink:0;" onerror="this.src='/placeholder.png'">
-                    <div style="flex:1; min-width:0;">
-                        <div style="display:flex; justify-content:space-between; align-items:flex-start;">
-                            <div style="min-width:0;">
-                                <div style="font-size:9px; text-transform:uppercase; letter-spacing:0.3em; font-weight:900; color:#111; margin-bottom:4px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${item.nombre}</div>
-                                ${item.size ? `<div style="font-size:8px; color:#B8860B; text-transform:uppercase; letter-spacing:0.2em; font-weight:700; background:rgba(184,134,11,0.08); padding:2px 8px; display:inline-block;">${item.size}</div>` : ''}
+            if(list) {
+                // Group cart items by product ID
+                const groupedCart: any[] = [];
+                cart.forEach((item: any) => {
+                    let existingGroup = groupedCart.find((g: any) => g.id === item.id);
+                    if (!existingGroup) {
+                        existingGroup = {
+                            id: item.id,
+                            nombre: item.nombre || item.name,
+                            image_url: item.image_url || (item.imagenes && item.imagenes[0]) || '/placeholder.png',
+                            variants: []
+                        };
+                        groupedCart.push(existingGroup);
+                    }
+                    existingGroup.variants.push({
+                        size: item.size || '',
+                        color: item.color || '',
+                        qty: item.qty,
+                        precio: item.precio || item.price || 0
+                    });
+                });
+
+                list.innerHTML = groupedCart.map((item: any) => `
+                    <div class="cart-item-card" style="display:flex; gap:16px; margin-bottom:16px; padding:12px; background:white; border:1px solid #f0f0f0;">
+                        <img src="${item.image_url}" style="width:70px; height:90px; object-fit:cover; flex-shrink:0;" onerror="this.src='/placeholder.png'">
+                        <div style="flex:1; min-width:0;">
+                            <!-- Header: Product name & Delete all button -->
+                            <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+                                <div style="font-size:9px; text-transform:uppercase; letter-spacing:0.3em; font-weight:900; color:#111; margin-bottom:4px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+                                    ${item.nombre}
+                                </div>
+                                <button onclick="window.__removeAllOfProduct('${item.id}')" style="color:#ccc; font-size:18px; border:none; background:none; cursor:pointer;" title="Eliminar todo">×</button>
                             </div>
-                            <button onclick="window.__removeFromCart('${item.id}', '${item.size || ''}')" style="color:#ccc; font-size:18px; border:none; background:none; cursor:pointer;">×</button>
-                        </div>
-                        <div style="display:flex; align-items:center; justify-content:space-between; margin-top:12px;">
-                            <div style="display:flex; align-items:center; border:1px solid #eee;">
-                                <button onclick="window.__updateQty('${item.id}', -1, '${item.size || ''}')" style="width:28px; height:28px; border:none; background:#fafafa; cursor:pointer; color:#111;">−</button>
-                                <span style="font-size:11px; font-weight:900; min-width:24px; text-align:center; color:#111;">${item.qty}</span>
-                                <button onclick="window.__updateQty('${item.id}', 1, '${item.size || ''}')" style="width:28px; height:28px; border:none; background:#fafafa; cursor:pointer; color:#111;">+</button>
-                            </div>
-                            <div style="text-align:right;">
-                                <div style="font-family:'Playfair Display',serif; font-size:1rem; font-weight:900; font-style:italic; color:#111;">$${(item.precio * item.qty).toFixed(2)}</div>
-                                <div style="font-size:8px; color:#B8860B; font-weight:700;">Bs. ${(item.precio * item.qty * dollarRate).toLocaleString('es-VE',{minimumFractionDigits:2,maximumFractionDigits:2})}</div>
+                            
+                            <!-- Variants List inside this product -->
+                            <div style="display:flex; flex-direction:column; gap:12px; margin-top:8px;">
+                                ${item.variants.map((v: any) => `
+                                    <div style="display:flex; flex-direction:column; gap:4px; padding-bottom:10px; border-bottom:1px dashed #eee; margin-bottom:2px;">
+                                        <div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:4px;">
+                                            ${v.size ? `<span style="font-size:8px; color:#B8860B; text-transform:uppercase; letter-spacing:0.2em; font-weight:700; background:rgba(184,134,11,0.08); padding:2px 8px; display:inline-block;">Talla: ${v.size}</span>` : ''}
+                                            ${v.color ? `<span style="font-size:8px; color:#555; text-transform:uppercase; letter-spacing:0.2em; font-weight:700; background:rgba(0,0,0,0.05); padding:2px 8px; display:inline-block;">Color: ${v.color}</span>` : ''}
+                                        </div>
+                                        <div style="display:flex; align-items:center; justify-content:space-between; margin-top:8px;">
+                                            <div style="display:flex; align-items:center; border:1px solid #eee;">
+                                                <button onclick="window.__updateQty('${item.id}', -1, '${v.size || ''}', '${v.color || ''}')" style="width:24px; height:24px; border:none; background:#fafafa; cursor:pointer; color:#111; font-weight:bold;">−</button>
+                                                <span style="font-size:10px; font-weight:900; min-width:20px; text-align:center; color:#111;">${v.qty}</span>
+                                                <button onclick="window.__updateQty('${item.id}', 1, '${v.size || ''}', '${v.color || ''}')" style="width:24px; height:24px; border:none; background:#fafafa; cursor:pointer; color:#111; font-weight:bold;">+</button>
+                                            </div>
+                                            <div style="text-align:right; display:flex; flex-direction:column; align-items:flex-end; gap:2px;">
+                                                <div style="font-family:'Playfair Display',serif; font-size:0.9rem; font-weight:900; font-style:italic; color:#111; line-height:1;">$${(v.precio * v.qty).toFixed(2)}</div>
+                                                <div style="font-size:7px; color:#B8860B; font-weight:700; line-height:1;">Bs. ${(v.precio * v.qty * dollarRate).toLocaleString('es-VE',{minimumFractionDigits:2,maximumFractionDigits:2})}</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                `).join('')}
                             </div>
                         </div>
                     </div>
-                </div>
-            `).join('');
+                `).join('');
+            }
         };
 
         (window as any).__openCart = function() {
@@ -569,7 +604,13 @@ const deliveryZones = settingsData?.find((s: any) => s.key === 'delivery_zones')
                 deliverySummary = `• MÉTODO: Delivery Local\n• ZONA: ${delZone}\n• DIRECCIÓN: ${delAddr}`;
             }
 
-            const itemsSummary = cart.map((i: any) => `  - ${i.qty}x ${i.nombre}${i.size ? ` (${i.size})` : ''}: $${(i.precio * i.qty).toFixed(2)}`).join('\n');
+            const itemsSummary = cart.map((i: any) => {
+                let variantDesc = '';
+                if (i.size && i.color) variantDesc = ` (${i.size} - ${i.color})`;
+                else if (i.size) variantDesc = ` (${i.size})`;
+                else if (i.color) variantDesc = ` (${i.color})`;
+                return `  - ${i.qty}x ${i.nombre}${variantDesc}: $${(i.precio * i.qty).toFixed(2)}`;
+            }).join('\n');
 
             const msg = `✦ *RESUMEN DE COMPRA — FOREVER ONE* ✦
 ----------------------------------

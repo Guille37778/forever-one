@@ -36,6 +36,7 @@ if (Astro.request.method === 'POST') {
                     newVariants.map((v: any) => ({
                         product_id: id,
                         size: v.size,
+                        color: v.color || null,
                         stock_quantity: parseInt(v.stock_qty.toString()) || 0
                     }))
                 );
@@ -52,7 +53,7 @@ const created = Astro.url.searchParams.get('created') === 'true';
 // Parallel fetching for high performance and stability
 const [productsResponse, subcategoriesResponse] = await Promise.all([
     supabase.from('products')
-        .select('*, collections(name), subcategories(name, id, parent_category), variants(size, stock_quantity)')
+        .select('*, collections(name), subcategories(name, id, parent_category), variants(size, color, stock_quantity)')
         .order('created_at', { ascending: false }),
     supabase.from('subcategories')
         .select('*')
@@ -581,13 +582,14 @@ const accesoriosSubcategories = allSubcategories?.filter((s: any) => s.parent_ca
 
                 <!-- Stock Mobile Info -->
                 <div 
-                    data-variants={JSON.stringify((product.variants || []).map((v: any) => ({size: v.size, stock_qty: v.stock_quantity})))}
+                    data-variants={JSON.stringify((product.variants || []).map((v: any) => ({size: v.size, color: v.color || '', stock_qty: v.stock_quantity})))}
                     x-data="{ 
                         open: false, 
                         isEditing: false, 
                         localVariants: [],
                         availableSizes: ['XS','S','M','L','XL','XXL','UNICO'],
                         newSize: 'XS',
+                        newColor: '',
                         init() {
                             this.localVariants = JSON.parse($el.getAttribute('data-variants') || '[]');
                         },
@@ -615,13 +617,13 @@ const accesoriosSubcategories = allSubcategories?.filter((s: any) => s.parent_ca
                          x-transition:enter="transition ease-out duration-200"
                          x-transition:enter-start="opacity-0 translate-y-2"
                          x-transition:enter-end="opacity-100 translate-y-0"
-                         style="position: absolute; top: calc(100% + 5px); left: 0; background: white; border: 1px solid #111; padding: 0.75rem; z-index: 50; min-width: 180px; box-shadow: 0 10px 25px rgba(0,0,0,0.2);">
+                         style="position: absolute; top: calc(100% + 5px); left: 0; background: white; border: 1px solid #111; padding: 0.75rem; z-index: 50; min-width: 220px; box-shadow: 0 10px 25px rgba(0,0,0,0.2);">
                         
                         <div x-show="!isEditing">
-                            <span class="tooltip-header">Stock por Talla</span>
-                            <template x-for="(v, index) in localVariants" :key="v.size">
+                            <span class="tooltip-header">Stock por Variante</span>
+                            <template x-for="(v, index) in localVariants" :key="index">
                                 <div class="tooltip-row">
-                                    <span class="tooltip-size" x-text="v.size"></span>
+                                    <span class="tooltip-size" x-text="v.color ? `${v.size} (${v.color})` : v.size"></span>
                                     <span class="tooltip-qty" :class="{ 'low': v.stock_qty <= 1 }" x-text="v.stock_qty"></span>
                                 </div>
                             </template>
@@ -629,24 +631,27 @@ const accesoriosSubcategories = allSubcategories?.filter((s: any) => s.parent_ca
                         </div>
 
                         <div x-show="isEditing" x-cloak>
-                            <span class="tooltip-header">Editando Tallas</span>
+                            <span class="tooltip-header">Editando Variantes</span>
                             <template x-for="(v, index) in localVariants" :key="index">
                                 <div class="tooltip-row" style="margin-bottom:8px;">
                                     <div style="display:flex; align-items:center; gap:8px;">
                                         <button @click="localVariants.splice(index, 1)" class="btn-remove-variant">×</button>
-                                        <span class="tooltip-size" style="width:30px;" x-text="v.size"></span>
+                                        <span class="tooltip-size" style="width:70px;" x-text="v.color ? `${v.size} (${v.color})` : v.size"></span>
                                     </div>
                                     <input type="number" x-model="v.stock_qty" class="stock-input" min="0">
                                 </div>
                             </template>
                             
-                            <div class="add-size-row">
-                                <select x-model="newSize" class="add-size-select">
-                                    <template x-for="s in availableSizes" :key="s">
-                                        <option :value="s" x-text="s" :disabled="localVariants.find(v => v.size === s)"></option>
-                                    </template>
-                                </select>
-                                <button @click="localVariants.push({size: newSize, stock_qty: 0})" class="btn-add-variant">+</button>
+                            <div class="add-size-row" style="flex-direction: column; gap: 4px; margin-top: 0.75rem;">
+                                <div style="display: flex; gap: 4px;">
+                                    <select x-model="newSize" class="add-size-select" style="padding: 2px;">
+                                        <template x-for="s in availableSizes" :key="s">
+                                            <option :value="s" x-text="s"></option>
+                                        </template>
+                                    </select>
+                                    <input type="text" x-model="newColor" placeholder="Color" class="stock-input" style="flex:1; font-size:9px; text-align:left; padding:2px 5px; height:20px;">
+                                    <button @click="localVariants.push({size: newSize, color: newColor, stock_qty: 0}); newColor = ''" class="btn-add-variant" style="height:20px; line-height:1;">+</button>
+                                </div>
                             </div>
 
                             <div class="tooltip-actions">
@@ -692,13 +697,14 @@ const accesoriosSubcategories = allSubcategories?.filter((s: any) => s.parent_ca
                     </td>
                     <td><span style="font-family:'Playfair Display',serif; font-weight:800; font-style:italic; color:#B8860B;">${product.price}</span></td>
                     <td 
-                        data-variants={JSON.stringify((product.variants || []).map((v: any) => ({size: v.size, stock_qty: v.stock_quantity})))}
+                        data-variants={JSON.stringify((product.variants || []).map((v: any) => ({size: v.size, color: v.color || '', stock_qty: v.stock_quantity})))}
                         x-data="{ 
                             open: false, 
                             isEditing: false, 
                             localVariants: [],
                             availableSizes: ['XS','S','M','L','XL','XXL','UNICO'],
                             newSize: 'XS',
+                            newColor: '',
                             init() {
                                 this.localVariants = JSON.parse($el.getAttribute('data-variants') || '[]');
                             },
@@ -725,10 +731,10 @@ const accesoriosSubcategories = allSubcategories?.filter((s: any) => s.parent_ca
                         <div class="stock-tooltip" x-show="open" :class="{ 'stock-tooltip-active': open }" x-cloak>
                             
                             <div x-show="!isEditing">
-                                <span class="tooltip-header">Desglose por Talla</span>
-                                <template x-for="(v, index) in localVariants" :key="v.size">
+                                <span class="tooltip-header">Stock por Variante</span>
+                                <template x-for="(v, index) in localVariants" :key="index">
                                     <div class="tooltip-row">
-                                        <span class="tooltip-size" x-text="v.size"></span>
+                                        <span class="tooltip-size" x-text="v.color ? `${v.size} (${v.color})` : v.size"></span>
                                         <span class="tooltip-qty" :class="{ 'low': v.stock_qty <= 1 }" x-text="v.stock_qty"></span>
                                     </div>
                                 </template>
@@ -737,24 +743,27 @@ const accesoriosSubcategories = allSubcategories?.filter((s: any) => s.parent_ca
 
                             <!-- Edición Form -->
                             <div x-show="isEditing" x-cloak>
-                                <span class="tooltip-header">Editando Tallas</span>
+                                <span class="tooltip-header">Editando Variantes</span>
                                 <template x-for="(v, index) in localVariants" :key="index">
                                     <div class="tooltip-row" style="margin-bottom:8px;">
                                         <div style="display:flex; align-items:center; gap:8px;">
                                             <button @click="localVariants.splice(index, 1)" class="btn-remove-variant">×</button>
-                                            <span class="tooltip-size" style="width:30px;" x-text="v.size"></span>
+                                            <span class="tooltip-size" style="width:70px;" x-text="v.color ? `${v.size} (${v.color})` : v.size"></span>
                                         </div>
                                         <input type="number" x-model="v.stock_qty" class="stock-input" min="0">
                                     </div>
                                 </template>
                                 
-                                <div class="add-size-row">
-                                    <select x-model="newSize" class="add-size-select">
-                                        <template x-for="s in availableSizes" :key="s">
-                                            <option :value="s" x-text="s" :disabled="localVariants.find(v => v.size === s)"></option>
-                                        </template>
-                                    </select>
-                                    <button @click="localVariants.push({size: newSize, stock_qty: 0})" class="btn-add-variant">+</button>
+                                <div class="add-size-row" style="flex-direction: column; gap: 4px; margin-top: 0.75rem;">
+                                    <div style="display: flex; gap: 4px;">
+                                        <select x-model="newSize" class="add-size-select" style="padding: 2px;">
+                                            <template x-for="s in availableSizes" :key="s">
+                                                <option :value="s" x-text="s"></option>
+                                            </template>
+                                        </select>
+                                        <input type="text" x-model="newColor" placeholder="Color" class="stock-input" style="flex:1; font-size:9px; text-align:left; padding:2px 5px; height:20px;">
+                                        <button @click="localVariants.push({size: newSize, color: newColor, stock_qty: 0}); newColor = ''" class="btn-add-variant" style="height:20px; line-height:1;">+</button>
+                                    </div>
                                 </div>
 
                                 <div class="tooltip-actions">
@@ -812,13 +821,14 @@ const accesoriosSubcategories = allSubcategories?.filter((s: any) => s.parent_ca
 
                 <!-- Stock Mobile Info -->
                 <div 
-                    data-variants={JSON.stringify((product.variants || []).map((v: any) => ({size: v.size, stock_qty: v.stock_quantity})))}
+                    data-variants={JSON.stringify((product.variants || []).map((v: any) => ({size: v.size, color: v.color || '', stock_qty: v.stock_quantity})))}
                     x-data="{ 
                         open: false, 
                         isEditing: false, 
                         localVariants: [],
                         availableSizes: ['XS','S','M','L','XL','XXL','UNICO'],
                         newSize: 'XS',
+                        newColor: '',
                         init() {
                             this.localVariants = JSON.parse($el.getAttribute('data-variants') || '[]');
                         },
@@ -846,13 +856,13 @@ const accesoriosSubcategories = allSubcategories?.filter((s: any) => s.parent_ca
                          x-transition:enter="transition ease-out duration-200"
                          x-transition:enter-start="opacity-0 translate-y-2"
                          x-transition:enter-end="opacity-100 translate-y-0"
-                         style="position: absolute; top: calc(100% + 5px); left: 0; background: white; border: 1px solid #111; padding: 0.75rem; z-index: 50; min-width: 180px; box-shadow: 0 10px 25px rgba(0,0,0,0.2);">
+                         style="position: absolute; top: calc(100% + 5px); left: 0; background: white; border: 1px solid #111; padding: 0.75rem; z-index: 50; min-width: 220px; box-shadow: 0 10px 25px rgba(0,0,0,0.2);">
                         
                         <div x-show="!isEditing">
-                            <span class="tooltip-header">Stock Disponible</span>
-                            <template x-for="(v, index) in localVariants" :key="v.size">
+                            <span class="tooltip-header">Stock por Variante</span>
+                            <template x-for="(v, index) in localVariants" :key="index">
                                 <div class="tooltip-row">
-                                    <span class="tooltip-size" x-text="v.size"></span>
+                                    <span class="tooltip-size" x-text="v.color ? `${v.size} (${v.color})` : v.size"></span>
                                     <span class="tooltip-qty" :class="{ 'low': v.stock_qty <= 1 }" x-text="v.stock_qty"></span>
                                 </div>
                             </template>
@@ -860,24 +870,27 @@ const accesoriosSubcategories = allSubcategories?.filter((s: any) => s.parent_ca
                         </div>
 
                         <div x-show="isEditing" x-cloak>
-                            <span class="tooltip-header">Editando Tallas</span>
+                            <span class="tooltip-header">Editando Variantes</span>
                             <template x-for="(v, index) in localVariants" :key="index">
                                 <div class="tooltip-row" style="margin-bottom:8px;">
                                     <div style="display:flex; align-items:center; gap:8px;">
                                         <button @click="localVariants.splice(index, 1)" class="btn-remove-variant">×</button>
-                                        <span class="tooltip-size" style="width:30px;" x-text="v.size"></span>
+                                        <span class="tooltip-size" style="width:70px;" x-text="v.color ? `${v.size} (${v.color})` : v.size"></span>
                                     </div>
                                     <input type="number" x-model="v.stock_qty" class="stock-input" min="0">
                                 </div>
                             </template>
                             
-                            <div class="add-size-row">
-                                <select x-model="newSize" class="add-size-select">
-                                    <template x-for="s in availableSizes" :key="s">
-                                        <option :value="s" x-text="s" :disabled="localVariants.find(v => v.size === s)"></option>
-                                    </template>
-                                </select>
-                                <button @click="localVariants.push({size: newSize, stock_qty: 0})" class="btn-add-variant">+</button>
+                            <div class="add-size-row" style="flex-direction: column; gap: 4px; margin-top: 0.75rem;">
+                                <div style="display: flex; gap: 4px;">
+                                    <select x-model="newSize" class="add-size-select" style="padding: 2px;">
+                                        <template x-for="s in availableSizes" :key="s">
+                                            <option :value="s" x-text="s"></option>
+                                        </template>
+                                    </select>
+                                    <input type="text" x-model="newColor" placeholder="Color" class="stock-input" style="flex:1; font-size:9px; text-align:left; padding:2px 5px; height:20px;">
+                                    <button @click="localVariants.push({size: newSize, color: newColor, stock_qty: 0}); newColor = ''" class="btn-add-variant" style="height:20px; line-height:1;">+</button>
+                                </div>
                             </div>
 
                             <div class="tooltip-actions">
@@ -923,13 +936,14 @@ const accesoriosSubcategories = allSubcategories?.filter((s: any) => s.parent_ca
                     </td>
                     <td><span style="font-family:'Playfair Display',serif; font-weight:800; font-style:italic; color:#B8860B;">${product.price}</span></td>
                     <td 
-                        data-variants={JSON.stringify((product.variants || []).map((v: any) => ({size: v.size, stock_qty: v.stock_quantity})))}
+                        data-variants={JSON.stringify((product.variants || []).map((v: any) => ({size: v.size, color: v.color || '', stock_qty: v.stock_quantity})))}
                         x-data="{ 
                             open: false, 
                             isEditing: false, 
                             localVariants: [],
                             availableSizes: ['XS','S','M','L','XL','XXL','UNICO'],
                             newSize: 'XS',
+                            newColor: '',
                             init() {
                                 this.localVariants = JSON.parse($el.getAttribute('data-variants') || '[]');
                             },
@@ -956,10 +970,10 @@ const accesoriosSubcategories = allSubcategories?.filter((s: any) => s.parent_ca
                         <div class="stock-tooltip" x-show="open" :class="{ 'stock-tooltip-active': open }" x-cloak>
                             
                             <div x-show="!isEditing">
-                                <span class="tooltip-header">Stock Disponible</span>
-                                <template x-for="(v, index) in localVariants" :key="v.size">
+                                <span class="tooltip-header">Stock por Variante</span>
+                                <template x-for="(v, index) in localVariants" :key="index">
                                     <div class="tooltip-row">
-                                        <span class="tooltip-size" x-text="v.size"></span>
+                                        <span class="tooltip-size" x-text="v.color ? `${v.size} (${v.color})` : v.size"></span>
                                         <span class="tooltip-qty" :class="{ 'low': v.stock_qty <= 1 }" x-text="v.stock_qty"></span>
                                     </div>
                                 </template>
@@ -968,24 +982,27 @@ const accesoriosSubcategories = allSubcategories?.filter((s: any) => s.parent_ca
 
                             <!-- Edición Form -->
                             <div x-show="isEditing" x-cloak>
-                                <span class="tooltip-header">Editando Tallas</span>
+                                <span class="tooltip-header">Editando Variantes</span>
                                 <template x-for="(v, index) in localVariants" :key="index">
                                     <div class="tooltip-row" style="margin-bottom:8px;">
                                         <div style="display:flex; align-items:center; gap:8px;">
                                             <button @click="localVariants.splice(index, 1)" class="btn-remove-variant">×</button>
-                                            <span class="tooltip-size" style="width:30px;" x-text="v.size"></span>
+                                            <span class="tooltip-size" style="width:70px;" x-text="v.color ? `${v.size} (${v.color})` : v.size"></span>
                                         </div>
                                         <input type="number" x-model="v.stock_qty" class="stock-input" min="0">
                                     </div>
                                 </template>
                                 
-                                <div class="add-size-row">
-                                    <select x-model="newSize" class="add-size-select">
-                                        <template x-for="s in availableSizes" :key="s">
-                                            <option :value="s" x-text="s" :disabled="localVariants.find(v => v.size === s)"></option>
-                                        </template>
-                                    </select>
-                                    <button @click="localVariants.push({size: newSize, stock_qty: 0})" class="btn-add-variant">+</button>
+                                <div class="add-size-row" style="flex-direction: column; gap: 4px; margin-top: 0.75rem;">
+                                    <div style="display: flex; gap: 4px;">
+                                        <select x-model="newSize" class="add-size-select" style="padding: 2px;">
+                                            <template x-for="s in availableSizes" :key="s">
+                                                <option :value="s" x-text="s"></option>
+                                            </template>
+                                        </select>
+                                        <input type="text" x-model="newColor" placeholder="Color" class="stock-input" style="flex:1; font-size:9px; text-align:left; padding:2px 5px; height:20px;">
+                                        <button @click="localVariants.push({size: newSize, color: newColor, stock_qty: 0}); newColor = ''" class="btn-add-variant" style="height:20px; line-height:1;">+</button>
+                                    </div>
                                 </div>
 
                                 <div class="tooltip-actions">

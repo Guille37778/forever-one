@@ -89,25 +89,46 @@ export const POST: APIRoute = async ({ request, locals }) => {
     // 3. Insertar los items de la orden y restar stock
     for (const item of items) {
       try {
+        let finalVariantId = item.variantId;
+        
+        if (!finalVariantId && item.productId) {
+          const itemSize = item.size || 'UNICO';
+          const itemColor = item.color || '';
+          
+          const { data: v } = await supabase
+            .from('variants')
+            .select('id')
+            .eq('product_id', item.productId)
+            .eq('size', itemSize)
+            .eq('color', itemColor)
+            .limit(1)
+            .maybeSingle();
+            
+          if (v) {
+            finalVariantId = v.id;
+          }
+        }
+
         await supabase
           .from('order_items')
           .insert({
             order_id: order.id,
             product_id: item.productId,
-            variant_id: item.variantId,
+            variant_id: finalVariantId || null,
             product_name: item.name,
             size: item.size,
+            color: item.color || '',
             price_usd: parseFloat(item.price) || 0,
             quantity: parseInt(item.qty) || 1
           });
 
         // Restar stock
-        if (item.variantId) {
-          const { data: v } = await supabase.from('variants').select('stock_quantity').eq('id', item.variantId).single();
+        if (finalVariantId) {
+          const { data: v } = await supabase.from('variants').select('stock_quantity').eq('id', finalVariantId).single();
           if (v) {
             await supabase.from('variants')
               .update({ stock_quantity: Math.max(0, v.stock_quantity - item.qty) })
-              .eq('id', item.variantId);
+              .eq('id', finalVariantId);
           }
         }
       } catch (itemErr) {
