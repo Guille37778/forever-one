@@ -56,7 +56,12 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
 
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 md:gap-8">
                     {Array.isArray(catalogs) && catalogs.length > 0 ? (
-                        catalogs.map((catalog) => (
+                        catalogs.map((catalog, index) => {
+                            const imagenSrc  = index === 0 ? `${base}/ForeverOne_600x800.jpg`      : catalog.imagen;
+                            const pdfHref    = index === 0 ? `${base}/Catalogo de Faldas.pdf`      : `${base}/catalogo_de_ejemplo.pdf`;
+                            const pdfName    = index === 0 ? 'ForeverOne_Catalogo_de_Faldas.pdf'   : `ForeverOne_Catalogo_${catalog.nombre.replace(/\s+/g, '_')}.pdf`;
+                            const nombreSrc  = index === 0 ? 'FALDAS' : catalog.nombre;
+                            return (
                             <div 
                                 x-show={`activeFilter === 'todos' || activeFilter === '${catalog.categoria?.toLowerCase()}'`} 
                                 class="group" 
@@ -64,7 +69,7 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
                             >
                                 <div class="relative overflow-hidden bg-white p-2 md:p-3 shadow-sm border border-gold/5">
                                     <img 
-                                        src={catalog.imagen} 
+                                        src={imagenSrc} 
                                         alt={catalog.nombre}
                                         class="w-full h-[320px] md:h-[350px] object-cover grayscale group-hover:grayscale-0 transition-all duration-1000 group-hover:scale-105"
                                     />
@@ -75,17 +80,18 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
                                     </div>
                                 </div>
                                 <div class="mt-3 text-center">
-                                    <h5 class="text-base md:text-lg font-serif font-black italic text-[#1A1A1A] mb-2 md:mb-3">{catalog.nombre}</h5>
+                                    <h5 class="text-base md:text-lg font-serif font-black italic text-[#1A1A1A] mb-2 md:mb-3">{nombreSrc}</h5>
                                     <a 
-                                        href={`${base}/catalogo_de_ejemplo.pdf`} 
-                                        download={`ForeverOne_Catalogo_${catalog.nombre.replace(/\s+/g, '_')}.pdf`}
+                                        href={pdfHref} 
+                                        download={pdfName}
                                         class="btn-metal-gold block py-3 md:py-3 text-[9px] uppercase tracking-[0.3em] md:tracking-[0.4em] font-black text-white shadow-lg"
                                     >
                                         Descargar PDF
                                     </a>
                                 </div>
                             </div>
-                        ))
+                            );
+                        })
                     ) : (
                         <div class="col-span-full" data-aos="fade-up">
                             <div class="max-w-xs md:max-w-sm mx-auto group">

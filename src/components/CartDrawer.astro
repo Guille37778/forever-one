@@ -248,6 +248,13 @@ const deliveryZones = settingsData?.find((s: any) => s.key === 'delivery_zones')
                     <input type="text" id="pay-reference"
                            placeholder="Número de referencia del pago (ej: 012345678901)"
                            class="cart-input" style="border-color:rgba(184,134,11,0.3); background:#fffdf7;">
+                           
+                    <div style="margin-top: 1rem;">
+                        <label for="pay-capture" style="display:block; font-size:9px; text-transform:uppercase; letter-spacing:0.3em; font-weight:700; color:#999; margin-bottom:0.5rem;">
+                            Adjuntar Capture de Pago (Obligatorio)
+                        </label>
+                        <input type="file" id="pay-capture" accept="image/*" class="cart-input" required>
+                    </div>
                 </div>
 
                 <button disabled
@@ -549,10 +556,21 @@ const deliveryZones = settingsData?.find((s: any) => s.key === 'delivery_zones')
                 payRef: (el('pay-reference') as HTMLInputElement).value.trim()
             };
 
-            if(!vals.name || !vals.id || !vals.phone || !vals.email || !vals.payRef) {
-                alert('❌ POR FAVOR, COMPLETE TODOS LOS CAMPOS OBLIGATORIOS');
+            const payCaptureInput = el('pay-capture') as HTMLInputElement;
+            const payCaptureFile = payCaptureInput?.files?.[0];
+
+            if(!vals.name || !vals.id || !vals.phone || !vals.email || !vals.payRef || !payCaptureFile) {
+                alert('❌ POR FAVOR, COMPLETE TODOS LOS CAMPOS OBLIGATORIOS Y ADJUNTE EL CAPTURE DE PAGO');
                 return;
             }
+
+            // Convertir el archivo a Base64
+            const fileToBase64 = (file: File): Promise<string> => new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = () => resolve(reader.result as string);
+                reader.onerror = error => reject(error);
+            });
 
             const { selectedMethod, selectedCourier } = (window as any). __getDeliveryData?.() || {};
             const shipAgency = (el('ship-agency-code') as HTMLInputElement)?.value.trim();
@@ -565,6 +583,7 @@ const deliveryZones = settingsData?.find((s: any) => s.key === 'delivery_zones')
 
             let orderCode = 'PENDIENTE';
             try {
+                const payCaptureBase64 = await fileToBase64(payCaptureFile);
                 const total = cartTotal();
                 const res = await fetch('/api/orders', { 
                     method: 'POST', 
@@ -572,7 +591,7 @@ const deliveryZones = settingsData?.find((s: any) => s.key === 'delivery_zones')
                     body: JSON.stringify({ 
                         items: cart, 
                         total, 
-                        customer: vals,
+                        customer: { ...vals, payCaptureBase64, payCaptureName: payCaptureFile.name },
                         delivery: {
                             method: selectedMethod,
                             courier: selectedCourier,

@@ -63,8 +63,41 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
 				interface Window {
 					Alpine: any;
 					__addToCart: (product: any) => void;
+					__initGalleryCycle: () => void;
 				}
 			}
+
+			let galleryIntervals: any[] = [];
+
+			(window as any).__initGalleryCycle = function() {
+				// Clear any existing intervals
+				galleryIntervals.forEach(interval => clearInterval(interval));
+				galleryIntervals = [];
+
+				const containers = document.querySelectorAll('.product-card-image-container');
+				containers.forEach(container => {
+					const images = container.querySelectorAll('img');
+					if (images.length <= 1) return;
+
+					let currentIndex = 0;
+					const intervalId = setInterval(() => {
+						// Remove active class from current image
+						images[currentIndex].classList.remove('active');
+						
+						// Go to next image
+						currentIndex = (currentIndex + 1) % images.length;
+						
+						// Add active class to new image
+						images[currentIndex].classList.add('active');
+					}, 3000); // cycle every 3 seconds
+
+					galleryIntervals.push(intervalId);
+				});
+			};
+
+			// Run on load and after transitions
+			document.addEventListener('DOMContentLoaded', () => (window as any).__initGalleryCycle());
+			document.addEventListener('astro:after-swap', () => (window as any).__initGalleryCycle());
 		</script>
 	</body>
 </html>

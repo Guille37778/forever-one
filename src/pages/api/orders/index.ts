@@ -1,5 +1,6 @@
 import type { APIRoute } from 'astro';
 import { supabaseAdmin as supabase, initSupabase } from '../../../lib/supabase';
+import { Resend } from 'resend';
 
 /**
  * Endpoint de Creación de Orden
@@ -133,6 +134,47 @@ export const POST: APIRoute = async ({ request, locals }) => {
         }
       } catch (itemErr) {
         console.error('Error procesando item individual:', itemErr);
+      }
+    }
+
+    // 4. Enviar el comprobante de pago por correo electrónico vía Resend
+    if (customer.payCaptureBase64) {
+      try {
+        const resend = new Resend('re_2A3vN2Db_P9tdTA7TSUKTdr4Kgj18SeQ3');
+        
+        // El Base64 del frontend viene como "data:image/jpeg;base64,....."
+        let base64Data = customer.payCaptureBase64;
+        if (base64Data.includes('base64,')) {
+          base64Data = base64Data.split('base64,')[1];
+        }
+
+        const itemsHtml = items.map((i: any) => `<li>${i.qty}x ${i.name} ${i.size ? `(Talla: ${i.size})` : ''} - $${(i.price * i.qty).toFixed(2)}</li>`).join('');
+
+        await resend.emails.send({
+          from: 'onboarding@resend.dev',
+          to: 'contactoforeverone@gmail.com',
+          subject: `Nuevo Pago Móvil Recibido - Orden #${order.order_code || 'N/A'}`,
+          html: `
+            <h2>Nuevo Pago Móvil Adjunto</h2>
+            <p><strong>Orden:</strong> #${order.order_code || 'N/A'}</p>
+            <p><strong>Cliente:</strong> ${customer.name}</p>
+            <p><strong>Cédula:</strong> ${customer.id}</p>
+            <p><strong>Teléfono:</strong> ${customer.phone}</p>
+            <p><strong>Referencia:</strong> ${customer.payRef}</p>
+            <p><strong>Total:</strong> $${parseFloat(total).toFixed(2)}</p>
+            <h3>Artículos:</h3>
+            <ul>${itemsHtml}</ul>
+            <p>Se adjunta el comprobante de pago.</p>
+          `,
+          attachments: [
+            {
+              filename: customer.payCaptureName || 'comprobante.jpg',
+              content: base64Data,
+            }
+          ]
+        });
+      } catch (emailErr) {
+        console.error('Error al enviar el correo con Resend:', emailErr);
       }
     }
 
