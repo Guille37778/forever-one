@@ -58,8 +58,8 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
                     {Array.isArray(catalogs) && catalogs.length > 0 ? (
                         catalogs.map((catalog, index) => {
                             const imagenSrc  = index === 0 ? `${base}/ForeverOne_600x800.jpg`      : catalog.imagen;
-                            const pdfHref    = index === 0 ? `${base}/Catalogo de Faldas.pdf`      : `${base}/catalogo_de_ejemplo.pdf`;
-                            const pdfName    = index === 0 ? 'ForeverOne_Catalogo_de_Faldas.pdf'   : `ForeverOne_Catalogo_${catalog.nombre.replace(/\s+/g, '_')}.pdf`;
+                            const pdfHref    = `${base}/Catalogo de Faldas  (3).pdf`;
+                            const pdfName    = 'ForeverOne_Catalogo_de_Faldas.pdf';
                             const nombreSrc  = index === 0 ? 'FALDAS' : catalog.nombre;
                             return (
                             <div 
@@ -109,8 +109,8 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
                                     <h5 class="text-xl md:text-2xl font-serif font-black italic text-[#1A1A1A] mb-3 md:mb-4">Catálogo de Ejemplo</h5>
                                     <p class="text-slate-500 text-xs font-light italic mb-6 md:mb-8 px-4">Esta es una muestra de cómo se verán sus colecciones. Puede descargarla mientras sincroniza su Google Sheet.</p>
                                     <a 
-                                        href={`${base}/catalogo_de_ejemplo.pdf`} 
-                                        download="ForeverOne_Catalogo.pdf"
+                                        href={`${base}/Catalogo de Faldas  (3).pdf`} 
+                                        download="ForeverOne_Catalogo_de_Faldas.pdf"
                                         class="btn-metal-gold block py-3 md:py-4 text-[9px] md:text-[10px] uppercase tracking-[0.4em] md:tracking-[0.5em] font-black text-white shadow-2xl hover:scale-105 transition-all duration-300"
                                     >
                                         Descargar Muestra VIP
