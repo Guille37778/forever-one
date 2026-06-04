@@ -58,7 +58,7 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
                     {Array.isArray(catalogs) && catalogs.length > 0 ? (
                         catalogs.map((catalog, index) => {
                             const imagenSrc  = index === 0 ? `${base}/ForeverOne_600x800.jpg`      : catalog.imagen;
-                            const pdfHref    = `${base}/Catalogo de Faldas  (3).pdf`;
+                            const pdfHref    = index === 0 ? 'https://drive.google.com/file/d/1nEoXdyct5SMWXqIkRFnt7gvUETvq_CYh/view?usp=sharing' : `${base}/Catalogo de Faldas  (3).pdf`;
                             const pdfName    = 'ForeverOne_Catalogo_de_Faldas.pdf';
                             const nombreSrc  = index === 0 ? 'FALDAS' : catalog.nombre;
                             return (
@@ -81,13 +81,23 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
                                 </div>
                                 <div class="mt-3 text-center">
                                     <h5 class="text-base md:text-lg font-serif font-black italic text-[#1A1A1A] mb-2 md:mb-3">{nombreSrc}</h5>
-                                    <a 
-                                        href={pdfHref} 
-                                        download={pdfName}
-                                        class="btn-metal-gold block py-3 md:py-3 text-[9px] uppercase tracking-[0.3em] md:tracking-[0.4em] font-black text-white shadow-lg"
-                                    >
-                                        Descargar PDF
-                                    </a>
+                                    {index === 0 ? (
+                                        <a 
+                                            href={pdfHref} 
+                                            target="_blank"
+                                            class="btn-metal-gold block py-3 md:py-3 text-[9px] uppercase tracking-[0.3em] md:tracking-[0.4em] font-black text-white shadow-lg"
+                                        >
+                                            Ver catálogo
+                                        </a>
+                                    ) : (
+                                        <a 
+                                            href={pdfHref} 
+                                            download={pdfName}
+                                            class="btn-metal-gold block py-3 md:py-3 text-[9px] uppercase tracking-[0.3em] md:tracking-[0.4em] font-black text-white shadow-lg"
+                                        >
+                                            Descargar PDF
+                                        </a>
+                                    )}
                                 </div>
                             </div>
                             );
