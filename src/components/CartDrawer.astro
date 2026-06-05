@@ -250,10 +250,42 @@ const deliveryZones = settingsData?.find((s: any) => s.key === 'delivery_zones')
                            class="cart-input" style="border-color:rgba(184,134,11,0.3); background:#fffdf7;">
                            
                     <div style="margin-top: 1rem;">
-                        <label for="pay-capture" style="display:block; font-size:9px; text-transform:uppercase; letter-spacing:0.3em; font-weight:700; color:#999; margin-bottom:0.5rem;">
-                            Adjuntar Capture de Pago (Obligatorio)
+                        <label for="pay-capture" style="display:block; font-size:9px; text-transform:uppercase; letter-spacing:0.3em; font-weight:700; color:#999; margin-bottom:0.75rem;">
+                            Adjuntar Capture de Pago <span style="color:#B8860B;">(Obligatorio)</span>
                         </label>
-                        <input type="file" id="pay-capture" accept="image/*" class="cart-input" required>
+
+                        <!-- Zona de carga visual -->
+                        <label for="pay-capture" id="capture-drop-zone" class="capture-drop-zone">
+                            <!-- Estado vacío -->
+                            <div id="capture-empty-state">
+                                <svg width="32" height="32" fill="none" stroke="#B8860B" viewBox="0 0 24 24" style="opacity:0.7; margin-bottom:0.75rem;">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                                </svg>
+                                <p style="font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.3em; color:#555; margin-bottom:4px;">Subir Capture</p>
+                                <p style="font-size:10px; color:#aaa; font-style:italic;">Toca aquí para seleccionar la imagen</p>
+                            </div>
+
+                            <!-- Estado cargado (oculto al inicio) -->
+                            <div id="capture-success-state" style="display:none; width:100%; align-items:center; gap:1rem; flex-direction:column;">
+                                <div style="position:relative; width:100%;">
+                                    <img id="capture-preview" src="" alt="Preview" style="width:100%; max-height:200px; object-fit:contain; border:1px solid rgba(184,134,11,0.3);">
+                                    <!-- Badge de confirmación -->
+                                    <div style="position:absolute; top:-12px; right:-12px; width:32px; height:32px; border-radius:50%; background:#22c55e; display:flex; align-items:center; justify-content:center; box-shadow:0 4px 12px rgba(34,197,94,0.4); animation:popIn 0.4s cubic-bezier(0.34,1.56,0.64,1);">
+                                        <svg width="16" height="16" fill="none" stroke="white" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/>
+                                        </svg>
+                                    </div>
+                                </div>
+                                <div style="background:rgba(34,197,94,0.08); border:1px solid rgba(34,197,94,0.3); padding:0.6rem 1rem; width:100%; box-sizing:border-box; display:flex; align-items:center; gap:0.5rem;">
+                                    <svg width="14" height="14" fill="none" stroke="#22c55e" viewBox="0 0 24 24" style="flex-shrink:0;">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
+                                    </svg>
+                                    <span id="capture-filename" style="font-size:10px; font-weight:700; color:#22c55e; text-transform:uppercase; letter-spacing:0.2em; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">archivo.jpg</span>
+                                    <span style="margin-left:auto; font-size:9px; color:#aaa; flex-shrink:0;">Cambiar</span>
+                                </div>
+                            </div>
+                        </label>
+                        <input type="file" id="pay-capture" accept="image/*" required style="display:none;">
                     </div>
                 </div>
 
@@ -332,6 +364,40 @@ const deliveryZones = settingsData?.find((s: any) => s.key === 'delivery_zones')
     @media (min-width: 640px) { .cart-input-grid { grid-template-columns: 1fr 1fr; } }
     .method-grid, .courier-grid { display: grid; grid-template-columns: 1fr; gap: 0.75rem; margin-bottom: 1.5rem; }
     @media (min-width: 480px) { .method-grid, .courier-grid { grid-template-columns: 1fr 1fr 1fr; } }
+
+    /* ── CAPTURE UPLOAD ZONE ────────────────────────── */
+    .capture-drop-zone {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        min-height: 130px;
+        border: 2px dashed rgba(184,134,11,0.35);
+        background: rgba(184,134,11,0.03);
+        cursor: pointer;
+        transition: all 0.3s ease;
+        padding: 1.5rem;
+        box-sizing: border-box;
+        text-align: center;
+        position: relative;
+    }
+    .capture-drop-zone:hover {
+        border-color: #B8860B;
+        background: rgba(184,134,11,0.07);
+    }
+    .capture-drop-zone.has-file {
+        border-style: solid;
+        border-color: rgba(34,197,94,0.5);
+        background: rgba(34,197,94,0.03);
+        padding: 1rem;
+        min-height: auto;
+        align-items: stretch;
+    }
+    @keyframes popIn {
+        from { transform: scale(0); opacity: 0; }
+        to   { transform: scale(1); opacity: 1; }
+    }
 
     /* ── CART FAB RESPONSIVE ────────────────────────── */
     .cart-fab {
@@ -659,6 +725,31 @@ _Confirmando mi pedido en el Atelier..._`;
             localStorage.removeItem('fo1_cart'); 
             setTimeout(() => window.location.reload(), 1000);
         };
+
+        // CAPTURE UPLOAD PREVIEW
+        const captureInput = el('pay-capture') as HTMLInputElement;
+        const dropZone = el('capture-drop-zone');
+        const emptyState = el('capture-empty-state');
+        const successState = el('capture-success-state');
+        const previewImg = el('capture-preview') as HTMLImageElement;
+        const filenameSpan = el('capture-filename');
+
+        if (captureInput) {
+            captureInput.addEventListener('change', () => {
+                const file = captureInput.files?.[0];
+                if (!file) return;
+
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    if (previewImg) previewImg.src = e.target?.result as string;
+                    if (filenameSpan) filenameSpan.textContent = file.name;
+                    if (emptyState) emptyState.style.display = 'none';
+                    if (successState) { successState.style.display = 'flex'; }
+                    if (dropZone) dropZone.classList.add('has-file');
+                };
+                reader.readAsDataURL(file);
+            });
+        }
 
         // INITIALIZE
         loadCart();
