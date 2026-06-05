@@ -90,16 +90,21 @@ export const POST: APIRoute = async ({ request, locals }) => {
     // 3. Insertar los items de la orden y restar stock
     for (const item of items) {
       try {
+        // El carrito guarda los campos como 'nombre'/'precio'/'id'; normalizamos ambas convenciones
+        const itemName  = item.nombre  || item.name  || 'Producto';
+        const itemPrice = parseFloat(item.precio || item.price || 0);
+        const itemProductId = item.productId || item.id || null;
+
         let finalVariantId = item.variantId;
         
-        if (!finalVariantId && item.productId) {
+        if (!finalVariantId && itemProductId) {
           const itemSize = item.size || 'UNICO';
           const itemColor = item.color || '';
           
           const { data: v } = await supabase
             .from('variants')
             .select('id')
-            .eq('product_id', item.productId)
+            .eq('product_id', itemProductId)
             .eq('size', itemSize)
             .eq('color', itemColor)
             .limit(1)
@@ -114,12 +119,12 @@ export const POST: APIRoute = async ({ request, locals }) => {
           .from('order_items')
           .insert({
             order_id: order.id,
-            product_id: item.productId,
+            product_id: itemProductId,
             variant_id: finalVariantId || null,
-            product_name: item.name,
+            product_name: itemName,
             size: item.size,
             color: item.color || '',
-            price_usd: parseFloat(item.price) || 0,
+            price_usd: itemPrice,
             quantity: parseInt(item.qty) || 1
           });
 
@@ -148,7 +153,11 @@ export const POST: APIRoute = async ({ request, locals }) => {
           base64Data = base64Data.split('base64,')[1];
         }
 
-        const itemsHtml = items.map((i: any) => `<li>${i.qty}x ${i.name} ${i.size ? `(Talla: ${i.size})` : ''} - $${(i.price * i.qty).toFixed(2)}</li>`).join('');
+        const itemsHtml = items.map((i: any) => {
+          const n = i.nombre || i.name || 'Producto';
+          const p = parseFloat(i.precio || i.price || 0);
+          return `<li>${i.qty}x ${n} ${i.size ? `(Talla: ${i.size})` : ''} - $${(p * i.qty).toFixed(2)}</li>`;
+        }).join('');
 
         await resend.emails.send({
           from: 'onboarding@resend.dev',
