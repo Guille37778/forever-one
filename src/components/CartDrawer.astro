@@ -726,26 +726,38 @@ _Confirmando mi pedido en el Atelier..._`;
             setTimeout(() => window.location.reload(), 1000);
         };
 
-        // CAPTURE UPLOAD PREVIEW
-        const captureInput = el('pay-capture') as HTMLInputElement;
-        const dropZone = el('capture-drop-zone');
-        const emptyState = el('capture-empty-state');
-        const successState = el('capture-success-state');
-        const previewImg = el('capture-preview') as HTMLImageElement;
-        const filenameSpan = el('capture-filename');
+        // CAPTURE UPLOAD PREVIEW — usar delegación en document para que
+        // siempre funcione, incluso después de astro:after-swap
+        function initCapturePreview() {
+            const captureInput = document.getElementById('pay-capture') as HTMLInputElement;
+            const dropZone     = document.getElementById('capture-drop-zone');
+            const emptyState   = document.getElementById('capture-empty-state');
+            const successState = document.getElementById('capture-success-state');
+            const previewImg   = document.getElementById('capture-preview') as HTMLImageElement;
+            const filenameSpan = document.getElementById('capture-filename');
 
-        if (captureInput) {
+            if (!captureInput || captureInput.dataset.listenerAttached === 'true') return;
+
+            captureInput.dataset.listenerAttached = 'true';
             captureInput.addEventListener('change', () => {
                 const file = captureInput.files?.[0];
                 if (!file) return;
 
                 const reader = new FileReader();
                 reader.onload = (e) => {
-                    if (previewImg) previewImg.src = e.target?.result as string;
-                    if (filenameSpan) filenameSpan.textContent = file.name;
-                    if (emptyState) emptyState.style.display = 'none';
+                    const result = e.target?.result as string;
+                    if (previewImg)   { previewImg.src = result; }
+                    if (filenameSpan) { filenameSpan.textContent = file.name; }
+                    if (emptyState)   { emptyState.style.display = 'none'; }
                     if (successState) { successState.style.display = 'flex'; }
-                    if (dropZone) dropZone.classList.add('has-file');
+                    if (dropZone)     { dropZone.classList.add('has-file'); }
+                };
+                reader.onerror = () => {
+                    // Si falla la lectura, al menos mostramos el nombre
+                    if (filenameSpan) { filenameSpan.textContent = file.name; }
+                    if (emptyState)   { emptyState.style.display = 'none'; }
+                    if (successState) { successState.style.display = 'flex'; }
+                    if (dropZone)     { dropZone.classList.add('has-file'); }
                 };
                 reader.readAsDataURL(file);
             });
@@ -754,10 +766,12 @@ _Confirmando mi pedido en el Atelier..._`;
         // INITIALIZE
         loadCart();
         (window as any).__renderCart();
+        initCapturePreview();
         
         document.addEventListener('astro:after-swap', () => {
             loadCart();
             (window as any).__renderCart();
+            initCapturePreview();
         });
     })();
 </script>
