@@ -320,66 +320,72 @@ const productInfo = {
                                     <p class="text-[9px] font-black uppercase tracking-[0.3em] text-[#B8860B] mt-1">Elige tus tallas y colores</p>
                                 </div>
                                 
-                                <div id="modal-colors-container" class="flex flex-col gap-4 max-h-[350px] overflow-y-auto pr-1 py-1">
+                                <div id="modal-colors-container" class="flex flex-col gap-3 max-h-[350px] overflow-y-auto pr-1 py-1">
                                     {sortedUniqueSizes && sortedUniqueSizes.length > 0 ? (
                                         sortedUniqueSizes.map((g: any) => (
-                                            <div id={`row-${g.size}`} class="flex items-center justify-between border border-slate-100 rounded-2xl p-4 gap-4 transition-all" style="border-width: 2px;">
-                                                <!-- Talla -->
-                                                <div class="flex-shrink-0">
-                                                    <span class="w-11 h-11 bg-slate-100/80 rounded-xl flex items-center justify-center font-black text-slate-800 text-sm tracking-wider uppercase border border-slate-200/50">
-                                                        {g.size}
-                                                    </span>
+                                            <div id={`row-${g.size}`} class="flex flex-col gap-2 border border-slate-100 rounded-2xl p-3 transition-all" style="border-width: 2px;">
+                                                <!-- Fila superior: Talla + Color Dropdown -->
+                                                <div class="flex items-center gap-2">
+                                                    <!-- Talla -->
+                                                    <div class="flex-shrink-0">
+                                                        <span class="w-10 h-10 bg-slate-100/80 rounded-xl flex items-center justify-center font-black text-slate-800 text-xs tracking-wider uppercase border border-slate-200/50">
+                                                            {g.size}
+                                                        </span>
+                                                    </div>
+                                                    
+                                                    <!-- Color Dropdown -->
+                                                    <div class="flex-1 min-w-0">
+                                                        <select 
+                                                            id={`select-color-${g.size}`} 
+                                                            class="color-select w-full bg-slate-50 border border-slate-200 rounded-xl px-2 py-2 text-xs font-black text-slate-700 focus:outline-none focus:border-[#B8860B]"
+                                                            onchange={`window.__onColorChange('${g.size}')`}
+                                                        >
+                                                            {g.colorVariants.map((c: any) => (
+                                                                <option value={c.color} data-stock={c.stock_quantity}>
+                                                                    {c.color || 'Único'} ({c.stock_quantity} disp.)
+                                                                </option>
+                                                            ))}
+                                                        </select>
+                                                    </div>
                                                 </div>
-                                                
-                                                <!-- Color Dropdown -->
-                                                <div class="flex-1 min-w-0">
-                                                    <select 
-                                                        id={`select-color-${g.size}`} 
-                                                        class="color-select w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-black text-slate-700 focus:outline-none focus:border-[#B8860B]"
-                                                        onchange={`window.__onColorChange('${g.size}')`}
-                                                    >
-                                                        {g.colorVariants.map((c: any) => (
-                                                            <option value={c.color} data-stock={c.stock_quantity}>
-                                                                {c.color || 'Único'} ({c.stock_quantity} disp.)
-                                                            </option>
-                                                        ))}
-                                                    </select>
-                                                </div>
-                                                
-                                                <!-- Precio -->
-                                                <div class="text-right flex-shrink-0">
-                                                    <span class="text-xs font-black italic text-[#B8860B] font-primary block leading-none">
-                                                        ${productInfo.precio.toFixed(2)}
-                                                    </span>
-                                                    <span class="text-[8px] font-bold text-slate-400 block mt-1 leading-none">
-                                                        Bs. {(productInfo.precio * dollarRate).toLocaleString('es-VE', { minimumFractionDigits: 2 })}
-                                                    </span>
-                                                </div>
-                                                
-                                                <!-- Cantidad Selector Capsule -->
-                                                <div class="flex items-center bg-slate-100/80 rounded-full p-1 border border-slate-200/40 shadow-inner flex-shrink-0">
-                                                    <button 
-                                                        type="button" 
-                                                        class="w-8 h-8 rounded-full bg-white flex items-center justify-center text-slate-500 hover:text-[#B8860B] text-lg font-bold shadow-sm transition-all active:scale-90 hover:scale-105"
-                                                        onclick={`window.__updateRowQty('${g.size}', -1)`}
-                                                    >
-                                                        −
-                                                    </button>
-                                                    <input 
-                                                        type="number" 
-                                                        id={`input-qty-${g.size}`} 
-                                                        value="0" 
-                                                        min="0" 
-                                                        readonly
-                                                        class="w-10 text-center text-xs font-black text-slate-800 border-none focus:outline-none bg-transparent" 
-                                                    />
-                                                    <button 
-                                                        type="button" 
-                                                        class="w-8 h-8 rounded-full bg-white flex items-center justify-center text-slate-500 hover:text-[#B8860B] text-lg font-bold shadow-sm transition-all active:scale-90 hover:scale-105"
-                                                        onclick={`window.__updateRowQty('${g.size}', 1)`}
-                                                    >
-                                                        +
-                                                    </button>
+
+                                                <!-- Fila inferior: Precio + Cantidad -->
+                                                <div class="flex items-center justify-between gap-2 pl-1">
+                                                    <!-- Precio -->
+                                                    <div>
+                                                        <span class="text-sm font-black italic text-[#B8860B] font-primary block leading-none">
+                                                            ${productInfo.precio.toFixed(2)}
+                                                        </span>
+                                                        <span class="text-[9px] font-bold text-slate-400 block mt-0.5 leading-none">
+                                                            Bs. {(productInfo.precio * dollarRate).toLocaleString('es-VE', { minimumFractionDigits: 2 })}
+                                                        </span>
+                                                    </div>
+                                                    
+                                                    <!-- Cantidad Selector Capsule -->
+                                                    <div class="flex items-center bg-slate-100/80 rounded-full p-1 border border-slate-200/40 shadow-inner flex-shrink-0">
+                                                        <button 
+                                                            type="button" 
+                                                            class="w-8 h-8 rounded-full bg-white flex items-center justify-center text-slate-500 hover:text-[#B8860B] text-lg font-bold shadow-sm transition-all active:scale-90"
+                                                            onclick={`window.__updateRowQty('${g.size}', -1)`}
+                                                        >
+                                                            −
+                                                        </button>
+                                                        <input 
+                                                            type="number" 
+                                                            id={`input-qty-${g.size}`} 
+                                                            value="0" 
+                                                            min="0" 
+                                                            readonly
+                                                            class="w-8 text-center text-xs font-black text-slate-800 border-none focus:outline-none bg-transparent" 
+                                                        />
+                                                        <button 
+                                                            type="button" 
+                                                            class="w-8 h-8 rounded-full bg-white flex items-center justify-center text-slate-500 hover:text-[#B8860B] text-lg font-bold shadow-sm transition-all active:scale-90"
+                                                            onclick={`window.__updateRowQty('${g.size}', 1)`}
+                                                        >
+                                                            +
+                                                        </button>
+                                                    </div>
                                                 </div>
                                             </div>
                                         ))
