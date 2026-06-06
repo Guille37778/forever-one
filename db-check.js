@@ -20,11 +20,11 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 
 async function main() {
     console.log('Querying Supabase at:', supabaseUrl);
-    const { data, error } = await supabase.from('products').select('id, name, is_active').eq('is_active', true).limit(10);
+    const { data, error } = await supabase.from('variants').select('*').limit(5);
     if (error) {
-        console.error('Error fetching products:', error);
+        console.error('Error fetching variants:', error);
     } else {
-        console.log('Success! Sample products:', data);
+        console.log('Success! Sample variants:', data);
     }
 }
 main();

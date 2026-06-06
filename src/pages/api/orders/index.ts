@@ -101,14 +101,19 @@ export const POST: APIRoute = async ({ request, locals }) => {
           const itemSize = item.size || 'UNICO';
           const itemColor = item.color || '';
           
-          const { data: v } = await supabase
+          let query = supabase
             .from('variants')
             .select('id')
             .eq('product_id', itemProductId)
-            .eq('size', itemSize)
-            .eq('color', itemColor)
-            .limit(1)
-            .maybeSingle();
+            .eq('size', itemSize);
+            
+          if (itemColor === '') {
+            query = query.or('color.is.null,color.eq.');
+          } else {
+            query = query.eq('color', itemColor);
+          }
+          
+          const { data: v } = await query.limit(1).maybeSingle();
             
           if (v) {
             finalVariantId = v.id;
