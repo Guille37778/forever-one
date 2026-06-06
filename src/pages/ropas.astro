@@ -457,7 +457,7 @@ const sub = Astro.url.searchParams.get('sub') || '';
                     </a>
 
                     <div style="padding:10px 14px 14px;">
-                        <button onclick="window.__addToCart(${JSON.stringify(p).replace(/"/g, '&quot;')})"
+                        <button onclick="window.__openVariantModal(${JSON.stringify(p).replace(/"/g, '&quot;')})"
                                 ${!inStock ? 'disabled' : ''}
                                 style="width:100%; padding:14px 8px; border:none; font-size:8.5px;
                                        font-family:'Montserrat',sans-serif; font-weight:900;
@@ -506,5 +506,312 @@ const sub = Astro.url.searchParams.get('sub') || '';
         });
     })();
     </script>
+
+    <!-- ── VARIANT SELECTION MODAL (Catalog) ─────────────────────── -->
+    <div id="catalog-variant-modal"
+         style="display:none; position:fixed; inset:0; z-index:9999; align-items:center; justify-content:center;
+                padding:16px; background:rgba(0,0,0,0.65); backdrop-filter:blur(6px);
+                opacity:0; pointer-events:none; transition:opacity 0.3s ease;">
+        <div id="catalog-variant-panel"
+             style="background:#fff; border-radius:24px; max-width:480px; width:100%; padding:32px;
+                    border:1px solid rgba(184,134,11,0.2); box-shadow:0 40px 120px rgba(0,0,0,0.3);
+                    transform:scale(0.95); transition:transform 0.3s ease; display:flex; flex-direction:column; gap:24px;
+                    max-height:90vh; overflow-y:auto;">
+
+            <!-- Header -->
+            <div style="text-align:center; border-bottom:1px solid rgba(184,134,11,0.1); padding-bottom:20px;">
+                <div id="catalog-modal-image-wrap" style="width:80px; height:80px; margin:0 auto 12px; overflow:hidden; border-radius:12px; border:1px solid rgba(184,134,11,0.15);">
+                    <img id="catalog-modal-img" src="" alt="" style="width:100%; height:100%; object-fit:cover;">
+                </div>
+                <h4 id="catalog-modal-title"
+                    style="font-family:'Cinzel',serif; font-weight:900; font-style:italic; font-size:1.1rem;
+                           text-transform:uppercase; letter-spacing:0.05em; color:#111; margin:0 0 6px;"></h4>
+                <p style="font-size:8px; font-weight:800; text-transform:uppercase; letter-spacing:0.4em; color:#B8860B; margin:0;">Elige tus tallas y colores</p>
+            </div>
+
+            <!-- Price -->
+            <div style="display:flex; align-items:baseline; gap:8px;">
+                <span id="catalog-modal-price" style="font-family:'Cinzel',serif; font-size:1.5rem; font-weight:900; font-style:italic; color:#B8860B;"></span>
+                <span id="catalog-modal-bs" style="font-size:9px; color:#aaa; font-weight:600;"></span>
+            </div>
+
+            <!-- Loading state -->
+            <div id="catalog-modal-loading" style="text-align:center; padding:24px 0;">
+                <div style="width:32px; height:32px; border:2px solid #B8860B; border-top-color:transparent;
+                             border-radius:50%; animation:spin 0.8s linear infinite; margin:0 auto;"></div>
+                <p style="font-size:9px; font-weight:800; text-transform:uppercase; letter-spacing:0.3em; color:#999; margin-top:12px;">Cargando variantes...</p>
+            </div>
+
+            <!-- Variants container -->
+            <div id="catalog-modal-variants" style="display:none; flex-direction:column; gap:12px; max-height:320px; overflow-y:auto; padding-right:4px;"></div>
+
+            <!-- No variants fallback (direct add) -->
+            <div id="catalog-modal-no-variants" style="display:none; text-align:center; padding:8px 0;">
+                <p style="font-size:10px; color:#666; font-style:italic; margin:0 0 8px;">Talla única — se añadirá directamente.</p>
+            </div>
+
+            <!-- Actions -->
+            <div style="display:flex; gap:12px; margin-top:4px;">
+                <button onclick="window.__closeCatalogVariantModal()"
+                        style="flex:1; padding:14px 8px; border:1px solid #e2e8f0; background:transparent;
+                               font-size:9px; font-weight:900; text-transform:uppercase; letter-spacing:0.3em;
+                               color:#64748b; border-radius:12px; cursor:pointer; transition:all 0.2s;"
+                        onmouseenter="this.style.background='#f8fafc'; this.style.color='#111';"
+                        onmouseleave="this.style.background='transparent'; this.style.color='#64748b';">Cancelar</button>
+                <button id="catalog-modal-confirm-btn"
+                        onclick="window.__confirmCatalogVariants()"
+                        style="flex:1; padding:14px 8px; border:none; background:#111; color:#fff;
+                               font-size:9px; font-weight:900; text-transform:uppercase; letter-spacing:0.3em;
+                               border-radius:12px; cursor:pointer; transition:all 0.2s; box-shadow:0 4px 20px rgba(0,0,0,0.2);"
+                        onmouseenter="this.style.background='#B8860B';"
+                        onmouseleave="this.style.background='#111';">Añadir al Carrito</button>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        @keyframes spin { to { transform: rotate(360deg); } }
+    </style>
+
+    <script is:inline>
+    (function() {
+        let _modalProduct = null;      // product data object from card
+        let _modalVariants = [];       // fetched variants [{id, size, color, stock_quantity}]
+        let _modalQtys = {};           // key: `${size}_${color}` => qty
+        let _modalDollarRate = 0;
+
+        function _getRate() {
+            if (_modalDollarRate) return _modalDollarRate;
+            const root = document.getElementById('shop-root');
+            _modalDollarRate = parseFloat(root?.dataset?.dollarRate || '0');
+            return _modalDollarRate;
+        }
+
+        // ── Group variants by size ─────────────────────────────────────
+        function _groupBySize(variants) {
+            const SIZE_ORDER = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'UNICO'];
+            const groups = {};
+            variants.forEach(v => {
+                const size = v.size || 'UNICO';
+                if (!groups[size]) groups[size] = { size, colorVariants: [], totalStock: 0 };
+                groups[size].totalStock += v.stock_quantity || 0;
+                groups[size].colorVariants.push({ id: v.id, color: v.color || '', stock_quantity: v.stock_quantity || 0 });
+            });
+            return Object.values(groups).sort((a, b) => SIZE_ORDER.indexOf(a.size) - SIZE_ORDER.indexOf(b.size));
+        }
+
+        // ── Build variant rows HTML ────────────────────────────────────
+        function _buildVariantRows(groups, product) {
+            const rate = _getRate();
+            const price = parseFloat(product.precio) || 0;
+            const priceStr = '$' + price.toFixed(2);
+            const bsStr = rate > 0 ? 'Bs. ' + Math.round(price * rate).toLocaleString() : '';
+
+            return groups.map(g => `
+                <div id="cvm-row-${CSS.escape(g.size)}"
+                     style="border:2px solid #f1f5f9; border-radius:16px; padding:12px; transition:all 0.2s;">
+                    <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
+                        <!-- Size badge -->
+                        <span style="flex-shrink:0; width:44px; height:44px; background:#f8fafc; border:1px solid #e2e8f0;
+                                     border-radius:12px; display:flex; align-items:center; justify-content:center;
+                                     font-size:11px; font-weight:900; text-transform:uppercase; color:#111; letter-spacing:0.05em;">
+                            ${g.size}
+                        </span>
+                        <!-- Color select -->
+                        <select id="cvm-sel-${g.size}"
+                                style="flex:1; background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px;
+                                       padding:10px 12px; font-size:11px; font-weight:700; color:#374151;
+                                       cursor:pointer; outline:none;"
+                                onchange="window.__cvmColorChange('${g.size}')">
+                            ${g.colorVariants.map(c => `<option value="${c.color}" data-stock="${c.stock_quantity}">${c.color || 'Único'} (${c.stock_quantity} disp.)</option>`).join('')}
+                        </select>
+                    </div>
+                    <div style="display:flex; align-items:center; justify-content:space-between;">
+                        <div>
+                            <span style="font-family:'Cinzel',serif; font-size:13px; font-weight:900; font-style:italic; color:#B8860B;">${priceStr}</span>
+                            ${bsStr ? `<span style="font-size:9px; color:#aaa; font-weight:600; margin-left:6px;">${bsStr}</span>` : ''}
+                        </div>
+                        <!-- Qty capsule -->
+                        <div style="display:flex; align-items:center; background:#f1f5f9; border-radius:999px; padding:4px;
+                                    border:1px solid rgba(0,0,0,0.06); box-shadow:inset 0 1px 3px rgba(0,0,0,0.06);">
+                            <button type="button"
+                                    style="width:32px; height:32px; border-radius:50%; background:#fff; border:none;
+                                           display:flex; align-items:center; justify-content:center;
+                                           font-size:18px; font-weight:700; color:#94a3b8; cursor:pointer;
+                                           box-shadow:0 1px 3px rgba(0,0,0,0.1); transition:all 0.15s;"
+                                    onmouseenter="this.style.color='#B8860B';"
+                                    onmouseleave="this.style.color='#94a3b8';"
+                                    onclick="window.__cvmUpdateQty('${g.size}', -1)">−</button>
+                            <input type="number" id="cvm-qty-${g.size}" value="0" readonly
+                                   style="width:32px; text-align:center; font-size:12px; font-weight:900;
+                                          border:none; background:transparent; color:#111;">
+                            <button type="button"
+                                    style="width:32px; height:32px; border-radius:50%; background:#fff; border:none;
+                                           display:flex; align-items:center; justify-content:center;
+                                           font-size:18px; font-weight:700; color:#94a3b8; cursor:pointer;
+                                           box-shadow:0 1px 3px rgba(0,0,0,0.1); transition:all 0.15s;"
+                                    onmouseenter="this.style.color='#B8860B';"
+                                    onmouseleave="this.style.color='#94a3b8';"
+                                    onclick="window.__cvmUpdateQty('${g.size}', 1)">+</button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // ── Open modal ────────────────────────────────────────────────
+        window.__openVariantModal = async function(product) {
+            _modalProduct = product;
+            _modalQtys = {};
+            _modalVariants = [];
+
+            const modal   = document.getElementById('catalog-variant-modal');
+            const panel   = document.getElementById('catalog-variant-panel');
+            const loading = document.getElementById('catalog-modal-loading');
+            const varDiv  = document.getElementById('catalog-modal-variants');
+            const noVarDiv= document.getElementById('catalog-modal-no-variants');
+
+            // Set header info
+            document.getElementById('catalog-modal-title').textContent = product.nombre || '';
+            const img = document.getElementById('catalog-modal-img');
+            img.src = product.imagen || product.imagenes?.[0] || '';
+            img.alt = product.nombre || '';
+
+            const price = parseFloat(product.precio) || 0;
+            document.getElementById('catalog-modal-price').textContent = '$' + price.toFixed(2);
+            const rate = _getRate();
+            document.getElementById('catalog-modal-bs').textContent = rate > 0 ? '≈ Bs. ' + Math.round(price * rate).toLocaleString() : '';
+
+            // Reset state
+            loading.style.display = 'block';
+            varDiv.style.display = 'none';
+            noVarDiv.style.display = 'none';
+            varDiv.innerHTML = '';
+
+            // Show modal
+            modal.style.display = 'flex';
+            requestAnimationFrame(() => {
+                modal.style.opacity = '1';
+                modal.style.pointerEvents = 'auto';
+                panel.style.transform = 'scale(1)';
+            });
+
+            // Close on backdrop click
+            modal.onclick = function(e) {
+                if (e.target === modal) window.__closeCatalogVariantModal();
+            };
+
+            try {
+                const res = await fetch(`/api/variants?product_id=${encodeURIComponent(product.id)}`);
+                if (res.ok) {
+                    _modalVariants = await res.json();
+                } else {
+                    _modalVariants = [];
+                }
+            } catch(e) {
+                _modalVariants = [];
+            }
+
+            loading.style.display = 'none';
+
+            if (_modalVariants.length === 0) {
+                noVarDiv.style.display = 'block';
+            } else {
+                const groups = _groupBySize(_modalVariants);
+                varDiv.innerHTML = _buildVariantRows(groups, product);
+                varDiv.style.display = 'flex';
+                // Init max-stock attributes
+                groups.forEach(g => window.__cvmColorChange(g.size));
+            }
+        };
+
+        // ── Close modal ───────────────────────────────────────────────
+        window.__closeCatalogVariantModal = function() {
+            const modal = document.getElementById('catalog-variant-modal');
+            const panel = document.getElementById('catalog-variant-panel');
+            modal.style.opacity = '0';
+            modal.style.pointerEvents = 'none';
+            panel.style.transform = 'scale(0.95)';
+            setTimeout(() => { modal.style.display = 'none'; }, 300);
+        };
+
+        // ── Color change (update max stock on qty input) ───────────────
+        window.__cvmColorChange = function(size) {
+            const sel = document.getElementById(`cvm-sel-${size}`);
+            const inp = document.getElementById(`cvm-qty-${size}`);
+            if (!sel || !inp) return;
+            const option = sel.options[sel.selectedIndex];
+            const stock = parseInt(option?.getAttribute('data-stock') || '999');
+            inp.setAttribute('data-max', stock);
+            const color = sel.value || '';
+            const key = `${size}_${color}`;
+            inp.value = (_modalQtys[key] || 0).toString();
+        };
+
+        // ── Update qty ────────────────────────────────────────────────
+        window.__cvmUpdateQty = function(size, delta) {
+            const sel = document.getElementById(`cvm-sel-${size}`);
+            const inp = document.getElementById(`cvm-qty-${size}`);
+            if (!sel || !inp) return;
+            const color = sel.value || '';
+            const key = `${size}_${color}`;
+            const max = parseInt(inp.getAttribute('data-max') || '999');
+            let qty = (_modalQtys[key] || 0) + delta;
+            if (qty < 0) qty = 0;
+            if (qty > max) { alert(`✦ Stock máximo para talla ${size}: ${max} unidades.`); return; }
+            if (qty > 0) _modalQtys[key] = qty; else delete _modalQtys[key];
+            inp.value = qty.toString();
+
+            // Highlight row
+            const row = document.getElementById(`cvm-row-${CSS.escape(size)}`);
+            if (row) {
+                row.style.borderColor = qty > 0 ? '#B8860B' : '#f1f5f9';
+                row.style.background = qty > 0 ? 'rgba(184,134,11,0.03)' : '';
+            }
+        };
+
+        // ── Confirm & add to cart ────────────────────────────────────
+        window.__confirmCatalogVariants = function() {
+            if (!_modalProduct) return;
+
+            // No variants case (talla única)
+            if (_modalVariants.length === 0) {
+                const data = { ..._modalProduct, selectedSize: 'UNICO', qty: 1 };
+                if (window.__addToCart) window.__addToCart(data);
+                window.__closeCatalogVariantModal();
+                return;
+            }
+
+            const keys = Object.keys(_modalQtys);
+            if (keys.length === 0) {
+                alert('✦ Por favor selecciona al menos una talla y cantidad.');
+                return;
+            }
+
+            let added = false;
+            keys.forEach(key => {
+                const qty = _modalQtys[key];
+                if (qty > 0) {
+                    const parts = key.split('_');
+                    const size  = parts[0];
+                    const color = parts.slice(1).join('_');
+                    const variant = _modalVariants.find(v => (v.size || 'UNICO') === size && (v.color || '') === color);
+                    const data = {
+                        ..._modalProduct,
+                        selectedSize: size,
+                        selectedColor: color,
+                        color: color,
+                        qty: qty,
+                        stock: variant?.stock_quantity ?? 999
+                    };
+                    if (window.__addToCart) { window.__addToCart(data); added = true; }
+                }
+            });
+
+            if (added) window.__closeCatalogVariantModal();
+        };
+    })();
+    </script>
+
     <Footer />
 </Layout>
