@@ -1,5 +1,12 @@
 @import "tailwindcss";
 
+/* ─── Zoom de escritorio: igual al 80% del navegador ───────── */
+@media (min-width: 1024px) {
+  html {
+    zoom: 0.8;
+  }
+}
+
 @theme {
   --color-gold: #B8860B;
   --color-deep-black: #000000;

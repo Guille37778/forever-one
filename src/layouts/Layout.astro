@@ -32,6 +32,15 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
 				visibility: visible !important;
 				transform: none !important;
 			}
+
+			/* ── ZOOM 80% EN PC ────────────────────────────────── */
+			/* Hace que el sitio se vea igual que al 80% de zoom
+			   del navegador, sin que el usuario tenga que ajustarlo */
+			@media (min-width: 1024px) {
+				html {
+					zoom: 0.8;
+				}
+			}
 		</style>
 		
 		<ClientRouter />

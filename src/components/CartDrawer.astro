@@ -228,35 +228,62 @@ const deliveryZones = settingsData?.find((s: any) => s.key === 'delivery_zones')
                     Forma de Pago
                 </div>
 
-                <div style="border:1px solid rgba(0,0,0,0.08); background:#fff; padding:1.5rem; margin-bottom:1rem; overflow:hidden; box-sizing:border-box; max-width:100%;">
-                    <div style="display:flex; align-items:center; gap:0.75rem; margin-bottom:1.25rem;">
-                        <div style="width:8px; height:8px; border-radius:50%; background:#B8860B; animation:pulse 2s ease infinite;"></div>
-                        <span style="font-size:9px; text-transform:uppercase; letter-spacing:0.4em; font-weight:900; color:#0a0a0a;">
-                            Pago Móvil
-                        </span>
-                    </div>
-                    <div style="display:grid; grid-template-columns:auto 1fr; gap:0.5rem 1.5rem;
-                                font-size:12px; font-style:italic; color:#555; margin-bottom:1.25rem;
-                                padding-bottom:1.25rem; border-bottom:1px solid #f0f0f0;">
-                        <span style="color:#aaa; font-size:9px; font-style:normal; text-transform:uppercase; letter-spacing:0.2em; align-self:center;">Banco</span>
-                        <strong style="font-style:normal; color:#111;">Venezuela — 0102</strong>
-                        <span style="color:#aaa; font-size:9px; font-style:normal; text-transform:uppercase; letter-spacing:0.2em; align-self:center;">Teléfono</span>
-                        <strong style="font-style:normal; color:#111;">0412-0708031</strong>
-                        <span style="color:#aaa; font-size:9px; font-style:normal; text-transform:uppercase; letter-spacing:0.2em; align-self:center;">Cédula</span>
-                        <strong style="font-style:normal; color:#111;">V-32.189.355</strong>
+                <!-- Payment method selector cards -->
+                <div class="method-grid" style="margin-bottom:1.5rem;">
+                    <button onclick="window.__setPaymentMethod('pagoMovil')" id="btn-pay-pagoMovil"
+                            class="meth-card active-meth">
+                        <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="margin-bottom:8px;">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                                  d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+                        </svg>
+                        <span>Pago</span>
+                        <small>Móvil</small>
+                    </button>
+                    <button onclick="window.__setPaymentMethod('paypal')" id="btn-pay-paypal"
+                            class="meth-card">
+                        <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="margin-bottom:8px;">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                                  d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/>
+                        </svg>
+                        <span>PayPal</span>
+                        <small>USD</small>
+                    </button>
+                    <button onclick="window.__setPaymentMethod('zelle')" id="btn-pay-zelle"
+                            class="meth-card">
+                        <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="margin-bottom:8px;">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                                  d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                        </svg>
+                        <span>Zelle</span>
+                        <small>USD</small>
+                    </button>
+                </div>
+
+                <!-- ── PAGO MÓVIL ───────────────────────────────── -->
+                <div id="pay-fields-pagoMovil" style="display:flex; flex-direction:column; gap:1rem;">
+                    <div style="border:1px solid rgba(184,134,11,0.2); background:rgba(184,134,11,0.03); padding:1.25rem 1.5rem;">
+                        <div style="display:flex; align-items:center; gap:0.75rem; margin-bottom:1rem;">
+                            <div style="width:8px; height:8px; border-radius:50%; background:#B8860B; animation:pulse 2s ease infinite;"></div>
+                            <span style="font-size:9px; text-transform:uppercase; letter-spacing:0.4em; font-weight:900; color:#0a0a0a;">Datos de Pago Móvil</span>
+                        </div>
+                        <div style="display:grid; grid-template-columns:auto 1fr; gap:0.5rem 1.5rem; font-size:12px; font-style:italic; color:#555;">
+                            <span style="color:#aaa; font-size:9px; font-style:normal; text-transform:uppercase; letter-spacing:0.2em; align-self:center;">Banco</span>
+                            <strong style="font-style:normal; color:#111;">Venezuela — 0102</strong>
+                            <span style="color:#aaa; font-size:9px; font-style:normal; text-transform:uppercase; letter-spacing:0.2em; align-self:center;">Teléfono</span>
+                            <strong style="font-style:normal; color:#111;">0412-0708031</strong>
+                            <span style="color:#aaa; font-size:9px; font-style:normal; text-transform:uppercase; letter-spacing:0.2em; align-self:center;">Cédula</span>
+                            <strong style="font-style:normal; color:#111;">V-32.189.355</strong>
+                        </div>
                     </div>
                     <input type="text" id="pay-reference"
                            placeholder="Número de referencia del pago (ej: 012345678901)"
                            class="cart-input" style="border-color:rgba(184,134,11,0.3); background:#fffdf7;">
-                           
-                    <div style="margin-top: 1rem; overflow:hidden; max-width:100%;">
-                        <label for="pay-capture" style="display:block; font-size:9px; text-transform:uppercase; letter-spacing:0.3em; font-weight:700; color:#999; margin-bottom:0.75rem;">
+                    <!-- Capture Upload - Pago Móvil -->
+                    <div style="overflow:hidden; max-width:100%;">
+                        <label style="display:block; font-size:9px; text-transform:uppercase; letter-spacing:0.3em; font-weight:700; color:#999; margin-bottom:0.75rem;">
                             Adjuntar Capture de Pago <span style="color:#B8860B;">(Obligatorio)</span>
                         </label>
-
-                        <!-- Zona de carga visual -->
                         <label for="pay-capture" id="capture-drop-zone" class="capture-drop-zone">
-                            <!-- Estado vacío -->
                             <div id="capture-empty-state">
                                 <svg width="32" height="32" fill="none" stroke="#B8860B" viewBox="0 0 24 24" style="opacity:0.7; margin-bottom:0.75rem;">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
@@ -264,41 +291,123 @@ const deliveryZones = settingsData?.find((s: any) => s.key === 'delivery_zones')
                                 <p style="font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.3em; color:#555; margin-bottom:4px;">Subir Capture</p>
                                 <p style="font-size:10px; color:#aaa; font-style:italic;">Toca aquí para seleccionar la imagen</p>
                             </div>
-
-                            <!-- Estado cargado (oculto al inicio) -->
                             <div id="capture-success-state" style="display:none; width:100%; max-width:100%; box-sizing:border-box; align-items:center; gap:1rem; flex-direction:column;">
                                 <div style="position:relative; width:100%; max-width:100%; overflow:hidden; box-sizing:border-box;">
                                     <img id="capture-preview" src="" alt="Preview" style="width:100%; max-width:100%; max-height:200px; object-fit:contain; border:1px solid rgba(184,134,11,0.3); display:block; box-sizing:border-box;">
-                                    <!-- Badge de confirmación -->
                                     <div style="position:absolute; top:8px; right:8px; width:32px; height:32px; border-radius:50%; background:#22c55e; display:flex; align-items:center; justify-content:center; box-shadow:0 4px 12px rgba(34,197,94,0.4); animation:popIn 0.4s cubic-bezier(0.34,1.56,0.64,1);">
-                                        <svg width="16" height="16" fill="none" stroke="white" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/>
-                                        </svg>
+                                        <svg width="16" height="16" fill="none" stroke="white" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>
                                     </div>
                                 </div>
                                 <div style="background:rgba(34,197,94,0.08); border:1px solid rgba(34,197,94,0.3); padding:0.6rem 1rem; width:100%; box-sizing:border-box; display:flex; align-items:center; gap:0.5rem;">
-                                    <svg width="14" height="14" fill="none" stroke="#22c55e" viewBox="0 0 24 24" style="flex-shrink:0;">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
-                                    </svg>
+                                    <svg width="14" height="14" fill="none" stroke="#22c55e" viewBox="0 0 24 24" style="flex-shrink:0;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
                                     <span id="capture-filename" style="font-size:10px; font-weight:700; color:#22c55e; text-transform:uppercase; letter-spacing:0.2em; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">archivo.jpg</span>
                                     <span style="margin-left:auto; font-size:9px; color:#aaa; flex-shrink:0;">Cambiar</span>
                                 </div>
                             </div>
                         </label>
-                        <input type="file" id="pay-capture" accept="image/*" required style="display:none;">
+                        <input type="file" id="pay-capture" accept="image/*" style="display:none;">
                     </div>
                 </div>
 
-                <button disabled
-                        style="width:100%; padding:1rem; border:1.5px solid #0070ba; color:#0070ba;
-                               background:#fff; font-size:9px; font-weight:900; text-transform:uppercase;
-                               letter-spacing:0.3em; display:flex; align-items:center; justify-content:center;
-                               gap:0.75rem; opacity:0.45; cursor:not-allowed;">
-                    <svg width="16" height="16" fill="#0070ba" viewBox="0 0 24 24">
-                        <path d="M7.076 21.337H2.47a.641.641 0 01-.633-.74L4.944 3.729C5.056 3.003 5.603 2.5 6.241 2.5h8.482c1.669 0 2.9.412 3.658 1.225.684.733.916 1.745.69 3.008-.287 1.706-1.127 2.87-2.493 3.46-1.558.673-3.048.601-4.708.601H10.15l-.23 1.344-.115.717-.803 4.542c-.105.743-.654 1.291-1.353 1.291l-.573-.076z"/>
-                    </svg>
-                    PayPal — Próximamente disponible
-                </button>
+                <!-- ── PAYPAL ───────────────────────────────────── -->
+                <div id="pay-fields-paypal" style="display:none; flex-direction:column; gap:1rem;">
+                    <div style="border:1px solid rgba(0,112,186,0.2); background:rgba(0,112,186,0.03); padding:1.25rem 1.5rem;">
+                        <div style="display:flex; align-items:center; gap:0.75rem; margin-bottom:1rem;">
+                            <div style="width:8px; height:8px; border-radius:50%; background:#0070ba; animation:pulse 2s ease infinite;"></div>
+                            <span style="font-size:9px; text-transform:uppercase; letter-spacing:0.4em; font-weight:900; color:#0a0a0a;">Datos de PayPal</span>
+                        </div>
+                        <div style="display:grid; grid-template-columns:auto 1fr; gap:0.5rem 1.5rem; font-size:12px; font-style:italic; color:#555;">
+                            <span style="color:#aaa; font-size:9px; font-style:normal; text-transform:uppercase; letter-spacing:0.2em; align-self:center;">Correo</span>
+                            <strong style="font-style:normal; color:#111;">pagos.foreverone@gmail.com</strong>
+                            <span style="color:#aaa; font-size:9px; font-style:normal; text-transform:uppercase; letter-spacing:0.2em; align-self:center;">Titular</span>
+                            <strong style="font-style:normal; color:#111;">Forever One Atelier</strong>
+                            <span style="color:#aaa; font-size:9px; font-style:normal; text-transform:uppercase; letter-spacing:0.2em; align-self:center;">Moneda</span>
+                            <strong style="font-style:normal; color:#111;">USD (dólares americanos)</strong>
+                        </div>
+                    </div>
+                    <p style="font-size:10px; color:#555; font-style:italic; line-height:1.6; background:rgba(0,112,186,0.04); border:1px solid rgba(0,112,186,0.12); padding:0.875rem 1rem;">
+                        💡 Realiza el pago a la dirección de PayPal indicada, luego adjunta el capture de confirmación.
+                    </p>
+                    <!-- Capture Upload - PayPal -->
+                    <div style="overflow:hidden; max-width:100%;">
+                        <label style="display:block; font-size:9px; text-transform:uppercase; letter-spacing:0.3em; font-weight:700; color:#999; margin-bottom:0.75rem;">
+                            Adjuntar Capture de Pago <span style="color:#0070ba;">(Obligatorio)</span>
+                        </label>
+                        <label for="pay-capture-paypal" id="capture-drop-zone-paypal" class="capture-drop-zone capture-drop-zone--blue">
+                            <div id="capture-empty-state-paypal">
+                                <svg width="32" height="32" fill="none" stroke="#0070ba" viewBox="0 0 24 24" style="opacity:0.7; margin-bottom:0.75rem;">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                                </svg>
+                                <p style="font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.3em; color:#555; margin-bottom:4px;">Subir Capture</p>
+                                <p style="font-size:10px; color:#aaa; font-style:italic;">Toca aquí para seleccionar la imagen</p>
+                            </div>
+                            <div id="capture-success-state-paypal" style="display:none; width:100%; max-width:100%; box-sizing:border-box; align-items:center; gap:1rem; flex-direction:column;">
+                                <div style="position:relative; width:100%; max-width:100%; overflow:hidden; box-sizing:border-box;">
+                                    <img id="capture-preview-paypal" src="" alt="Preview" style="width:100%; max-width:100%; max-height:200px; object-fit:contain; border:1px solid rgba(0,112,186,0.3); display:block; box-sizing:border-box;">
+                                    <div style="position:absolute; top:8px; right:8px; width:32px; height:32px; border-radius:50%; background:#22c55e; display:flex; align-items:center; justify-content:center; box-shadow:0 4px 12px rgba(34,197,94,0.4);">
+                                        <svg width="16" height="16" fill="none" stroke="white" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>
+                                    </div>
+                                </div>
+                                <div style="background:rgba(34,197,94,0.08); border:1px solid rgba(34,197,94,0.3); padding:0.6rem 1rem; width:100%; box-sizing:border-box; display:flex; align-items:center; gap:0.5rem;">
+                                    <svg width="14" height="14" fill="none" stroke="#22c55e" viewBox="0 0 24 24" style="flex-shrink:0;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+                                    <span id="capture-filename-paypal" style="font-size:10px; font-weight:700; color:#22c55e; text-transform:uppercase; letter-spacing:0.2em; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">archivo.jpg</span>
+                                    <span style="margin-left:auto; font-size:9px; color:#aaa; flex-shrink:0;">Cambiar</span>
+                                </div>
+                            </div>
+                        </label>
+                        <input type="file" id="pay-capture-paypal" accept="image/*" style="display:none;">
+                    </div>
+                </div>
+
+                <!-- ── ZELLE ────────────────────────────────────── -->
+                <div id="pay-fields-zelle" style="display:none; flex-direction:column; gap:1rem;">
+                    <div style="border:1px solid rgba(110,60,180,0.2); background:rgba(110,60,180,0.03); padding:1.25rem 1.5rem;">
+                        <div style="display:flex; align-items:center; gap:0.75rem; margin-bottom:1rem;">
+                            <div style="width:8px; height:8px; border-radius:50%; background:#6e3cb4; animation:pulse 2s ease infinite;"></div>
+                            <span style="font-size:9px; text-transform:uppercase; letter-spacing:0.4em; font-weight:900; color:#0a0a0a;">Datos de Zelle</span>
+                        </div>
+                        <div style="display:grid; grid-template-columns:auto 1fr; gap:0.5rem 1.5rem; font-size:12px; font-style:italic; color:#555;">
+                            <span style="color:#aaa; font-size:9px; font-style:normal; text-transform:uppercase; letter-spacing:0.2em; align-self:center;">Correo</span>
+                            <strong style="font-style:normal; color:#111;">zelle.foreverone@gmail.com</strong>
+                            <span style="color:#aaa; font-size:9px; font-style:normal; text-transform:uppercase; letter-spacing:0.2em; align-self:center;">Titular</span>
+                            <strong style="font-style:normal; color:#111;">Forever One Atelier</strong>
+                            <span style="color:#aaa; font-size:9px; font-style:normal; text-transform:uppercase; letter-spacing:0.2em; align-self:center;">Banco</span>
+                            <strong style="font-style:normal; color:#111;">Bank of America</strong>
+                        </div>
+                    </div>
+                    <p style="font-size:10px; color:#555; font-style:italic; line-height:1.6; background:rgba(110,60,180,0.04); border:1px solid rgba(110,60,180,0.12); padding:0.875rem 1rem;">
+                        💡 Envía el pago por Zelle a la dirección indicada, luego adjunta el capture de confirmación.
+                    </p>
+                    <!-- Capture Upload - Zelle -->
+                    <div style="overflow:hidden; max-width:100%;">
+                        <label style="display:block; font-size:9px; text-transform:uppercase; letter-spacing:0.3em; font-weight:700; color:#999; margin-bottom:0.75rem;">
+                            Adjuntar Capture de Pago <span style="color:#6e3cb4;">(Obligatorio)</span>
+                        </label>
+                        <label for="pay-capture-zelle" id="capture-drop-zone-zelle" class="capture-drop-zone capture-drop-zone--purple">
+                            <div id="capture-empty-state-zelle">
+                                <svg width="32" height="32" fill="none" stroke="#6e3cb4" viewBox="0 0 24 24" style="opacity:0.7; margin-bottom:0.75rem;">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                                </svg>
+                                <p style="font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.3em; color:#555; margin-bottom:4px;">Subir Capture</p>
+                                <p style="font-size:10px; color:#aaa; font-style:italic;">Toca aquí para seleccionar la imagen</p>
+                            </div>
+                            <div id="capture-success-state-zelle" style="display:none; width:100%; max-width:100%; box-sizing:border-box; align-items:center; gap:1rem; flex-direction:column;">
+                                <div style="position:relative; width:100%; max-width:100%; overflow:hidden; box-sizing:border-box;">
+                                    <img id="capture-preview-zelle" src="" alt="Preview" style="width:100%; max-width:100%; max-height:200px; object-fit:contain; border:1px solid rgba(110,60,180,0.3); display:block; box-sizing:border-box;">
+                                    <div style="position:absolute; top:8px; right:8px; width:32px; height:32px; border-radius:50%; background:#22c55e; display:flex; align-items:center; justify-content:center; box-shadow:0 4px 12px rgba(34,197,94,0.4);">
+                                        <svg width="16" height="16" fill="none" stroke="white" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>
+                                    </div>
+                                </div>
+                                <div style="background:rgba(34,197,94,0.08); border:1px solid rgba(34,197,94,0.3); padding:0.6rem 1rem; width:100%; box-sizing:border-box; display:flex; align-items:center; gap:0.5rem;">
+                                    <svg width="14" height="14" fill="none" stroke="#22c55e" viewBox="0 0 24 24" style="flex-shrink:0;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+                                    <span id="capture-filename-zelle" style="font-size:10px; font-weight:700; color:#22c55e; text-transform:uppercase; letter-spacing:0.2em; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">archivo.jpg</span>
+                                    <span style="margin-left:auto; font-size:9px; color:#aaa; flex-shrink:0;">Cambiar</span>
+                                </div>
+                            </div>
+                        </label>
+                        <input type="file" id="pay-capture-zelle" accept="image/*" style="display:none;">
+                    </div>
+                </div>
             </div>
 
             <!-- FINALIZE BUTTON -->
@@ -591,7 +700,11 @@ const deliveryZones = settingsData?.find((s: any) => s.key === 'delivery_zones')
         (window as any).__updateDeliveryUI = function() {
             const { selectedMethod, selectedCourier } = (window as any).__getDeliveryData?.() || { selectedMethod: 'retiro', selectedCourier: 'Zoom' };
             
-            document.querySelectorAll('.meth-card').forEach(b => b.classList.toggle('active-meth', b.id === 'btn-meth-' + selectedMethod));
+            document.querySelectorAll('.meth-card').forEach((b: any) => {
+                if (b.id && b.id.startsWith('btn-meth-')) {
+                    b.classList.toggle('active-meth', b.id === 'btn-meth-' + selectedMethod);
+                }
+            });
             const env = el('envio-fields'); if(env) env.style.display = selectedMethod === 'envio' ? 'flex' : 'none';
             const del = el('delivery-local-fields'); if(del) del.style.display = selectedMethod === 'delivery' ? 'flex' : 'none';
             const ret = el('retiro-fields'); if(ret) ret.style.display = selectedMethod === 'retiro' ? 'block' : 'none';
@@ -603,6 +716,26 @@ const deliveryZones = settingsData?.find((s: any) => s.key === 'delivery_zones')
                 zones.forEach(z => { const opt = document.createElement('option'); opt.value = z; opt.textContent = z; zoneSelect.appendChild(opt); });
             }
         };
+
+        // Payment method state
+        let _selectedPaymentMethod = 'pagoMovil';
+
+        (window as any).__setPaymentMethod = function(method: string) {
+            _selectedPaymentMethod = method;
+            // Update active card — only pay buttons
+            ['pagoMovil','paypal','zelle'].forEach(m => {
+                const btn = el('btn-pay-' + m);
+                if(btn) btn.classList.toggle('active-meth', m === method);
+            });
+            // Show/hide panels
+            const panels = ['pagoMovil','paypal','zelle'];
+            panels.forEach(m => {
+                const panel = el('pay-fields-' + m);
+                if(panel) panel.style.display = m === method ? 'flex' : 'none';
+            });
+        };
+
+        (window as any).__getPaymentMethod = function() { return _selectedPaymentMethod; };
 
         (window as any).__checkout = async function() {
             const cart = (window as any).__getCart?.() || [];
@@ -618,19 +751,31 @@ const deliveryZones = settingsData?.find((s: any) => s.key === 'delivery_zones')
                 return '+58' + p;                        // caso genérico
             };
 
+            const payMethod = (window as any).__getPaymentMethod?.() || 'pagoMovil';
+
             const vals = {
                 name: (el('cust-name') as HTMLInputElement).value.trim(),
                 id: (el('cust-id') as HTMLInputElement).value.trim(),
                 phone: normalizePhone((el('cust-phone') as HTMLInputElement).value.trim()),
                 email: (el('cust-email') as HTMLInputElement).value.trim(),
-                payRef: (el('pay-reference') as HTMLInputElement).value.trim()
+                payRef: payMethod === 'pagoMovil' ? (el('pay-reference') as HTMLInputElement)?.value.trim() : ''
             };
 
-            const payCaptureInput = el('pay-capture') as HTMLInputElement;
+            // Get the appropriate capture file based on payment method
+            const captureInputId = payMethod === 'pagoMovil' ? 'pay-capture' : payMethod === 'paypal' ? 'pay-capture-paypal' : 'pay-capture-zelle';
+            const payCaptureInput = el(captureInputId) as HTMLInputElement;
             const payCaptureFile = payCaptureInput?.files?.[0];
 
-            if(!vals.name || !vals.id || !vals.phone || !vals.email || !vals.payRef || !payCaptureFile) {
-                alert('❌ POR FAVOR, COMPLETE TODOS LOS CAMPOS OBLIGATORIOS Y ADJUNTE EL CAPTURE DE PAGO');
+            if(!vals.name || !vals.id || !vals.phone || !vals.email) {
+                alert('❌ POR FAVOR, COMPLETE TODOS LOS DATOS PERSONALES');
+                return;
+            }
+            if(payMethod === 'pagoMovil' && !vals.payRef) {
+                alert('❌ POR FAVOR, INGRESE EL NÚMERO DE REFERENCIA DEL PAGO MÓVIL');
+                return;
+            }
+            if(!payCaptureFile) {
+                alert('❌ POR FAVOR, ADJUNTE EL CAPTURE DE PAGO');
                 return;
             }
 
@@ -701,6 +846,12 @@ const deliveryZones = settingsData?.find((s: any) => s.key === 'delivery_zones')
                 return `  - ${i.qty}x ${i.nombre}${variantDesc}: $${(i.precio * i.qty).toFixed(2)}`;
             }).join('\n');
 
+            const payMethodLabel: Record<string,string> = { pagoMovil: 'Pago Móvil', paypal: 'PayPal', zelle: 'Zelle' };
+            let paymentSummary = `• Método: ${payMethodLabel[payMethod] || payMethod}`;
+            if(payMethod === 'pagoMovil') paymentSummary += `\n• Referencia: ${vals.payRef}`;
+            else if(payMethod === 'paypal') paymentSummary += `\n• Correo: pagos.foreverone@gmail.com`;
+            else if(payMethod === 'zelle') paymentSummary += `\n• Correo Zelle: zelle.foreverone@gmail.com`;
+
             const msg = `✦ *RESUMEN DE COMPRA — FOREVER ONE* ✦
 ----------------------------------
 📦 *ORDEN:* #${orderCode}
@@ -718,7 +869,7 @@ ${itemsSummary}
 ${deliverySummary}
 
 💰 *PAGO:*
-• Referencia: ${vals.payRef}
+${paymentSummary}
 • *TOTAL USD:* $${totalUSD.toFixed(2)}
 • *TOTAL Bs:* ${totalBS.toLocaleString('es-VE', { minimumFractionDigits: 2 })} (Tasa: ${dollarRate})
 ----------------------------------
@@ -730,40 +881,45 @@ _Confirmando mi pedido en el Atelier..._`;
             setTimeout(() => window.location.reload(), 1000);
         };
 
-        // CAPTURE UPLOAD PREVIEW — usar delegación en document para que
-        // siempre funcione, incluso después de astro:after-swap
+        // CAPTURE UPLOAD PREVIEW — inicializa listeners para los 3 métodos de pago
         function initCapturePreview() {
-            const captureInput = document.getElementById('pay-capture') as HTMLInputElement;
-            const dropZone     = document.getElementById('capture-drop-zone');
-            const emptyState   = document.getElementById('capture-empty-state');
-            const successState = document.getElementById('capture-success-state');
-            const previewImg   = document.getElementById('capture-preview') as HTMLImageElement;
-            const filenameSpan = document.getElementById('capture-filename');
+            const configs = [
+                { inputId: 'pay-capture',        dropId: 'capture-drop-zone',        emptyId: 'capture-empty-state',        successId: 'capture-success-state',        previewId: 'capture-preview',        filenameId: 'capture-filename' },
+                { inputId: 'pay-capture-paypal', dropId: 'capture-drop-zone-paypal', emptyId: 'capture-empty-state-paypal', successId: 'capture-success-state-paypal', previewId: 'capture-preview-paypal', filenameId: 'capture-filename-paypal' },
+                { inputId: 'pay-capture-zelle',  dropId: 'capture-drop-zone-zelle',  emptyId: 'capture-empty-state-zelle',  successId: 'capture-success-state-zelle',  previewId: 'capture-preview-zelle',  filenameId: 'capture-filename-zelle' },
+            ];
 
-            if (!captureInput || captureInput.dataset.listenerAttached === 'true') return;
+            configs.forEach(cfg => {
+                const captureInput = document.getElementById(cfg.inputId) as HTMLInputElement;
+                if (!captureInput || captureInput.dataset.listenerAttached === 'true') return;
+                captureInput.dataset.listenerAttached = 'true';
 
-            captureInput.dataset.listenerAttached = 'true';
-            captureInput.addEventListener('change', () => {
-                const file = captureInput.files?.[0];
-                if (!file) return;
+                captureInput.addEventListener('change', () => {
+                    const file = captureInput.files?.[0];
+                    if (!file) return;
+                    const dropZone     = document.getElementById(cfg.dropId);
+                    const emptyState   = document.getElementById(cfg.emptyId);
+                    const successState = document.getElementById(cfg.successId);
+                    const previewImg   = document.getElementById(cfg.previewId) as HTMLImageElement;
+                    const filenameSpan = document.getElementById(cfg.filenameId);
 
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    const result = e.target?.result as string;
-                    if (previewImg)   { previewImg.src = result; }
-                    if (filenameSpan) { filenameSpan.textContent = file.name; }
-                    if (emptyState)   { emptyState.style.display = 'none'; }
-                    if (successState) { successState.style.display = 'flex'; }
-                    if (dropZone)     { dropZone.classList.add('has-file'); }
-                };
-                reader.onerror = () => {
-                    // Si falla la lectura, al menos mostramos el nombre
-                    if (filenameSpan) { filenameSpan.textContent = file.name; }
-                    if (emptyState)   { emptyState.style.display = 'none'; }
-                    if (successState) { successState.style.display = 'flex'; }
-                    if (dropZone)     { dropZone.classList.add('has-file'); }
-                };
-                reader.readAsDataURL(file);
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        const result = e.target?.result as string;
+                        if (previewImg)   { previewImg.src = result; }
+                        if (filenameSpan) { filenameSpan.textContent = file.name; }
+                        if (emptyState)   { emptyState.style.display = 'none'; }
+                        if (successState) { successState.style.display = 'flex'; }
+                        if (dropZone)     { dropZone.classList.add('has-file'); }
+                    };
+                    reader.onerror = () => {
+                        if (filenameSpan) { filenameSpan.textContent = file.name; }
+                        if (emptyState)   { emptyState.style.display = 'none'; }
+                        if (successState) { successState.style.display = 'flex'; }
+                        if (dropZone)     { dropZone.classList.add('has-file'); }
+                    };
+                    reader.readAsDataURL(file);
+                });
             });
         }
 
