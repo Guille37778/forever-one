@@ -869,7 +869,7 @@ const deliveryZones = settingsData?.find((s: any) => s.key === 'delivery_zones')
                     body: JSON.stringify({ 
                         items: cart, 
                         total, 
-                        customer: { ...vals, payCaptureBase64, payCaptureName: payCaptureFile.name },
+                        customer: { ...vals, payCaptureBase64, payCaptureName: payCaptureFile.name, payMethod },
                         delivery: {
                             method: selectedMethod,
                             courier: selectedCourier,

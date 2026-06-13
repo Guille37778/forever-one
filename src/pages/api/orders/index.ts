@@ -1,6 +1,48 @@
 import type { APIRoute } from 'astro';
 import { supabaseAdmin as supabase, initSupabase } from '../../../lib/supabase';
-import { Resend } from 'resend';
+
+// ─── Telegram Bot API Helper ────────────────────────────────────────────────
+const TELEGRAM_TOKEN  = '8746821618:AAH-gzDhFA25BQ_W0JQkjMEt_tlOJ6iGOnM';
+const TELEGRAM_CHAT   = '1289209353';
+const TG_API          = `https://api.telegram.org/bot${TELEGRAM_TOKEN}`;
+
+async function sendTelegramNotification(
+  captureBase64: string,
+  captureName:   string,
+  caption:       string
+): Promise<void> {
+  // 1. Convertir Base64 → Blob para enviar como archivo real
+  let b64 = captureBase64;
+  let mimeType = 'image/jpeg';
+  if (b64.includes('base64,')) {
+    const parts = b64.split('base64,');
+    const header = parts[0]; // ej: "data:image/png;"
+    b64 = parts[1];
+    const mimeMatch = header.match(/data:([^;]+)/);
+    if (mimeMatch) mimeType = mimeMatch[1];
+  }
+
+  // Decodificar Base64 a bytes
+  const byteChars   = atob(b64);
+  const byteNumbers = new Uint8Array(byteChars.length);
+  for (let i = 0; i < byteChars.length; i++) {
+    byteNumbers[i] = byteChars.charCodeAt(i);
+  }
+  const blob = new Blob([byteNumbers], { type: mimeType });
+
+  // 2. Enviar foto con el resumen como caption
+  const form = new FormData();
+  form.append('chat_id', TELEGRAM_CHAT);
+  form.append('photo',   blob, captureName || 'comprobante.jpg');
+  form.append('caption', caption);
+  form.append('parse_mode', 'HTML');
+
+  const res = await fetch(`${TG_API}/sendPhoto`, { method: 'POST', body: form });
+  if (!res.ok) {
+    const errBody = await res.text();
+    throw new Error(`Telegram sendPhoto falló: ${errBody}`);
+  }
+}
 
 /**
  * Endpoint de Creación de Orden
@@ -147,48 +189,63 @@ export const POST: APIRoute = async ({ request, locals }) => {
       }
     }
 
-    // 4. Enviar el comprobante de pago por correo electrónico vía Resend
+    // 4. Enviar comprobante de pago + resumen a Telegram
     if (customer.payCaptureBase64) {
       try {
-        const resend = new Resend('re_2A3vN2Db_P9tdTA7TSUKTdr4Kgj18SeQ3');
-        
-        // El Base64 del frontend viene como "data:image/jpeg;base64,....."
-        let base64Data = customer.payCaptureBase64;
-        if (base64Data.includes('base64,')) {
-          base64Data = base64Data.split('base64,')[1];
-        }
+        // Detectar método de pago para el mensaje
+        const payMethodLabel: Record<string, string> = {
+          pagoMovil: '📱 Pago Móvil',
+          paypal:    '🔵 PayPal',
+          zelle:     '🟣 Zelle',
+          binance:   '🟡 Binance Pay',
+        };
+        const metodoPago = payMethodLabel[customer.payMethod || ''] || '💳 Pago';
 
-        const itemsHtml = items.map((i: any) => {
+        // Construir lista de artículos
+        const itemsText = items.map((i: any) => {
           const n = i.nombre || i.name || 'Producto';
           const p = parseFloat(i.precio || i.price || 0);
-          return `<li>${i.qty}x ${n} ${i.size ? `(Talla: ${i.size})` : ''} - $${(p * i.qty).toFixed(2)}</li>`;
-        }).join('');
+          const talla = i.size ? ` · Talla: ${i.size}` : '';
+          const color = i.color ? ` · Color: ${i.color}` : '';
+          return `  • ${i.qty}x ${n}${talla}${color} — $${(p * i.qty).toFixed(2)}`;
+        }).join('\n');
 
-        await resend.emails.send({
-          from: 'onboarding@resend.dev',
-          to: 'contactoforeverone@gmail.com',
-          subject: `Nuevo Pago Móvil Recibido - Orden #${order.order_code || 'N/A'}`,
-          html: `
-            <h2>Nuevo Pago Móvil Adjunto</h2>
-            <p><strong>Orden:</strong> #${order.order_code || 'N/A'}</p>
-            <p><strong>Cliente:</strong> ${customer.name}</p>
-            <p><strong>Cédula:</strong> ${customer.id}</p>
-            <p><strong>Teléfono:</strong> ${customer.phone}</p>
-            <p><strong>Referencia:</strong> ${customer.payRef}</p>
-            <p><strong>Total:</strong> $${parseFloat(total).toFixed(2)}</p>
-            <h3>Artículos:</h3>
-            <ul>${itemsHtml}</ul>
-            <p>Se adjunta el comprobante de pago.</p>
-          `,
-          attachments: [
-            {
-              filename: customer.payCaptureName || 'comprobante.jpg',
-              content: base64Data,
-            }
-          ]
-        });
-      } catch (emailErr) {
-        console.error('Error al enviar el correo con Resend:', emailErr);
+        // Construir info de entrega
+        let entregaText = '';
+        if (delivery?.method === 'envio') {
+          entregaText = `🚚 <b>Envío:</b> ${delivery.agency || 'N/A'}\n📍 <b>Destino:</b> ${delivery.shipAddress || 'N/A'}`;
+        } else if (delivery?.method === 'delivery') {
+          entregaText = `🛵 <b>Delivery:</b> ${delivery.delZone || 'N/A'}\n📍 <b>Dirección:</b> ${delivery.delAddress || 'N/A'}`;
+        } else {
+          entregaText = `📦 <b>Retiro en tienda</b>`;
+        }
+
+        const caption = [
+          `🛍️ <b>NUEVO PEDIDO #${order.order_code || order.id}</b>`,
+          ``,
+          `👤 <b>Cliente:</b> ${customer.name}`,
+          `🪪 <b>Cédula:</b> ${customer.id || 'N/A'}`,
+          `📞 <b>Teléfono:</b> ${customer.phone}`,
+          `📧 <b>Email:</b> ${customer.email}`,
+          ``,
+          `${metodoPago}`,
+          customer.payRef ? `🔖 <b>Referencia:</b> ${customer.payRef}` : '',
+          ``,
+          `📦 <b>Artículos:</b>`,
+          itemsText,
+          ``,
+          `💰 <b>Total: $${parseFloat(total).toFixed(2)}</b>`,
+          ``,
+          entregaText,
+        ].filter(Boolean).join('\n');
+
+        await sendTelegramNotification(
+          customer.payCaptureBase64,
+          customer.payCaptureName || 'comprobante.jpg',
+          caption
+        );
+      } catch (tgErr) {
+        console.error('Error al enviar notificación a Telegram:', tgErr);
       }
     }
 
