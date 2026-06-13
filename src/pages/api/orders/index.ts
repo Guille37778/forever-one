@@ -3,7 +3,7 @@ import { supabaseAdmin as supabase, initSupabase } from '../../../lib/supabase';
 
 // ─── Telegram Bot API Helper ────────────────────────────────────────────────
 const TELEGRAM_TOKEN  = '8746821618:AAH-gzDhFA25BQ_W0JQkjMEt_tlOJ6iGOnM';
-const TELEGRAM_CHAT   = '1289209353';
+const TELEGRAM_CHAT   = '-5583395651'; // Grupo: "Forever one fashion pedidos"
 const TG_API          = `https://api.telegram.org/bot${TELEGRAM_TOKEN}`;
 
 async function sendTelegramNotification(
