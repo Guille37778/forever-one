@@ -195,7 +195,6 @@ export const POST: APIRoute = async ({ request, locals }) => {
         // Detectar método de pago para el mensaje
         const payMethodLabel: Record<string, string> = {
           pagoMovil: '📱 Pago Móvil',
-          paypal:    '🔵 PayPal',
           zelle:     '🟣 Zelle',
           binance:   '🟡 Binance Pay',
         };
