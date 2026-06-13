@@ -859,6 +859,10 @@ const deliveryZones = settingsData?.find((s: any) => s.key === 'delivery_zones')
             btn.disabled = true; 
             btn.textContent = '⏱ PROCESANDO...';
 
+            // Abrir la ventana de WhatsApp AHORA (gesto del usuario) para evitar el bloqueador de popups
+            // La URL se asignará más adelante cuando tengamos el resumen listo
+            const waWindow = window.open('', '_blank');
+
             let orderCode = 'PENDIENTE';
             try {
                 const payCaptureBase64 = await fileToBase64(payCaptureFile);
@@ -939,7 +943,13 @@ ${paymentSummary}
 ----------------------------------
 _Confirmando mi pedido en el Atelier..._`;
 
-            window.open(`https://wa.me/584244557693?text=${encodeURIComponent(msg)}`, '_blank');
+            // Navegar la ventana ya abierta a WhatsApp (nunca es bloqueada)
+            if (waWindow) {
+                waWindow.location.href = `https://wa.me/584244557693?text=${encodeURIComponent(msg)}`;
+            } else {
+                // Fallback por si el usuario cerró la ventana antes
+                window.open(`https://wa.me/584244557693?text=${encodeURIComponent(msg)}`, '_blank');
+            }
             
             localStorage.removeItem('fo1_cart'); 
             setTimeout(() => window.location.reload(), 1000);
