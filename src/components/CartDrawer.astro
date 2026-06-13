@@ -802,9 +802,12 @@ const deliveryZones = settingsData?.find((s: any) => s.key === 'delivery_zones')
             btn.disabled = true; 
             btn.textContent = '⏱ PROCESANDO...';
 
-            // Abrir la ventana de WhatsApp AHORA (gesto del usuario) para evitar el bloqueador de popups
-            // La URL se asignará más adelante cuando tengamos el resumen listo
-            const waWindow = window.open('', '_blank');
+            // Detectar móvil ANTES de cualquier window.open para no desperdiciar el gesto del usuario
+            const isMobile = /Android|iPhone|iPad|iPod|Opera Mini|IEMobile|WPDesktop/i.test(navigator.userAgent);
+
+            // En desktop: abrir ventana vacía ahora (dentro del gesto) y asignarle la URL después
+            // En móvil: NO abrir nada ahora; usaremos window.location.href al final
+            const waWindow = isMobile ? null : window.open('', '_blank');
 
             let orderCode = 'PENDIENTE';
             try {
@@ -885,20 +888,17 @@ ${paymentSummary}
 ----------------------------------
 _Confirmando mi pedido en el Atelier..._`;
 
-            // Detectar si es dispositivo móvil
-            const isMobile = /Android|iPhone|iPad|iPod|Opera Mini|IEMobile|WPDesktop/i.test(navigator.userAgent);
+            const waUrl = `https://wa.me/584244557693?text=${encodeURIComponent(msg)}`;
 
             if (isMobile) {
-                // En móvil: location.href abre directamente la app de WhatsApp sin ser bloqueado
-                if (waWindow) waWindow.close(); // cerrar la ventana vacía que abrimos antes
-                window.location.href = `https://wa.me/584244557693?text=${encodeURIComponent(msg)}`;
+                // En móvil: redirigir directamente → Android/iOS abren la app de WhatsApp
+                window.location.href = waUrl;
             } else {
                 // En escritorio: navegar la ventana ya abierta (evita bloqueador de popups)
                 if (waWindow) {
-                    waWindow.location.href = `https://wa.me/584244557693?text=${encodeURIComponent(msg)}`;
+                    waWindow.location.href = waUrl;
                 } else {
-                    // Fallback por si el usuario cerró la ventana antes
-                    window.open(`https://wa.me/584244557693?text=${encodeURIComponent(msg)}`, '_blank');
+                    window.open(waUrl, '_blank');
                 }
             }
             
