@@ -147,6 +147,20 @@ const statusLabels: Record<string, string> = {
     box-shadow: none !important;
   }
 
+  .search-box {
+    display: flex; align-items: center; gap: 0.75rem;
+    background: #fff; border: 1px solid rgba(0,0,0,0.08);
+    border-radius: 12px; padding: 0.75rem 1.25rem;
+    margin-bottom: 1.5rem; transition: all 0.3s;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+  }
+  .search-box:focus-within { border-color: #B8860B; box-shadow: 0 0 0 3px rgba(184,134,11,0.08); }
+  .search-box svg { width: 16px; height: 16px; color: #999; }
+  .search-box input {
+    border: none; background: transparent; font-size: 13px;
+    font-family: inherit; outline: none; color: #333; width: 100%;
+  }
+
   .empty-state {
     background: white; border: 1px solid rgba(0,0,0,0.05); border-radius: 12px;
     text-align: center; padding: 6rem 2rem; color: #ccc;
@@ -170,11 +184,22 @@ const statusLabels: Record<string, string> = {
     <h2>Registro de Pedidos</h2>
   </div>
 
+  <div class="search-box">
+    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+    </svg>
+    <input type="text" placeholder="Buscar pedido por nombre de cliente o número de cédula..." id="order-search-input">
+  </div>
+
   {ordersData && ordersData.length > 0 ? ordersData.map((order: any) => {
     const sc = statusColors[order.status] || statusColors.verificando;
     const sl = statusLabels[order.status] || order.status;
+    const cedulaMatch = order.notes?.match(/CI:\s*([^\s|]+)/);
+    const cedulaStr = cedulaMatch ? cedulaMatch[1].toLowerCase() : '';
+    const customerNameStr = (order.customer_name || '').toLowerCase();
+
     return (
-      <div class="order-card">
+      <div class="order-card" data-name={customerNameStr} data-cedula={cedulaStr}>
         <div class="order-header">
           <div style="display:flex; align-items:center;">
             <span class="order-code">{order.order_code}</span>
@@ -296,7 +321,7 @@ const statusLabels: Record<string, string> = {
 <script is:inline>
   // ── Confirmar Venta ────────────────────────────────────────────
   window.confirmSale = async function(orderId, btn) {
-    if (!confirm('¿Confirmar esta venta?\n\nEsto:\n• Cierra el pedido como VENDIDO\n• Registra la fecha de pago\n• Descuenta el stock automáticamente')) return;
+    if (!confirm('¿CONFIRMAR VENTA CERRADA?\n\nAl confirmar se entiende que ya pasó por:\n  ✓ Verificación de pago\n  ✓ Confirmación de pago\n  ✓ Marcado como enviado\n\nEsto también:\n  • Registra la fecha de venta\n  • Descuenta el stock de las variantes\n  • Añade la venta al historial del cliente')) return;
 
     const original = btn.innerHTML;
     btn.innerHTML = '⏳ Procesando...';
@@ -370,4 +395,20 @@ const statusLabels: Record<string, string> = {
       btn.style.pointerEvents = 'auto';
     }
   };
+
+  // ── Buscar Pedidos ─────────────────────────────────────────────
+  const orderSearchInput = document.getElementById('order-search-input');
+  const orderCards = document.querySelectorAll('.order-card');
+
+  if (orderSearchInput) {
+    orderSearchInput.addEventListener('input', function() {
+      const q = this.value.toLowerCase().trim();
+      orderCards.forEach(function(card) {
+        const name = card.getAttribute('data-name') || '';
+        const cedula = card.getAttribute('data-cedula') || '';
+        const matches = !q || name.includes(q) || cedula.includes(q);
+        card.style.display = matches ? '' : 'none';
+      });
+    });
+  }
 </script>

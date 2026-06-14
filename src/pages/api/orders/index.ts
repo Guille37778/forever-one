@@ -111,23 +111,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
       return new Response(JSON.stringify({ error: 'Error al registrar pedido en DB', details: orderError.message }), { status: 500 });
     }
 
-    // 2.5 Actualizar el contador de pedidos del cliente si existe profile_id
-    if (finalProfileId) {
-      try {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('total_orders')
-          .eq('id', finalProfileId)
-          .single();
-        
-        await supabase
-          .from('profiles')
-          .update({ total_orders: (profile?.total_orders || 0) + 1 })
-          .eq('id', finalProfileId);
-      } catch (profErr) {
-        console.error('Error actualizando total_orders del perfil:', profErr);
-      }
-    }
+    // 2.5 Nota: total_orders y stock se actualizan al CONFIRMAR la venta, no al crear el pedido.
 
     // 3. Insertar los items de la orden y restar stock
     for (const item of items) {
@@ -175,15 +159,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
             quantity: parseInt(item.qty) || 1
           });
 
-        // Restar stock
-        if (finalVariantId) {
-          const { data: v } = await supabase.from('variants').select('stock_quantity').eq('id', finalVariantId).single();
-          if (v) {
-            await supabase.from('variants')
-              .update({ stock_quantity: Math.max(0, v.stock_quantity - item.qty) })
-              .eq('id', finalVariantId);
-          }
-        }
+        // Stock se descuenta SOLO al confirmar la venta (confirm-sale.ts), no al crear el pedido.
       } catch (itemErr) {
         console.error('Error procesando item individual:', itemErr);
       }

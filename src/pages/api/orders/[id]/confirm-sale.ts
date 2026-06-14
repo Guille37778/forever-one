@@ -8,7 +8,11 @@ import { supabaseAdmin } from '../../../../lib/supabase';
  * Cierra un pedido como VENTA REAL:
  *  1. Cambia status → 'entregado'
  *  2. Registra paid_at = now()
- *  3. Descuenta stock de cada variante del pedido
+ *  3. Descuenta stock de cada variante — ÚNICO lugar donde ocurre el descuento
+ *  4. Incrementa total_orders en el perfil del cliente (solo ventas cerradas reales)
+ *
+ * Al confirmar la venta se entiende implícitamente que ya pasó por:
+ *  ✓ Verificando pago  ✓ Pago confirmado  ✓ Marcado como enviado
  */
 export const POST: APIRoute = async ({ params }) => {
   try {
@@ -21,7 +25,7 @@ export const POST: APIRoute = async ({ params }) => {
     // 1. Verificar que la orden existe y no fue ya cerrada
     const { data: order, error: fetchError } = await supabaseAdmin
       .from('orders')
-      .select('id, status, paid_at, order_items(*)')
+      .select('id, status, paid_at, profile_id, order_items(*)')
       .eq('id', id)
       .single();
 
@@ -34,6 +38,7 @@ export const POST: APIRoute = async ({ params }) => {
     }
 
     // 2. Cerrar la venta: status = entregado + paid_at = now()
+    // Implica automáticamente: verificado → pago confirmado → enviado → cerrado
     const { error: updateError } = await supabaseAdmin
       .from('orders')
       .update({
@@ -45,7 +50,7 @@ export const POST: APIRoute = async ({ params }) => {
 
     if (updateError) throw updateError;
 
-    // 3. Descontar stock de cada item
+    // 3. Descontar stock de cada item — ÚNICO lugar donde ocurre el descuento
     const items: any[] = order.order_items || [];
     for (const item of items) {
       if (!item.variant_id) continue;
@@ -66,6 +71,25 @@ export const POST: APIRoute = async ({ params }) => {
       } catch (stockErr) {
         // No bloquear la confirmación si falla el stock de un item
         console.error('[confirm-sale] Error descontando stock:', stockErr);
+      }
+    }
+
+    // 4. Incrementar total_orders del perfil del cliente (solo ventas cerradas cuentan)
+    if (order.profile_id) {
+      try {
+        const { data: profile } = await supabaseAdmin
+          .from('profiles')
+          .select('total_orders')
+          .eq('id', order.profile_id)
+          .single();
+
+        await supabaseAdmin
+          .from('profiles')
+          .update({ total_orders: (profile?.total_orders || 0) + 1 })
+          .eq('id', order.profile_id);
+      } catch (profileErr) {
+        // No bloquear la confirmación si falla la actualización del perfil
+        console.error('[confirm-sale] Error actualizando total_orders del perfil:', profileErr);
       }
     }
 

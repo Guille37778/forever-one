@@ -15,39 +15,61 @@ try {
   return Astro.redirect('/admin/login');
 }
 
-// Cargar datos en paralelo para máxima eficiencia
-const [customersResponse, ordersResponse] = await Promise.all([
-  supabaseAdmin.from('profiles').select('*', { count: 'exact' }).order('created_at', { ascending: false }),
-  supabaseAdmin.from('orders').select('profile_id, created_at, status, order_code').order('created_at', { ascending: false })
-]);
+// Cargar solo las órdenes, ya que el directorio se basará en quién ha comprado
+const { data: allOrders } = await supabaseAdmin
+  .from('orders')
+  .select('profile_id, created_at, status, order_code, paid_at, notes, customer_name, customer_email, customer_phone, city')
+  .order('created_at', { ascending: false });
 
-const customers = customersResponse.data;
-const totalCustomers = customersResponse.count;
-const allOrders = ordersResponse.data;
+// Helper: extrae el número de cédula del campo notes (formato: "CI: XXXXX | ...")
+function extractCedula(notes: string | null): string | null {
+  if (!notes) return null;
+  const match = notes.match(/CI:\s*([^\s|]+)/);
+  return match ? match[1] : null;
+}
 
-// Crear mapa enriquecido de pedidos por cliente
-const orderDataMap: Record<string, { count: number; lastDate: string | null; lastStatus: string | null; lastCode: string | null }> = {};
+// Agrupar órdenes por Cédula (o por email si no hay cédula) para construir los clientes únicos
+const clientsMap: Record<string, any> = {};
+
 if (allOrders) {
+  // Como están ordenadas por created_at DESC, la primera vez que vemos un cliente
+  // será su orden más reciente.
   for (const o of allOrders) {
-    if (o.profile_id) {
-      if (!orderDataMap[o.profile_id]) {
-        orderDataMap[o.profile_id] = { count: 0, lastDate: o.created_at, lastStatus: o.status, lastCode: o.order_code };
-      }
-      orderDataMap[o.profile_id].count++;
+    const cedula = extractCedula(o.notes);
+    const clientId = cedula || o.customer_email || o.customer_phone || `unknown-${Math.random()}`;
+
+    if (!clientsMap[clientId]) {
+      clientsMap[clientId] = {
+        id: clientId,
+        full_name: o.customer_name,
+        email: o.customer_email,
+        phone: o.customer_phone,
+        city: o.city,
+        cedula: cedula,
+        created_at: o.created_at, // Esto se actualizará abajo para mantener la fecha de su primera compra
+        order_count: 0,
+        last_order_date: o.created_at,
+        last_order_status: o.status,
+        last_order_code: o.order_code,
+      };
+    } else {
+      // Actualizamos la fecha de registro para que sea la de su primera orden
+      clientsMap[clientId].created_at = o.created_at;
+    }
+
+    // Solo contar como venta si está cerrada
+    if (o.status === 'entregado' && o.paid_at) {
+      clientsMap[clientId].order_count++;
     }
   }
 }
 
-const clientList = (customers || []).map((c: any) => ({
-  ...c,
-  order_count: orderDataMap[c.id]?.count || 0,
-  last_order_date: orderDataMap[c.id]?.lastDate || null,
-  last_order_status: orderDataMap[c.id]?.lastStatus || null,
-  last_order_code: orderDataMap[c.id]?.lastCode || null,
-}));
+// Solo incluir en el directorio a los clientes que tienen al menos 1 venta cerrada
+const clientList = Object.values(clientsMap).filter((c: any) => c.order_count > 0);
 
 // Estadísticas rápidas
-const activeCustomers = clientList.filter((c: any) => c.order_count > 0).length;
+const totalCustomers = clientList.length;
+const activeCustomers = totalCustomers; // Todos los de la lista tienen ventas
 const newThisMonth = clientList.filter((c: any) => {
   const created = new Date(c.created_at);
   const now = new Date();
@@ -242,7 +264,7 @@ const newThisMonth = clientList.filter((c: any) => {
   <!-- Page Header -->
   <div class="page-header">
     <h2>Directorio de Clientes</h2>
-    <p>Registro de todos los clientes que se han registrado en el sistema</p>
+    <p>Registro de todos los clientes que han comprado en el sistema</p>
   </div>
 
   <!-- Quick Stats -->
@@ -265,7 +287,7 @@ const newThisMonth = clientList.filter((c: any) => {
         </svg>
       </div>
       <div>
-        <p class="qs-label">Con Pedidos</p>
+        <p class="qs-label">Con Ventas</p>
         <p class="qs-value">{activeCustomers}</p>
       </div>
     </div>
@@ -290,7 +312,7 @@ const newThisMonth = clientList.filter((c: any) => {
         <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
         </svg>
-        <input type="text" placeholder="Buscar cliente..." id="customer-search-input">
+        <input type="text" placeholder="Buscar por nombre, CI o correo..." id="customer-search-input">
       </div>
     </div>
 
@@ -305,7 +327,7 @@ const newThisMonth = clientList.filter((c: any) => {
             <tr>
               <th>Cliente</th>
               <th>Registro</th>
-              <th>Pedidos</th>
+              <th>Ventas Cerradas</th>
               <th>Último Pedido</th>
               <th>Ciudad</th>
             </tr>
@@ -320,7 +342,7 @@ const newThisMonth = clientList.filter((c: any) => {
                 cancelado:   { bg: 'rgba(239,68,68,0.1)',   text: '#b91c1c' },
               }[client.last_order_status as string] || { bg: '#f5f5f5', text: '#aaa' } : null;
               return (
-              <tr data-name={(client.full_name || '').toLowerCase()} data-email={(client.email || '').toLowerCase()}>
+              <tr data-name={(client.full_name || '').toLowerCase()} data-email={(client.email || '').toLowerCase()} data-cedula={(client.cedula || '').toLowerCase()}>
                 <td>
                   <div class="avatar-cell">
                     <div class="avatar">
@@ -328,7 +350,16 @@ const newThisMonth = clientList.filter((c: any) => {
                     </div>
                     <div>
                       <div class="client-name">{client.full_name || '—'}</div>
-                      <div class="client-email">{client.email}</div>
+                      {client.cedula ? (
+                        <div class="client-email" style="display:flex; align-items:center; gap:4px;">
+                          <svg width="10" height="10" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color:#B8860B; flex-shrink:0;">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2"/>
+                          </svg>
+                          <span style="font-weight:700; color:#B8860B; letter-spacing:0.05em;">CI: {client.cedula}</span>
+                        </div>
+                      ) : (
+                        <div class="client-email">{client.email}</div>
+                      )}
                     </div>
                   </div>
                 </td>
@@ -341,10 +372,10 @@ const newThisMonth = clientList.filter((c: any) => {
                       <svg width="10" height="10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/>
                       </svg>
-                      {client.order_count} {client.order_count === 1 ? 'pedido' : 'pedidos'}
+                      {client.order_count} {client.order_count === 1 ? 'venta' : 'ventas'}
                     </span>
                   ) : (
-                    <span class="order-badge no-orders">Sin pedidos</span>
+                    <span class="order-badge no-orders">Sin ventas</span>
                   )}
                 </td>
                 <td>
@@ -379,9 +410,10 @@ const newThisMonth = clientList.filter((c: any) => {
       searchInput.addEventListener('input', function() {
         const q = this.value.toLowerCase().trim();
         rows.forEach(function(row) {
-          const name = row.getAttribute('data-name') || '';
-          const email = row.getAttribute('data-email') || '';
-          const matches = !q || name.includes(q) || email.includes(q);
+          const name   = row.getAttribute('data-name')   || '';
+          const email  = row.getAttribute('data-email')  || '';
+          const cedula = row.getAttribute('data-cedula') || '';
+          const matches = !q || name.includes(q) || email.includes(q) || cedula.includes(q);
           row.style.display = matches ? '' : 'none';
         });
       });

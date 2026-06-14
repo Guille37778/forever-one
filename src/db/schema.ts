@@ -108,18 +108,6 @@ export const orderItems = pgTable('order_items', {
   quantity: integer('quantity').default(1).notNull(),
 });
 
-// =============================================
-// ANALYTICS (Inteligencia de Marca)
-// =============================================
-export const productStats = pgTable('product_stats', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  productId: uuid('product_id').references(() => products.id).notNull().unique(),
-  views: integer('views').default(0),
-  whatsappClicks: integer('whatsapp_clicks').default(0),
-  avgTimeOnPageSeconds: integer('avg_time_on_page_seconds').default(0),
-  cityInterest: text('city_interest'),
-  createdAt: timestamp('created_at').defaultNow(),
-});
 
 // =============================================
 // LEADS (Marketing)
