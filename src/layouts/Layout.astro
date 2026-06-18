@@ -90,14 +90,20 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
 
 					let currentIndex = 0;
 					const intervalId = setInterval(() => {
-						// Remove active class from current image
-						images[currentIndex].classList.remove('active');
-						
-						// Go to next image
+						const outgoing = images[currentIndex];
+
+						// Slide outgoing image to the left
+						outgoing.classList.add('exiting');
+						outgoing.classList.remove('active');
+
+						// Slide incoming image in from the right simultaneously
 						currentIndex = (currentIndex + 1) % images.length;
-						
-						// Add active class to new image
 						images[currentIndex].classList.add('active');
+
+						// Clean up exiting class after animation finishes
+						setTimeout(() => {
+							outgoing.classList.remove('exiting');
+						}, 900);
 					}, 3000); // cycle every 3 seconds
 
 					galleryIntervals.push(intervalId);

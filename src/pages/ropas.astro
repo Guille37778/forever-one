@@ -383,7 +383,7 @@ const sub = Astro.url.searchParams.get('sub') || '';
                 const showPrice = rawPrice > 0;
                 const priceDisplay = '$' + rawPrice.toFixed(2);
                 const bsDisplay = showPrice && dollarRate > 0
-                    ? `<span style="font-size:8.5px; color:#ccc; font-weight:600; margin-left:6px; opacity:0.8;">≈ Bs. ${Math.round(rawPrice * dollarRate).toLocaleString()}</span>`
+                    ? `<span style="font-size:11px; color:#7A5800; font-weight:800; margin-left:6px; letter-spacing:0.01em;">Bs. ${(rawPrice * dollarRate + 20).toFixed(2).replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, '.')}</span>`
                     : '';
 
                 const btnStyle = inStock
@@ -605,7 +605,7 @@ const sub = Astro.url.searchParams.get('sub') || '';
             const rate = _getRate();
             const price = parseFloat(product.precio) || 0;
             const priceStr = '$' + price.toFixed(2);
-            const bsStr = rate > 0 ? 'Bs. ' + Math.round(price * rate).toLocaleString() : '';
+            const bsStr = rate > 0 ? 'Bs. ' + (price * rate + 20).toFixed(2).replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, '.') : '';
 
             return groups.map(g => `
                 <div id="cvm-row-${CSS.escape(g.size)}"
@@ -680,7 +680,7 @@ const sub = Astro.url.searchParams.get('sub') || '';
             const price = parseFloat(product.precio) || 0;
             document.getElementById('catalog-modal-price').textContent = '$' + price.toFixed(2);
             const rate = _getRate();
-            document.getElementById('catalog-modal-bs').textContent = rate > 0 ? '≈ Bs. ' + Math.round(price * rate).toLocaleString() : '';
+            document.getElementById('catalog-modal-bs').textContent = rate > 0 ? '≈ Bs. ' + (price * rate + 20).toFixed(2).replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, '.') : '';
 
             // Reset state
             loading.style.display = 'block';

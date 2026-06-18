@@ -2,7 +2,7 @@ import { supabase } from './supabase';
 
 /**
  * Scrapes the BCV website to get the USD exchange rate.
- * @returns {Promise<number>} The rate with a 1.01 multiplier (1% margin).
+ * @returns {Promise<number>} The exact BCV rate, no markup applied.
  */
 export async function getBcvRate(): Promise<number> {
   const BCV_URL = 'https://www.bcv.org.ve/';
@@ -37,10 +37,8 @@ export async function getBcvRate(): Promise<number> {
     
     if (isNaN(rawRate)) throw new Error('Parsed rate is NaN');
 
-    // Apply 1% margin
-    const rateWithMargin = rawRate * 1.01;
-    
-    return rateWithMargin;
+    // Return the exact BCV rate with no markup
+    return rawRate;
   } catch (error) {
     console.error('[BCV Scraper Error]:', error);
     throw error;
