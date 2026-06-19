@@ -311,8 +311,8 @@ const productInfo = {
                         </div>
 
                         <!-- Quantity Selector Modal -->
-                        <div id="qty-modal" class="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm opacity-0 pointer-events-none transition-all duration-300" style="display: none;">
-                            <div class="bg-white rounded-3xl max-w-lg w-full p-8 border border-gold/20 shadow-2xl transform scale-95 transition-all duration-300 flex flex-col gap-6">
+                        <div id="qty-modal" style="display:none; position:fixed; inset:0; z-index:9999; align-items:center; justify-content:center; padding:16px; background:rgba(0,0,0,0.6); backdrop-filter:blur(6px); opacity:0; pointer-events:none; transition:opacity 0.3s ease;">
+                            <div id="qty-modal-panel" style="background:#fff; border-radius:24px; max-width:480px; width:100%; padding:32px; border:1px solid rgba(184,134,11,0.2); box-shadow:0 40px 120px rgba(0,0,0,0.3); transform:scale(0.95); transition:transform 0.3s ease; display:flex; flex-direction:column; gap:24px; max-height:90vh; overflow-y:auto;">
                                 <div class="text-center">
                                     <h4 class="font-primary italic font-black text-2xl text-slate-900 uppercase tracking-wide">Seleccionar Variantes</h4>
                                     <p class="text-[9px] font-black uppercase tracking-[0.3em] text-[#B8860B] mt-1">Elige tus tallas y colores</p>
@@ -782,52 +782,59 @@ const productInfo = {
             // Handle opening variants modal
             window.__selectSize = function(size) {
                 activeSizeForModal = size;
-                
+
                 const modal = document.getElementById('qty-modal');
-                if (modal) {
-                    // Initialize current selection state for all rows
-                    document.querySelectorAll('.color-select').forEach((select) => {
-                        const rowSize = select.id.replace('select-color-', '');
-                        
-                        // Highlight target clicked size row
-                        const rowElement = document.getElementById(`row-${rowSize}`);
-                        if (rowElement) {
-                            if (rowSize === size) {
-                                rowElement.style.backgroundColor = 'rgba(184,134,11,0.03)';
-                                rowElement.style.borderColor = '#B8860B';
-                            } else {
-                                rowElement.style.backgroundColor = '';
-                                rowElement.style.borderColor = '';
-                            }
+                const panel = document.getElementById('qty-modal-panel');
+                if (!modal) return;
+
+                // Initialize current selection state for all rows
+                document.querySelectorAll('.color-select').forEach(function(select) {
+                    const rowSize = select.id.replace('select-color-', '');
+
+                    // Highlight target clicked size row
+                    const rowElement = document.getElementById('row-' + rowSize);
+                    if (rowElement) {
+                        if (rowSize === size) {
+                            rowElement.style.backgroundColor = 'rgba(184,134,11,0.03)';
+                            rowElement.style.borderColor = '#B8860B';
+                        } else {
+                            rowElement.style.backgroundColor = '';
+                            rowElement.style.borderColor = '';
                         }
-                        
-                        window.__onColorChange(rowSize);
-                    });
-                    
-                    modal.style.display = 'flex';
-                    setTimeout(() => {
-                        modal.classList.remove('opacity-0', 'pointer-events-none');
-                        modal.querySelector('div')?.classList.remove('scale-95');
-                    }, 50);
-                }
+                    }
+
+                    window.__onColorChange(rowSize);
+                });
+
+                // Show modal via inline styles (same pattern as ropas.astro)
+                modal.style.display = 'flex';
+                requestAnimationFrame(function() {
+                    modal.style.opacity = '1';
+                    modal.style.pointerEvents = 'auto';
+                    if (panel) panel.style.transform = 'scale(1)';
+                });
+
+                // Close on backdrop click
+                modal.onclick = function(e) {
+                    if (e.target === modal) window.__closeQtyModal();
+                };
 
                 // Ocultar el texto guía
                 const helper = document.getElementById('size-helper');
                 if (helper) {
                     helper.style.opacity = '0';
-                    setTimeout(() => { helper.style.display = 'none'; }, 300);
+                    setTimeout(function() { helper.style.display = 'none'; }, 300);
                 }
             };
 
             window.__closeQtyModal = function() {
                 const modal = document.getElementById('qty-modal');
-                if (modal) {
-                    modal.classList.add('opacity-0', 'pointer-events-none');
-                    modal.querySelector('div')?.classList.add('scale-95');
-                    setTimeout(() => {
-                        modal.style.display = 'none';
-                    }, 300);
-                }
+                const panel = document.getElementById('qty-modal-panel');
+                if (!modal) return;
+                modal.style.opacity = '0';
+                modal.style.pointerEvents = 'none';
+                if (panel) panel.style.transform = 'scale(0.95)';
+                setTimeout(function() { modal.style.display = 'none'; }, 300);
             };
 
             window.__confirmQty = function() {
