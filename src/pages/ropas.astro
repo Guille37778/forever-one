@@ -457,7 +457,8 @@ const sub = Astro.url.searchParams.get('sub') || '';
                     </a>
 
                     <div style="padding:10px 14px 14px;">
-                        <button onclick="window.__openVariantModal(${JSON.stringify(p).replace(/"/g, '&quot;')})"
+                        <button class="quick-add-btn"
+                                data-product-id="${p.id}"
                                 ${!inStock ? 'disabled' : ''}
                                 style="width:100%; padding:14px 8px; border:none; font-size:8.5px;
                                        font-family:'Montserrat',sans-serif; font-weight:900;
@@ -474,6 +475,15 @@ const sub = Astro.url.searchParams.get('sub') || '';
             if (window.__initGalleryCycle) {
                 window.__initGalleryCycle();
             }
+
+            // Attach event listeners for quick-add buttons using in-memory product data
+            document.querySelectorAll('.quick-add-btn').forEach(function(btn) {
+                btn.addEventListener('click', function() {
+                    const pid = btn.getAttribute('data-product-id');
+                    const prod = products.find(function(pr) { return String(pr.id) === String(pid); });
+                    if (prod) window.__openVariantModal(prod);
+                });
+            });
         }
 
         function init() {
