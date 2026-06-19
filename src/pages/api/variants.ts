@@ -13,7 +13,7 @@ export const GET: APIRoute = async ({ url }) => {
 
   const { data: variants, error } = await supabase
     .from('variants')
-    .select('id, size, color, stock_quantity')
+    .select('id, size, color, stock_quantity, image_url')
     .eq('product_id', productId)
     .order('size');
 

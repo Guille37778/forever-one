@@ -26,7 +26,7 @@ const { data: variants } = await supabase
   .eq('product_id', id);
 
 // Agrupar variantes por talla única para no duplicar botones en la interfaz
-const groupedVariants: Record<string, { size: string; totalStock: number; colorVariants: Array<{ id: string; color: string; stock_quantity: number }> }> = {};
+const groupedVariants: Record<string, { size: string; totalStock: number; colorVariants: Array<{ id: string; color: string; stock_quantity: number; image_url: string }> }> = {};
 
 if (variants) {
   variants.forEach((v: any) => {
@@ -42,7 +42,8 @@ if (variants) {
     groupedVariants[size].colorVariants.push({
       id: v.id,
       color: v.color || '',
-      stock_quantity: v.stock_quantity || 0
+      stock_quantity: v.stock_quantity || 0,
+      image_url: v.image_url || ''
     });
   });
 }
@@ -340,7 +341,7 @@ const productInfo = {
                                                             onchange={`window.__onColorChange('${g.size}')`}
                                                         >
                                                             {g.colorVariants.map((c: any) => (
-                                                                <option value={c.color} data-stock={c.stock_quantity}>
+                                                                <option value={c.color} data-stock={c.stock_quantity} data-image-url={c.image_url || ''}>
                                                                     {c.color || 'Único'} ({c.stock_quantity} disp.)
                                                                 </option>
                                                             ))}
@@ -680,11 +681,13 @@ const productInfo = {
                                     variantData.color = color;
                                     variantData.qty = qty;
                                     
-                                    // Get variant stock from dropdown option
+                                    // Get variant stock and image_url from dropdown option
                                     const selectEl = document.getElementById(`select-color-${size}`);
                                     const optionEl = selectEl ? selectEl.options[selectEl.selectedIndex] : null;
                                     const stockEl = optionEl ? parseInt(optionEl.getAttribute('data-stock') || '999') : 999;
                                     variantData.stock = stockEl;
+                                    const colorImgUrl = optionEl ? (optionEl.getAttribute('data-image-url') || '') : '';
+                                    variantData.image_url = colorImgUrl || productData.imagen || productData.imagenes?.[0] || '';
                                     
                                     if (window.__addToCart) {
                                         window.__addToCart(variantData);
@@ -739,6 +742,14 @@ const productInfo = {
                 const option = select.options[select.selectedIndex];
                 const stock = parseInt(option.getAttribute('data-stock') || '0');
                 input.setAttribute('data-max', stock.toString());
+
+                // Update gallery image with this color's image_url (if available)
+                const colorImgUrl = option.getAttribute('data-image-url') || '';
+                if (colorImgUrl) {
+                    const galleryImgs = document.querySelectorAll('[x-data] img[alt]');
+                    const firstImg = document.querySelector('.aspect-square img, .aspect-\\[4\/5\\] img');
+                    if (firstImg) { (firstImg as HTMLImageElement).src = colorImgUrl; }
+                }
             };
 
             // Update row quantity based on delta (-1 or +1)

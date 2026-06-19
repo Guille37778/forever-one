@@ -55,6 +55,31 @@ if (Astro.request.method === 'POST') {
         const colorsInput = form.get('colors')?.toString() || '';
         const colors = colorsInput.split(',').map(c => c.trim()).filter(c => c);
         const existingImageUrls = form.getAll('existing_image_urls[]').map(u => u.toString());
+
+        // Upload color-specific images
+        const colorImageUrls: Record<string, string> = {};
+        for (const color of colors) {
+          const colorFile = form.get(`color_image_${color}`) as File | null;
+          if (colorFile && colorFile.size > 0 && colorFile.name) {
+            const fileExt = colorFile.name.split('.').pop();
+            const fileName = `color-${Math.random().toString(36).substring(2)}-${Date.now()}.${fileExt}`;
+            const { error: uploadError } = await supabaseAdmin.storage
+              .from('productos')
+              .upload(fileName, colorFile);
+            if (!uploadError) {
+              const { data: { publicUrl } } = supabaseAdmin.storage
+                .from('productos')
+                .getPublicUrl(fileName);
+              colorImageUrls[color] = publicUrl;
+            }
+          } else {
+            // Preserve existing image_url for this color if no new file uploaded
+            const existingVariant = product.variants.find((v: any) => v.color === color);
+            if (existingVariant?.image_url) {
+              colorImageUrls[color] = existingVariant.image_url;
+            }
+          }
+        }
         const newImageFiles = form.getAll('new_image_files') as File[];
         const uploadedImageUrls: string[] = [];
 
@@ -96,7 +121,8 @@ if (Astro.request.method === 'POST') {
                                 product_id: id,
                                 size,
                                 color,
-                                stock_quantity: stock
+                                stock_quantity: stock,
+                                image_url: colorImageUrls[color] || null
                             });
                         }
                     }
@@ -340,9 +366,14 @@ if (isSuccess) successMessage = '✦ Prenda actualizada correctamente.';
   // Cargar variantes existentes
   const existingVariants = JSON.parse(stockInputsContainer?.getAttribute('data-existing') || '[]');
   const existingValues: Record<string, string> = {};
+  // Map color -> existing image_url from DB
+  const colorExistingImageUrls: Record<string, string> = {};
   existingVariants.forEach((v: any) => {
     const key = v.color ? `stock_${v.size}_${v.color}` : `stock_${v.size}`;
     existingValues[key] = String(v.stock_quantity || 0);
+    if (v.color && v.image_url && !colorExistingImageUrls[v.color]) {
+      colorExistingImageUrls[v.color] = v.image_url;
+    }
   });
 
   function rebuildStockInputs() {
@@ -377,6 +408,7 @@ if (isSuccess) successMessage = '✦ Prenda actualizada correctamente.';
 
     if (colors.length > 0) {
       colors.forEach(color => {
+        const safeColor = color.replace(/[^a-zA-Z0-9_\-]/g, '_');
         const colorDiv = document.createElement('div');
         colorDiv.style.border = '1px solid rgba(184,134,11,0.15)';
         colorDiv.style.background = 'rgba(184,134,11,0.02)';
@@ -392,6 +424,54 @@ if (isSuccess) successMessage = '✦ Prenda actualizada correctamente.';
         colorTitle.style.marginBottom = '1rem';
         colorTitle.textContent = `✦ Color: ${color}`;
         colorDiv.appendChild(colorTitle);
+
+        // Mini uploader de imagen por color (con preview de imagen actual si existe)
+        const currentImgUrl = colorExistingImageUrls[color] || '';
+        const uploaderWrap = document.createElement('div');
+        uploaderWrap.style.display = 'flex';
+        uploaderWrap.style.alignItems = 'center';
+        uploaderWrap.style.gap = '0.75rem';
+        uploaderWrap.style.marginBottom = '1rem';
+        uploaderWrap.style.padding = '0.65rem 0.75rem';
+        uploaderWrap.style.background = 'rgba(255,255,255,0.6)';
+        uploaderWrap.style.border = '1px dashed rgba(184,134,11,0.25)';
+        uploaderWrap.style.borderRadius = '4px';
+
+        const fileInputId   = `color-img-input-${safeColor}`;
+        const previewImgId  = `color-img-preview-${safeColor}`;
+        const previewIconId = `color-img-icon-${safeColor}`;
+
+        uploaderWrap.innerHTML = `
+          <input type="file" id="${fileInputId}" name="color_image_${color}" accept="image/*" style="display:none;">
+          <div style="width:52px; height:52px; border:1px solid rgba(184,134,11,0.3); border-radius:4px; overflow:hidden; flex-shrink:0; display:flex; align-items:center; justify-content:center; background:#fff; cursor:pointer;"
+               onclick="document.getElementById('${fileInputId}').click()" title="Click para cambiar imagen">
+            <span id="${previewIconId}" style="font-size:22px; color:#B8860B; ${currentImgUrl ? 'display:none;' : ''}">📷</span>
+            <img id="${previewImgId}" src="${currentImgUrl}" alt="" style="width:100%; height:100%; object-fit:cover; ${currentImgUrl ? '' : 'display:none;'}">
+          </div>
+          <div style="flex:1;">
+            <div style="font-size:8px; color:#B8860B; font-weight:800; text-transform:uppercase; letter-spacing:0.2em; margin-bottom:3px;">Foto — ${color}</div>
+            <div style="font-size:8px; color:#aaa;">${currentImgUrl ? 'Imagen actual. Click para reemplazar.' : 'Click en la miniatura para asignar foto a este color'}</div>
+          </div>
+        `;
+        colorDiv.appendChild(uploaderWrap);
+
+        // Preview listener
+        setTimeout(() => {
+          const fi = document.getElementById(fileInputId) as HTMLInputElement;
+          const pi = document.getElementById(previewImgId) as HTMLImageElement;
+          const ic = document.getElementById(previewIconId);
+          fi?.addEventListener('change', () => {
+            const f = fi.files?.[0];
+            if (f) {
+              const r = new FileReader();
+              r.onload = (ev) => {
+                if (pi) { pi.src = ev.target?.result as string; pi.style.display = 'block'; }
+                if (ic) ic.style.display = 'none';
+              };
+              r.readAsDataURL(f);
+            }
+          });
+        }, 0);
 
         const grid = document.createElement('div');
         grid.style.display = 'grid';

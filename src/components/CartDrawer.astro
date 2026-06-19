@@ -833,8 +833,13 @@ const deliveryZones = settingsData?.find((s: any) => s.key === 'delivery_zones')
                 if(res.ok) {
                     const data = await res.json();
                     orderCode = data.orderCode || 'REGISTRADA';
+                } else {
+                    const errData = await res.json().catch(() => ({}));
+                    console.error('Error al registrar pedido:', res.status, errData);
                 }
-            } catch(e) {}
+            } catch(e) {
+                console.error('Error de red al enviar pedido:', e);
+            }
             const drawer = el('cart-drawer');
             const dollarRate = parseFloat(drawer?.dataset.rate || '0');
             const totalUSD = cartTotal();

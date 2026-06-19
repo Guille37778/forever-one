@@ -6,6 +6,35 @@ const TELEGRAM_TOKEN  = '8746821618:AAH-gzDhFA25BQ_W0JQkjMEt_tlOJ6iGOnM';
 const TELEGRAM_CHAT   = '-5583395651'; // Grupo: "Forever one fashion pedidos"
 const TG_API          = `https://api.telegram.org/bot${TELEGRAM_TOKEN}`;
 
+// Límite de Telegram: caption de sendPhoto = 1024 chars, texto de sendMessage = 4096 chars
+const TG_CAPTION_LIMIT  = 1024;
+const TG_MESSAGE_LIMIT  = 4096;
+
+/** Recorta un texto al límite indicado añadiendo aviso si fue cortado */
+function truncateText(text: string, limit: number): string {
+  if (text.length <= limit) return text;
+  const suffix = '\n\n⚠️ <i>[Mensaje recortado — ver admin panel]</i>';
+  return text.slice(0, limit - suffix.length) + suffix;
+}
+
+/** Envía un mensaje de texto plano al grupo (fallback cuando sendPhoto falla) */
+async function sendTelegramMessage(text: string): Promise<void> {
+  const body = new URLSearchParams({
+    chat_id:    TELEGRAM_CHAT,
+    text:       truncateText(text, TG_MESSAGE_LIMIT),
+    parse_mode: 'HTML',
+  });
+  const res = await fetch(`${TG_API}/sendMessage`, {
+    method:  'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body,
+  });
+  if (!res.ok) {
+    const errBody = await res.text();
+    throw new Error(`Telegram sendMessage falló: ${errBody}`);
+  }
+}
+
 async function sendTelegramNotification(
   captureBase64: string,
   captureName:   string,
@@ -16,7 +45,7 @@ async function sendTelegramNotification(
   let mimeType = 'image/jpeg';
   if (b64.includes('base64,')) {
     const parts = b64.split('base64,');
-    const header = parts[0]; // ej: "data:image/png;"
+    const header = parts[0];
     b64 = parts[1];
     const mimeMatch = header.match(/data:([^;]+)/);
     if (mimeMatch) mimeType = mimeMatch[1];
@@ -30,17 +59,32 @@ async function sendTelegramNotification(
   }
   const blob = new Blob([byteNumbers], { type: mimeType });
 
-  // 2. Enviar foto con el resumen como caption
+  // 2. Verificar tamaño — Telegram rechaza fotos > 10 MB vía Bot API
+  const MAX_PHOTO_BYTES = 10 * 1024 * 1024; // 10 MB
+  if (blob.size > MAX_PHOTO_BYTES) {
+    // Fallback: enviar solo el texto + aviso de que el comprobante es demasiado grande
+    console.warn(`Comprobante muy grande (${blob.size} bytes), enviando solo texto a Telegram.`);
+    await sendTelegramMessage(
+      caption + '\n\n📎 <i>[Comprobante demasiado grande para adjuntar — solicitar al cliente]</i>'
+    );
+    return;
+  }
+
+  // 3. Enviar foto con caption (respetando límite de 1024 chars)
   const form = new FormData();
-  form.append('chat_id', TELEGRAM_CHAT);
-  form.append('photo',   blob, captureName || 'comprobante.jpg');
-  form.append('caption', caption);
+  form.append('chat_id',    TELEGRAM_CHAT);
+  form.append('photo',      blob, captureName || 'comprobante.jpg');
+  form.append('caption',    truncateText(caption, TG_CAPTION_LIMIT));
   form.append('parse_mode', 'HTML');
 
   const res = await fetch(`${TG_API}/sendPhoto`, { method: 'POST', body: form });
   if (!res.ok) {
     const errBody = await res.text();
-    throw new Error(`Telegram sendPhoto falló: ${errBody}`);
+    console.error('sendPhoto falló, intentando fallback con sendMessage:', errBody);
+    // Fallback: mandar el texto solo + aviso
+    await sendTelegramMessage(
+      caption + '\n\n📎 <i>[Error al adjuntar comprobante — solicitar al cliente]</i>'
+    );
   }
 }
 

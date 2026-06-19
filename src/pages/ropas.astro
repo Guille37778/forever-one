@@ -595,7 +595,7 @@ const sub = Astro.url.searchParams.get('sub') || '';
                 const size = v.size || 'UNICO';
                 if (!groups[size]) groups[size] = { size, colorVariants: [], totalStock: 0 };
                 groups[size].totalStock += v.stock_quantity || 0;
-                groups[size].colorVariants.push({ id: v.id, color: v.color || '', stock_quantity: v.stock_quantity || 0 });
+                groups[size].colorVariants.push({ id: v.id, color: v.color || '', stock_quantity: v.stock_quantity || 0, image_url: v.image_url || '' });
             });
             return Object.values(groups).sort((a, b) => SIZE_ORDER.indexOf(a.size) - SIZE_ORDER.indexOf(b.size));
         }
@@ -735,7 +735,7 @@ const sub = Astro.url.searchParams.get('sub') || '';
             setTimeout(() => { modal.style.display = 'none'; }, 300);
         };
 
-        // ── Color change (update max stock on qty input) ───────────────
+        // ── Color change (update max stock on qty input + update modal image) ──
         window.__cvmColorChange = function(size) {
             const sel = document.getElementById(`cvm-sel-${size}`);
             const inp = document.getElementById(`cvm-qty-${size}`);
@@ -746,6 +746,16 @@ const sub = Astro.url.searchParams.get('sub') || '';
             const color = sel.value || '';
             const key = `${size}_${color}`;
             inp.value = (_modalQtys[key] || 0).toString();
+
+            // Update modal header image with the selected color's image_url
+            const selectedVariant = _modalVariants.find(v => (v.color || '') === color);
+            const colorImgUrl = selectedVariant?.image_url || '';
+            const modalImg = document.getElementById('catalog-modal-img') as HTMLImageElement;
+            if (modalImg && colorImgUrl) {
+                modalImg.src = colorImgUrl;
+            } else if (modalImg && _modalProduct) {
+                modalImg.src = _modalProduct.imagen || _modalProduct.imagenes?.[0] || '';
+            }
         };
 
         // ── Update qty ────────────────────────────────────────────────
@@ -802,7 +812,8 @@ const sub = Astro.url.searchParams.get('sub') || '';
                         selectedColor: color,
                         color: color,
                         qty: qty,
-                        stock: variant?.stock_quantity ?? 999
+                        stock: variant?.stock_quantity ?? 999,
+                        image_url: variant?.image_url || _modalProduct?.imagen || _modalProduct?.imagenes?.[0] || ''
                     };
                     if (window.__addToCart) { window.__addToCart(data); added = true; }
                 }
