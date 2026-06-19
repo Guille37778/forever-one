@@ -196,9 +196,15 @@ if (isSuccess) successMessage = '✦ Prenda actualizada correctamente.';
     .delete-btn { padding: 0.875rem 1.5rem; background: transparent; border: 1px solid rgba(220,38,38,0.2); color: #dc2626; font-family: 'Montserrat', sans-serif; font-size: 9px; letter-spacing: 0.3em; text-transform: uppercase; cursor: pointer; transition: all 0.3s; font-weight: 600; min-height: 48px; }
     .delete-btn:hover { background: rgba(220,38,38,0.05); border-color: #dc2626; }
     .current-images { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
-    .image-thumb { position: relative; aspect-ratio: 1/1; border: 1px solid rgba(0,0,0,0.1); overflow: hidden; background: #f9f9f9; }
-    .image-thumb img { width: 100%; height: 100%; object-fit: cover; }
-    .remove-img-btn { position: absolute; top: 2px; right: 2px; width: 22px; height: 22px; background: #dc2626; color: white; border: none; border-radius: 50%; font-size: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center; opacity: 0.9; }
+    .image-thumb { position: relative; aspect-ratio: 1/1; border: 1px solid rgba(0,0,0,0.1); overflow: hidden; background: #f9f9f9; cursor: pointer; }
+    .image-thumb img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.25s; }
+    .image-thumb:hover img { transform: scale(1.04); }
+    .remove-img-btn { position: absolute; top: 4px; right: 4px; width: 24px; height: 24px; background: #dc2626; color: white; border: none; border-radius: 50%; font-size: 15px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.2s, transform 0.2s; transform: scale(0.7); box-shadow: 0 2px 6px rgba(0,0,0,0.3); }
+    .image-thumb:hover .remove-img-btn { opacity: 1; transform: scale(1); }
+    /* Color per-variant image hover-delete */
+    .color-img-wrap { position: relative; }
+    .color-del-btn { opacity: 0 !important; transition: opacity 0.2s, transform 0.2s !important; transform: scale(0.7) !important; }
+    .color-img-wrap:hover .color-del-btn { opacity: 1 !important; transform: scale(1) !important; }
     .cancel-link { font-size: 9px; letter-spacing: 0.25em; text-transform: uppercase; color: #bbb; text-decoration: none; font-weight: 600; transition: color 0.25s; }
     .cancel-link:hover { color: #666; }
     @keyframes shine { to { background-position: 200% center; } }
@@ -481,10 +487,10 @@ if (isSuccess) successMessage = '✦ Prenda actualizada correctamente.';
           <input type="file" id="${fileInputId}" name="color_image_${color}" accept="image/*" style="display:none;">
           <div style="font-size:8px; color:#B8860B; font-weight:800; text-transform:uppercase; letter-spacing:0.2em; margin-bottom:0.65rem;">📷 Foto — ${color}</div>
           <div style="display:flex; align-items:flex-start; gap:0.85rem;">
-            <div id="${imgWrapId}" style="position:relative; width:90px; height:90px; flex-shrink:0; border:1px solid rgba(184,134,11,0.3); border-radius:6px; overflow:hidden; background:#fafafa; display:flex; align-items:center; justify-content:center;">
+            <div id="${imgWrapId}" class="color-img-wrap" style="position:relative; width:90px; height:90px; flex-shrink:0; border:1px solid rgba(184,134,11,0.3); border-radius:6px; overflow:hidden; background:#fafafa; display:flex; align-items:center; justify-content:center;">
               <span id="${previewIconId}" style="font-size:28px; color:#ddd; ${currentImgUrl ? 'display:none;' : ''}">📷</span>
-              <img id="${previewImgId}" src="${currentImgUrl}" alt="" style="width:100%; height:100%; object-fit:cover; ${currentImgUrl ? '' : 'display:none;'}">
-              ${currentImgUrl ? `<button type="button" id="${deleteBtnId}" title="Eliminar imagen" style="position:absolute; top:3px; right:3px; width:22px; height:22px; background:#dc2626; color:white; border:none; border-radius:50%; font-size:13px; line-height:1; cursor:pointer; display:flex; align-items:center; justify-content:center; font-weight:700;">×</button>` : `<button type="button" id="${deleteBtnId}" style="display:none;"></button>`}
+              <img id="${previewImgId}" src="${currentImgUrl}" alt="" style="width:100%; height:100%; object-fit:cover; transition:transform 0.25s; ${currentImgUrl ? '' : 'display:none;'}">
+              <button type="button" id="${deleteBtnId}" class="color-del-btn" title="Eliminar imagen" style="position:absolute; top:4px; right:4px; width:24px; height:24px; background:#dc2626; color:white; border:none; border-radius:50%; font-size:15px; line-height:1; cursor:pointer; display:flex; align-items:center; justify-content:center; font-weight:700; box-shadow:0 2px 6px rgba(0,0,0,0.3); ${currentImgUrl ? '' : 'visibility:hidden;'}">×</button>
             </div>
             <div style="flex:1; display:flex; flex-direction:column; gap:0.4rem; justify-content:center;">
               <div id="${statusTextId}" style="font-size:8px; color:#aaa; margin-bottom:0.35rem;">${currentImgUrl ? '✓ Imagen asignada. Puedes cambiarla o eliminarla.' : 'Sin imagen. Sube una foto para este color.'}</div>
@@ -509,7 +515,7 @@ if (isSuccess) successMessage = '✦ Prenda actualizada correctamente.';
           db?.addEventListener('click', () => {
             if (pi) { pi.src = ''; pi.style.display = 'none'; }
             if (ic) ic.style.display = '';
-            if (db) db.style.display = 'none';
+            if (db) { db.style.display = 'none'; db.style.visibility = 'hidden'; }
             if (st) st.textContent = 'Imagen eliminada. Se guardará sin foto para este color.';
             // Clear the file input so no new image is sent, and mark as deleted
             if (fi) fi.value = '';
@@ -534,7 +540,7 @@ if (isSuccess) successMessage = '✦ Prenda actualizada correctamente.';
               r.onload = (ev) => {
                 if (pi) { pi.src = ev.target?.result as string; pi.style.display = 'block'; }
                 if (ic) ic.style.display = 'none';
-                if (db) db.style.display = 'flex';
+                if (db) { db.style.display = 'flex'; db.style.visibility = ''; }
                 if (st) st.textContent = '✓ Nueva imagen lista para guardar.';
                 // Remove the clear flag if user re-uploaded
                 colorExistingImageUrls[color] = '_new_';
