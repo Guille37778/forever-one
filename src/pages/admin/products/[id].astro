@@ -60,7 +60,9 @@ if (Astro.request.method === 'POST') {
         const colorImageUrls: Record<string, string> = {};
         for (const color of colors) {
           const colorFile = form.get(`color_image_${color}`) as File | null;
+          const clearFlag = form.get(`clear_color_image_${color}`);
           if (colorFile && colorFile.size > 0 && colorFile.name) {
+            // New file uploaded → upload it
             const fileExt = colorFile.name.split('.').pop();
             const fileName = `color-${Math.random().toString(36).substring(2)}-${Date.now()}.${fileExt}`;
             const { error: uploadError } = await supabaseAdmin.storage
@@ -72,8 +74,10 @@ if (Astro.request.method === 'POST') {
                 .getPublicUrl(fileName);
               colorImageUrls[color] = publicUrl;
             }
+          } else if (clearFlag === '1') {
+            // User explicitly deleted this color's image → leave it out (no entry = null image)
           } else {
-            // Preserve existing image_url for this color if no new file uploaded
+            // Preserve existing image_url for this color if no new file uploaded and not cleared
             const existingVariant = product.variants.find((v: any) => v.color === color);
             if (existingVariant?.image_url) {
               colorImageUrls[color] = existingVariant.image_url;
@@ -302,10 +306,25 @@ if (isSuccess) successMessage = '✦ Prenda actualizada correctamente.';
       <div class="form-group"><label>Descripción de Lujo</label><textarea name="description">{product.description}</textarea></div>
       <div class="form-group" id="edit-media-section">
         {colorsValue ? (
-          <!-- Product HAS colors: images are managed in the color uploaders below -->
-          <div style="background:rgba(184,134,11,0.05); border:1px solid rgba(184,134,11,0.2); border-radius:4px; padding:0.75rem 1rem; font-size:9px; color:#8B6508; font-weight:600; letter-spacing:0.05em;">
-            📷 Las fotos se gestionan por color en la sección de stock de abajo. Cada color tiene su propio mini-uploader de imagen.
-          </div>
+          <!-- Product HAS colors: show a read-only gallery + note that changes happen per-color below -->
+          <>
+            <label>Imágenes Actuales del Producto</label>
+            {product.image_urls && product.image_urls.length > 0 ? (
+              <div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap:0.85rem; margin-bottom:1rem;">
+                {product.image_urls.map((url: string, index: number) => (
+                  <div style="position:relative; aspect-ratio:1/1; border:1px solid rgba(0,0,0,0.1); overflow:hidden; background:#f9f9f9;">
+                    <img src={url} alt={`Imagen ${index}`} style="width:100%; height:100%; object-fit:cover;" />
+                    <div style="position:absolute; bottom:0; left:0; right:0; background:rgba(0,0,0,0.55); font-size:8px; color:#fff; text-align:center; padding:3px; letter-spacing:0.05em;">Color #{index+1}</div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div style="font-size:9px; color:#aaa; font-style:italic; margin-bottom:0.75rem;">Sin imágenes aún.</div>
+            )}
+            <div style="background:rgba(184,134,11,0.05); border:1px solid rgba(184,134,11,0.2); border-radius:4px; padding:0.75rem 1rem; font-size:9px; color:#8B6508; font-weight:600; letter-spacing:0.05em;">
+              📷 Para cambiar o eliminar la foto de cada color, usa los controles de imagen en la sección de stock de abajo.
+            </div>
+          </>
         ) : (
           <!-- Product has NO colors: show classic image manager -->
           <>
@@ -444,38 +463,70 @@ if (isSuccess) successMessage = '✦ Prenda actualizada correctamente.';
         // Mini uploader de imagen por color (con preview de imagen actual si existe)
         const currentImgUrl = colorExistingImageUrls[color] || '';
         const uploaderWrap = document.createElement('div');
-        uploaderWrap.style.display = 'flex';
-        uploaderWrap.style.alignItems = 'center';
-        uploaderWrap.style.gap = '0.75rem';
         uploaderWrap.style.marginBottom = '1rem';
-        uploaderWrap.style.padding = '0.65rem 0.75rem';
+        uploaderWrap.style.padding = '0.85rem 1rem';
         uploaderWrap.style.background = 'rgba(255,255,255,0.6)';
         uploaderWrap.style.border = '1px dashed rgba(184,134,11,0.25)';
         uploaderWrap.style.borderRadius = '4px';
 
-        const fileInputId   = `color-img-input-${safeColor}`;
-        const previewImgId  = `color-img-preview-${safeColor}`;
-        const previewIconId = `color-img-icon-${safeColor}`;
+        const fileInputId    = `color-img-input-${safeColor}`;
+        const previewImgId   = `color-img-preview-${safeColor}`;
+        const previewIconId  = `color-img-icon-${safeColor}`;
+        const deleteStateId  = `color-img-deleted-${safeColor}`;
+        const deleteBtnId    = `color-img-delbtn-${safeColor}`;
+        const imgWrapId      = `color-img-wrap-${safeColor}`;
+        const statusTextId   = `color-img-status-${safeColor}`;
 
         uploaderWrap.innerHTML = `
           <input type="file" id="${fileInputId}" name="color_image_${color}" accept="image/*" style="display:none;">
-          <div style="width:52px; height:52px; border:1px solid rgba(184,134,11,0.3); border-radius:4px; overflow:hidden; flex-shrink:0; display:flex; align-items:center; justify-content:center; background:#fff; cursor:pointer;"
-               onclick="document.getElementById('${fileInputId}').click()" title="Click para cambiar imagen">
-            <span id="${previewIconId}" style="font-size:22px; color:#B8860B; ${currentImgUrl ? 'display:none;' : ''}">📷</span>
-            <img id="${previewImgId}" src="${currentImgUrl}" alt="" style="width:100%; height:100%; object-fit:cover; ${currentImgUrl ? '' : 'display:none;'}">
-          </div>
-          <div style="flex:1;">
-            <div style="font-size:8px; color:#B8860B; font-weight:800; text-transform:uppercase; letter-spacing:0.2em; margin-bottom:3px;">Foto — ${color}</div>
-            <div style="font-size:8px; color:#aaa;">${currentImgUrl ? 'Imagen actual. Click para reemplazar.' : 'Click en la miniatura para asignar foto a este color'}</div>
+          <div style="font-size:8px; color:#B8860B; font-weight:800; text-transform:uppercase; letter-spacing:0.2em; margin-bottom:0.65rem;">📷 Foto — ${color}</div>
+          <div style="display:flex; align-items:flex-start; gap:0.85rem;">
+            <div id="${imgWrapId}" style="position:relative; width:90px; height:90px; flex-shrink:0; border:1px solid rgba(184,134,11,0.3); border-radius:6px; overflow:hidden; background:#fafafa; display:flex; align-items:center; justify-content:center;">
+              <span id="${previewIconId}" style="font-size:28px; color:#ddd; ${currentImgUrl ? 'display:none;' : ''}">📷</span>
+              <img id="${previewImgId}" src="${currentImgUrl}" alt="" style="width:100%; height:100%; object-fit:cover; ${currentImgUrl ? '' : 'display:none;'}">
+              ${currentImgUrl ? `<button type="button" id="${deleteBtnId}" title="Eliminar imagen" style="position:absolute; top:3px; right:3px; width:22px; height:22px; background:#dc2626; color:white; border:none; border-radius:50%; font-size:13px; line-height:1; cursor:pointer; display:flex; align-items:center; justify-content:center; font-weight:700;">×</button>` : `<button type="button" id="${deleteBtnId}" style="display:none;"></button>`}
+            </div>
+            <div style="flex:1; display:flex; flex-direction:column; gap:0.4rem; justify-content:center;">
+              <div id="${statusTextId}" style="font-size:8px; color:#aaa; margin-bottom:0.35rem;">${currentImgUrl ? '✓ Imagen asignada. Puedes cambiarla o eliminarla.' : 'Sin imagen. Sube una foto para este color.'}</div>
+              <button type="button" onclick="document.getElementById('${fileInputId}').click()" style="padding:0.35rem 0.85rem; background:rgba(184,134,11,0.08); border:1px solid rgba(184,134,11,0.3); color:#8B6508; font-size:8px; letter-spacing:0.15em; text-transform:uppercase; font-weight:700; cursor:pointer; border-radius:3px; width:fit-content;">
+                ${currentImgUrl ? '🔄 Cambiar imagen' : '📤 Subir imagen'}
+              </button>
+            </div>
           </div>
         `;
         colorDiv.appendChild(uploaderWrap);
 
-        // Preview listener
+        // Preview + delete listener
         setTimeout(() => {
-          const fi = document.getElementById(fileInputId) as HTMLInputElement;
-          const pi = document.getElementById(previewImgId) as HTMLImageElement;
-          const ic = document.getElementById(previewIconId);
+          const fi  = document.getElementById(fileInputId) as HTMLInputElement;
+          const pi  = document.getElementById(previewImgId) as HTMLImageElement;
+          const ic  = document.getElementById(previewIconId) as HTMLElement;
+          const db  = document.getElementById(deleteBtnId) as HTMLButtonElement;
+          const st  = document.getElementById(statusTextId) as HTMLElement;
+          const iw  = document.getElementById(imgWrapId) as HTMLElement;
+
+          // Delete button
+          db?.addEventListener('click', () => {
+            if (pi) { pi.src = ''; pi.style.display = 'none'; }
+            if (ic) ic.style.display = '';
+            if (db) db.style.display = 'none';
+            if (st) st.textContent = 'Imagen eliminada. Se guardará sin foto para este color.';
+            // Clear the file input so no new image is sent, and mark as deleted
+            if (fi) fi.value = '';
+            // Remove current image from our tracking map so the server sees no image for this color
+            colorExistingImageUrls[color] = '';
+            // Add a hidden flag so the server knows to clear this color's image
+            const existingHidden = iw?.parentElement?.querySelector(`input[name="clear_color_image_${color}"]`);
+            if (!existingHidden) {
+              const hidden = document.createElement('input');
+              hidden.type = 'hidden';
+              hidden.name = `clear_color_image_${color}`;
+              hidden.value = '1';
+              iw?.parentElement?.appendChild(hidden);
+            }
+          });
+
+          // File change → preview
           fi?.addEventListener('change', () => {
             const f = fi.files?.[0];
             if (f) {
@@ -483,6 +534,12 @@ if (isSuccess) successMessage = '✦ Prenda actualizada correctamente.';
               r.onload = (ev) => {
                 if (pi) { pi.src = ev.target?.result as string; pi.style.display = 'block'; }
                 if (ic) ic.style.display = 'none';
+                if (db) db.style.display = 'flex';
+                if (st) st.textContent = '✓ Nueva imagen lista para guardar.';
+                // Remove the clear flag if user re-uploaded
+                colorExistingImageUrls[color] = '_new_';
+                const existingHidden = iw?.parentElement?.querySelector(`input[name="clear_color_image_${color}"]`);
+                if (existingHidden) existingHidden.remove();
               };
               r.readAsDataURL(f);
             }
