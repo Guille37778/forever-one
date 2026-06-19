@@ -760,7 +760,7 @@ const sub = Astro.url.searchParams.get('sub') || '';
             // Update modal header image with the selected color's image_url
             const selectedVariant = _modalVariants.find(v => (v.color || '') === color);
             const colorImgUrl = selectedVariant?.image_url || '';
-            const modalImg = document.getElementById('catalog-modal-img') as HTMLImageElement;
+            const modalImg = document.getElementById('catalog-modal-img');
             if (modalImg && colorImgUrl) {
                 modalImg.src = colorImgUrl;
             } else if (modalImg && _modalProduct) {
