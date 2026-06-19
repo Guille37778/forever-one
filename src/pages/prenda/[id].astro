@@ -746,9 +746,8 @@ const productInfo = {
                 // Update gallery image with this color's image_url (if available)
                 const colorImgUrl = option.getAttribute('data-image-url') || '';
                 if (colorImgUrl) {
-                    const galleryImgs = document.querySelectorAll('[x-data] img[alt]');
-                    const firstImg = document.querySelector('.aspect-square img, .aspect-\\[4\/5\\] img');
-                    if (firstImg) { (firstImg as HTMLImageElement).src = colorImgUrl; }
+                    const firstImg = document.querySelector('.aspect-square img, .aspect-[4/5] img');
+                    if (firstImg) { firstImg.src = colorImgUrl; }
                 }
             };
 
