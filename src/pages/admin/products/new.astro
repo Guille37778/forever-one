@@ -24,9 +24,8 @@ if (Astro.request.method === 'POST') {
     const sizes = form.getAll('sizes[]').map(s => s.toString());
     const colorsInput = form.get('colors')?.toString() || '';
     const colors = colorsInput.split(',').map(c => c.trim()).filter(c => c);
-    const imageFiles = form.getAll('image_files') as File[];
 
-    // Upload color-specific images
+    // Upload color-specific images → these become the product's image gallery too
     const colorImageUrls: Record<string, string> = {};
     for (const color of colors) {
       const colorFile = form.get(`color_image_${color}`) as File | null;
@@ -44,23 +43,27 @@ if (Astro.request.method === 'POST') {
         }
       }
     }
-    const imageUrls: string[] = [];
 
-    for (const file of imageFiles) {
-      if (file.size > 0 && file.name) {
-        const fileExt = file.name.split('.').pop();
-        const fileName = `${Math.random().toString(36).substring(2)}-${Date.now()}.${fileExt}`;
-        const { data: uploadData, error: uploadError } = await supabaseAdmin.storage
-          .from('productos')
-          .upload(fileName, file);
-
-        if (!uploadError) {
-          const { data: { publicUrl } } = supabaseAdmin.storage
+    // If no colors, use the dedicated no-color uploader for product images
+    let imageUrls: string[] = [];
+    if (colors.length > 0) {
+      // Color images ARE the product images — no duplication needed
+      imageUrls = Object.values(colorImageUrls);
+    } else {
+      const noColorFiles = form.getAll('no_color_image_files') as File[];
+      for (const file of noColorFiles) {
+        if (file.size > 0 && file.name) {
+          const fileExt = file.name.split('.').pop();
+          const fileName = `${Math.random().toString(36).substring(2)}-${Date.now()}.${fileExt}`;
+          const { error: uploadError } = await supabaseAdmin.storage
             .from('productos')
-            .getPublicUrl(fileName);
-          imageUrls.push(publicUrl);
-        } else {
-            console.error('Error uploading image:', uploadError);
+            .upload(fileName, file);
+          if (!uploadError) {
+            const { data: { publicUrl } } = supabaseAdmin.storage
+              .from('productos')
+              .getPublicUrl(fileName);
+            imageUrls.push(publicUrl);
+          }
         }
       }
     }
@@ -448,24 +451,26 @@ if (created) successMessage = '✦ Prenda añadida al catálogo exitosamente.';
       </div>
     </div>
 
-    <!-- Descripción & Fotos -->
+    <!-- Descripción & Fotos sin color -->
     <div class="form-section">
       <p class="section-label">◈ Contenido y Medios</p>
       <div class="form-group">
         <label for="description">Descripción de Lujo</label>
         <textarea id="description" name="description" placeholder="Una pieza que encarna la sofisticación..."></textarea>
       </div>
-      <div class="form-group">
-        <label for="image_files">Subir Imágenes de Lujo (Múltiple)</label>
-        <div class="image-upload-zone" id="drop-zone">
-            <input type="file" id="image_files" name="image_files" accept="image/*" multiple class="hidden">
-            <div class="upload-placeholder" onclick="document.getElementById('image_files').click()">
+      <!-- Uploader para prendas SIN colores — se oculta cuando se escriben colores -->
+      <div class="form-group" id="no-color-upload-section">
+        <label style="font-size:8px; color:#B8860B; font-weight:800; letter-spacing:0.2em; text-transform:uppercase; display:block; margin-bottom:0.5rem;">📷 Fotos del Producto</label>
+        <div class="image-upload-zone" id="no-color-drop-zone">
+            <input type="file" id="no_color_image_files" name="no_color_image_files" accept="image/*" multiple class="hidden">
+            <div class="upload-placeholder" onclick="document.getElementById('no_color_image_files').click()">
                 <span class="text-2xl mb-2">✦</span>
                 <p>Click para seleccionar fotos</p>
-                <p class="text-[7px] text-slate-400 mt-1">Recomendado: 1000x1000px, WebP o JPG (Máx. 500KB)</p>
+                <p class="text-[7px] text-slate-400 mt-1">Recomendado: 1000x1000px, WebP o JPG</p>
             </div>
         </div>
-        <div id="image-previews" class="grid grid-cols-4 gap-2 mt-4"></div>
+        <div id="no-color-image-previews" class="grid grid-cols-4 gap-2 mt-4"></div>
+        <p style="font-size:8px; color:#aaa; margin-top:0.5rem; font-style:italic;">💡 Si la prenda tiene colores, sube las fotos directamente en cada color abajo — no hace falta subir aquí.</p>
       </div>
     </div>
 
@@ -705,27 +710,35 @@ if (created) successMessage = '✦ Prenda añadida al catálogo exitosamente.';
     rebuildStockInputs();
   });
 
-  // Image Preview Logic
-  const imageInput = document.getElementById('image_files') as HTMLInputElement;
-  const previewContainer = document.getElementById('image-previews');
-
-  imageInput?.addEventListener('change', () => {
-    if (!previewContainer) return;
-    previewContainer.innerHTML = '';
-    
-    if (imageInput.files) {
-      Array.from(imageInput.files).forEach(file => {
+  // No-color image preview logic
+  const noColorInput = document.getElementById('no_color_image_files') as HTMLInputElement;
+  const noColorPreview = document.getElementById('no-color-image-previews');
+  noColorInput?.addEventListener('change', () => {
+    if (!noColorPreview) return;
+    noColorPreview.innerHTML = '';
+    if (noColorInput.files) {
+      Array.from(noColorInput.files).forEach(file => {
         const reader = new FileReader();
         reader.onload = (e) => {
           const div = document.createElement('div');
           div.className = 'preview-thumb';
           div.innerHTML = `<img src="${e.target?.result}" alt="Preview">`;
-          previewContainer.appendChild(div);
+          noColorPreview.appendChild(div);
         };
         reader.readAsDataURL(file);
       });
     }
   });
+
+  // Show/hide the no-color uploader depending on whether colors are entered
+  function syncNoColorSection() {
+    const section = document.getElementById('no-color-upload-section');
+    if (!section) return;
+    const colors = (colorsInput?.value || '').split(',').map(c => c.trim()).filter(c => c);
+    section.style.display = colors.length > 0 ? 'none' : 'block';
+  }
+  colorsInput?.addEventListener('input', syncNoColorSection);
+  syncNoColorSection();
 
   // Double-submit protection
   const form = document.getElementById('productForm') as HTMLFormElement;

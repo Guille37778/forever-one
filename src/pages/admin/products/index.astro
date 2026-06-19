@@ -109,6 +109,8 @@ const accesoriosSubcategories = allSubcategories?.filter((s: any) => s.parent_ca
       border-radius: 8px;
       transition: all 0.3s;
       box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      white-space: nowrap;
+      flex-shrink: 0;
     }
 
     @media (min-width: 768px) { .add-btn { padding: 0.875rem 2rem; } }
@@ -485,7 +487,7 @@ const accesoriosSubcategories = allSubcategories?.filter((s: any) => s.parent_ca
       <p>Gestión del Atelier</p>
       <h2>Catálogo de Prendas</h2>
     </div>
-    <div style="display:flex; gap:1rem; align-items:center;">
+    <div style="display:flex; gap:1rem; align-items:center; flex-wrap:wrap;">
         {(updated || created) && (
             <div style="background:rgba(184,134,11,0.1); border:1px solid #B8860B; color:#8B6508; padding:8px 15px; font-size:10px; letter-spacing:0.1em; font-weight:700; border-radius:4px;">
                 ✦ {updated ? 'Inventario actualizado' : 'Prenda añadida con éxito'}

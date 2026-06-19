@@ -56,7 +56,7 @@ if (Astro.request.method === 'POST') {
         const colors = colorsInput.split(',').map(c => c.trim()).filter(c => c);
         const existingImageUrls = form.getAll('existing_image_urls[]').map(u => u.toString());
 
-        // Upload color-specific images
+        // Upload color-specific images → these become the product's image gallery too
         const colorImageUrls: Record<string, string> = {};
         for (const color of colors) {
           const colorFile = form.get(`color_image_${color}`) as File | null;
@@ -80,27 +80,32 @@ if (Astro.request.method === 'POST') {
             }
           }
         }
-        const newImageFiles = form.getAll('new_image_files') as File[];
-        const uploadedImageUrls: string[] = [];
 
-        for (const file of newImageFiles) {
-          if (file.size > 0 && file.name) {
-            const fileExt = file.name.split('.').pop();
-            const fileName = `${Math.random().toString(36).substring(2)}-${Date.now()}.${fileExt}`;
-            const { data: uploadData, error: uploadError } = await supabaseAdmin.storage
-              .from('productos')
-              .upload(fileName, file);
-
-            if (!uploadError) {
-              const { data: { publicUrl } } = supabaseAdmin.storage
+        let imageUrls: string[];
+        if (colors.length > 0) {
+          // Color images ARE the product images — no duplication needed
+          imageUrls = Object.values(colorImageUrls);
+        } else {
+          // No-color product: keep existing images + add new ones
+          const uploadedImageUrls: string[] = [];
+          const noColorFiles = form.getAll('no_color_image_files') as File[];
+          for (const file of noColorFiles) {
+            if (file.size > 0 && file.name) {
+              const fileExt = file.name.split('.').pop();
+              const fileName = `${Math.random().toString(36).substring(2)}-${Date.now()}.${fileExt}`;
+              const { error: uploadError } = await supabaseAdmin.storage
                 .from('productos')
-                .getPublicUrl(fileName);
-              uploadedImageUrls.push(publicUrl);
+                .upload(fileName, file);
+              if (!uploadError) {
+                const { data: { publicUrl } } = supabaseAdmin.storage
+                  .from('productos')
+                  .getPublicUrl(fileName);
+                uploadedImageUrls.push(publicUrl);
+              }
             }
           }
+          imageUrls = [...existingImageUrls, ...uploadedImageUrls];
         }
-
-        const imageUrls = [...existingImageUrls, ...uploadedImageUrls];
 
         const { error: pError } = await supabaseAdmin
             .from('products')
@@ -295,30 +300,41 @@ if (isSuccess) successMessage = '✦ Prenda actualizada correctamente.';
         </select>
       </div>
       <div class="form-group"><label>Descripción de Lujo</label><textarea name="description">{product.description}</textarea></div>
-      <div class="form-group">
-        <label>Medios Actuales</label>
-        <div class="current-images">
-          {product.image_urls?.map((url: string, index: number) => (
-            <div class="image-thumb">
-              <img src={url} alt={`Imagen ${index}`} />
-              <input type="hidden" name="existing_image_urls[]" value={url} />
-              <button type="button" class="remove-img-btn" onclick="this.parentElement.remove()">×</button>
-            </div>
-          ))}
-        </div>
-        <div class="new-upload mt-6">
-          <label style="font-size: 8px; color: #B8860B; margin-bottom: 0.85rem; display:block; letter-spacing: 0.2em; font-weight: 700;">✦ AÑADIR NUEVAS IMÁGENES</label>
-          <div class="image-upload-zone" id="drop-zone">
-              <input type="file" id="new_image_files" name="new_image_files" accept="image/*" multiple class="hidden">
-              <div class="upload-placeholder" onclick="document.getElementById('new_image_files').click()">
-                  <span class="text-xl mb-1 block">✦</span>
-                  <p>Seleccionar Fotos adicionales</p>
-              </div>
+      <div class="form-group" id="edit-media-section">
+        {colorsValue ? (
+          <!-- Product HAS colors: images are managed in the color uploaders below -->
+          <div style="background:rgba(184,134,11,0.05); border:1px solid rgba(184,134,11,0.2); border-radius:4px; padding:0.75rem 1rem; font-size:9px; color:#8B6508; font-weight:600; letter-spacing:0.05em;">
+            📷 Las fotos se gestionan por color en la sección de stock de abajo. Cada color tiene su propio mini-uploader de imagen.
           </div>
-          <div id="image-previews" class="grid grid-cols-4 gap-2 mt-4"></div>
-        </div>
+        ) : (
+          <!-- Product has NO colors: show classic image manager -->
+          <>
+            <label>Fotos del Producto</label>
+            <div class="current-images" id="existing-images-container">
+              {product.image_urls?.map((url: string, index: number) => (
+                <div class="image-thumb">
+                  <img src={url} alt={`Imagen ${index}`} />
+                  <input type="hidden" name="existing_image_urls[]" value={url} />
+                  <button type="button" class="remove-img-btn" onclick="this.parentElement.remove()">×</button>
+                </div>
+              ))}
+            </div>
+            <div class="new-upload mt-6">
+              <label style="font-size: 8px; color: #B8860B; margin-bottom: 0.85rem; display:block; letter-spacing: 0.2em; font-weight: 700;">✦ AÑADIR NUEVAS IMÁGENES</label>
+              <div class="image-upload-zone" id="drop-zone">
+                  <input type="file" id="no_color_image_files" name="no_color_image_files" accept="image/*" multiple class="hidden">
+                  <div class="upload-placeholder" onclick="document.getElementById('no_color_image_files').click()">
+                      <span class="text-xl mb-1 block">✦</span>
+                      <p>Seleccionar Fotos adicionales</p>
+                  </div>
+              </div>
+              <div id="image-previews" class="grid grid-cols-4 gap-2 mt-4"></div>
+            </div>
+          </>
+        )}
       </div>
     </div>
+
 
     <!-- Stock -->
     <div class="form-section" id="sizeSelection">
@@ -580,16 +596,16 @@ if (isSuccess) successMessage = '✦ Prenda actualizada correctamente.';
     });
   }
 
-  // New Images Preview Logic
-  const newImageInput = document.getElementById('new_image_files') as HTMLInputElement;
+  // No-color images preview logic
+  const noColorImgInput = document.getElementById('no_color_image_files') as HTMLInputElement;
   const previewContainer = document.getElementById('image-previews');
 
-  newImageInput?.addEventListener('change', () => {
+  noColorImgInput?.addEventListener('change', () => {
     if (!previewContainer) return;
     previewContainer.innerHTML = '';
     
-    if (newImageInput.files) {
-      Array.from(newImageInput.files).forEach(file => {
+    if (noColorImgInput.files) {
+      Array.from(noColorImgInput.files).forEach(file => {
         const reader = new FileReader();
         reader.onload = (e) => {
           const div = document.createElement('div');
