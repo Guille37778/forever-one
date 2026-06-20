@@ -180,7 +180,7 @@ const productInfo = {
                           @touchend="if (window.__handleSwipe) currentSlide = window.__handleSwipe(touchStartX, $event, total, currentSlide)">
                         <!-- Image Slider Container -->
                         <div class="relative aspect-square md:aspect-[4/5] overflow-hidden bg-white">
-                            <div class="flex transition-transform duration-500 ease-out h-full" 
+                            <div id="gallery-slider-track" class="flex transition-transform duration-500 ease-out h-full" 
                                  :style="`transform: translateX(-${currentSlide * 100}%)`">
                                 {productInfo.imagenes.map((img: string, idx: number) => (
                                     <div class="min-w-full h-full">
@@ -746,7 +746,9 @@ const productInfo = {
                 // Update gallery image with this color's image_url (if available)
                 const colorImgUrl = option.getAttribute('data-image-url') || '';
                 if (colorImgUrl) {
-                    const firstImg = document.querySelector('.aspect-square img, .aspect-[4/5] img');
+                    // Use the ID-based selector to avoid Tailwind bracket issues in querySelector
+                    const sliderTrack = document.getElementById('gallery-slider-track');
+                    const firstImg = sliderTrack ? sliderTrack.querySelector('img') : null;
                     if (firstImg) { firstImg.src = colorImgUrl; }
                 }
             };
@@ -788,23 +790,27 @@ const productInfo = {
                 if (!modal) return;
 
                 // Initialize current selection state for all rows
-                document.querySelectorAll('.color-select').forEach(function(select) {
-                    const rowSize = select.id.replace('select-color-', '');
+                try {
+                    document.querySelectorAll('.color-select').forEach(function(select) {
+                        const rowSize = select.id.replace('select-color-', '');
 
-                    // Highlight target clicked size row
-                    const rowElement = document.getElementById('row-' + rowSize);
-                    if (rowElement) {
-                        if (rowSize === size) {
-                            rowElement.style.backgroundColor = 'rgba(184,134,11,0.03)';
-                            rowElement.style.borderColor = '#B8860B';
-                        } else {
-                            rowElement.style.backgroundColor = '';
-                            rowElement.style.borderColor = '';
+                        // Highlight target clicked size row
+                        const rowElement = document.getElementById('row-' + rowSize);
+                        if (rowElement) {
+                            if (rowSize === size) {
+                                rowElement.style.backgroundColor = 'rgba(184,134,11,0.03)';
+                                rowElement.style.borderColor = '#B8860B';
+                            } else {
+                                rowElement.style.backgroundColor = '';
+                                rowElement.style.borderColor = '';
+                            }
                         }
-                    }
 
-                    window.__onColorChange(rowSize);
-                });
+                        window.__onColorChange(rowSize);
+                    });
+                } catch(err) {
+                    console.warn('[ForeverOne] Error initializing modal rows:', err);
+                }
 
                 // Show modal via inline styles (same pattern as ropas.astro)
                 modal.style.display = 'flex';
