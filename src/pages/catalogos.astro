@@ -58,7 +58,7 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
                     {Array.isArray(catalogs) && catalogs.length > 0 ? (
                         catalogs.map((catalog, index) => {
                             const imagenSrc  = index === 0 ? `${base}/ForeverOne_600x800.jpg` : index === 1 ? `${base}/miniatura de conjuntos.jpg` : catalog.imagen;
-                            const pdfHref    = index === 0 ? 'https://drive.google.com/file/d/1nEoXdyct5SMWXqIkRFnt7gvUETvq_CYh/view?usp=sharing' : index === 1 ? 'https://drive.google.com/file/d/1-MJvNo36w8q-lUjaD7s7DgotLo53OKLH/view?usp=drive_link' : `${base}/Catalogo de Faldas  (3).pdf`;
+                            const pdfHref    = index === 0 ? 'https://drive.google.com/file/d/1nEoXdyct5SMWXqIkRFnt7gvUETvq_CYh/view?usp=sharing' : index === 1 ? 'https://drive.google.com/file/d/1sFS2Nr6wZK5X9PoKnVkJ1PsqUWAK734I/view?usp=sharing' : `${base}/Catalogo de Faldas  (3).pdf`;
                             const nombreSrc  = index === 0 ? 'FALDAS' : index === 1 ? 'CONJUNTOS' : catalog.nombre;
                             return (
                             <div 
