@@ -57,10 +57,9 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 md:gap-8">
                     {Array.isArray(catalogs) && catalogs.length > 0 ? (
                         catalogs.map((catalog, index) => {
-                            const imagenSrc  = index === 0 ? `${base}/ForeverOne_600x800.jpg`      : catalog.imagen;
-                            const pdfHref    = index === 0 ? 'https://drive.google.com/file/d/1nEoXdyct5SMWXqIkRFnt7gvUETvq_CYh/view?usp=sharing' : `${base}/Catalogo de Faldas  (3).pdf`;
-                            const pdfName    = 'ForeverOne_Catalogo_de_Faldas.pdf';
-                            const nombreSrc  = index === 0 ? 'FALDAS' : catalog.nombre;
+                            const imagenSrc  = index === 0 ? `${base}/ForeverOne_600x800.jpg` : index === 1 ? `${base}/miniatura de conjuntos.jpg` : catalog.imagen;
+                            const pdfHref    = index === 0 ? 'https://drive.google.com/file/d/1nEoXdyct5SMWXqIkRFnt7gvUETvq_CYh/view?usp=sharing' : index === 1 ? 'https://drive.google.com/file/d/1-MJvNo36w8q-lUjaD7s7DgotLo53OKLH/view?usp=drive_link' : `${base}/Catalogo de Faldas  (3).pdf`;
+                            const nombreSrc  = index === 0 ? 'FALDAS' : index === 1 ? 'CONJUNTOS' : catalog.nombre;
                             return (
                             <div 
                                 x-show={`activeFilter === 'todos' || activeFilter === '${catalog.categoria?.toLowerCase()}'`} 
@@ -92,10 +91,10 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
                                     ) : (
                                         <a 
                                             href={pdfHref} 
-                                            download={pdfName}
+                                            target="_blank"
                                             class="btn-metal-gold block py-3 md:py-3 text-[9px] uppercase tracking-[0.3em] md:tracking-[0.4em] font-black text-white shadow-lg"
                                         >
-                                            Descargar PDF
+                                            Ver catálogo
                                         </a>
                                     )}
                                 </div>
