@@ -5,11 +5,12 @@ import { supabase } from '../lib/supabase';
 const { data: settingsData } = await supabase
   .from('site_settings')
   .select('*')
-  .in('key', ['bcv_usd_rate', 'delivery_enabled', 'delivery_zones']);
+  .in('key', ['bcv_usd_rate', 'delivery_enabled', 'delivery_zones', 'zelle_rate']);
 
 const dollarRate = parseFloat(settingsData?.find((s: any) => s.key === 'bcv_usd_rate')?.value || '0');
 const deliveryEnabled = settingsData?.find((s: any) => s.key === 'delivery_enabled')?.value === 'true';
 const deliveryZones = settingsData?.find((s: any) => s.key === 'delivery_zones')?.value || '';
+const zelleRate = parseFloat(settingsData?.find((s: any) => s.key === 'zelle_rate')?.value || '780');
 ---
 
 <!-- ═══════════════════════════════════════════════════════════
@@ -17,6 +18,7 @@ const deliveryZones = settingsData?.find((s: any) => s.key === 'delivery_zones')
 ═══════════════════════════════════════════════════════════ -->
 <div id="cart-drawer"
      data-rate={dollarRate}
+     data-zelle-rate={zelleRate}
      style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; z-index:3000; background:#F9F8F6;
             overflow-y:auto; overflow-x:hidden; opacity:0; transition:opacity 0.4s ease;">
 
@@ -109,6 +111,21 @@ const deliveryZones = settingsData?.find((s: any) => s.key === 'delivery_zones')
                             Tasa BCV Oficial: Bs. <span id="cart-rate-display">{dollarRate.toFixed(2)}</span>
                         </div>
                     </div>
+                </div>
+            </div>
+
+            <!-- Zelle Total Box (se muestra solo al seleccionar Zelle) -->
+            <div id="cart-zelle-total-box" style="display:none; margin-top:1rem; background:#0a0a0a; border:2px solid rgba(184,134,11,0.5); border-radius:16px; padding:1.5rem 1.75rem; box-shadow:0 8px 32px rgba(184,134,11,0.15);">
+                <div style="display:flex; align-items:center; gap:0.75rem; margin-bottom:1rem;">
+                    <div style="width:10px; height:10px; border-radius:50%; background:linear-gradient(135deg,#8B6508,#B8860B); box-shadow:0 0 10px rgba(184,134,11,0.8); animation:pulse 2s ease infinite;"></div>
+                    <span style="font-size:9px; text-transform:uppercase; letter-spacing:0.45em; font-weight:900; color:#B8860B;">Total a Pagar por Zelle</span>
+                </div>
+                <div style="display:flex; align-items:baseline; gap:0.6rem;">
+                    <span style="font-size:1.1rem; color:rgba(255,255,255,0.7); font-weight:600;">USD</span>
+                    <div id="cart-zelle-total-usd" style="font-family:'Playfair Display',serif; font-size:2.75rem; font-weight:900; font-style:italic; color:#f3cf7a; line-height:1; text-shadow:0 0 20px rgba(184,134,11,0.3);">$0.00</div>
+                </div>
+                <div style="font-size:9px; color:rgba(255,255,255,0.4); margin-top:0.6rem; letter-spacing:0.1em;">
+                    Tasa Zelle: Bs. <span id="cart-zelle-rate-display">{zelleRate.toFixed(2)}</span> / $1
                 </div>
             </div>
         </div>
@@ -268,12 +285,27 @@ const deliveryZones = settingsData?.find((s: any) => s.key === 'delivery_zones')
                             <span style="font-size:9px; text-transform:uppercase; letter-spacing:0.4em; font-weight:900; color:#0a0a0a;">Datos de Pago Móvil</span>
                         </div>
                         <div style="display:grid; grid-template-columns:auto 1fr; gap:0.5rem 1.5rem; font-size:12px; font-style:italic; color:#555;">
-                            <span style="color:#aaa; font-size:9px; font-style:normal; text-transform:uppercase; letter-spacing:0.2em; align-self:center;">Banco</span>
-                            <strong style="font-style:normal; color:#111;">Venezuela — 0102</strong>
-                            <span style="color:#aaa; font-size:9px; font-style:normal; text-transform:uppercase; letter-spacing:0.2em; align-self:center;">Teléfono</span>
-                            <strong style="font-style:normal; color:#111;">0412-0708031</strong>
-                            <span style="color:#aaa; font-size:9px; font-style:normal; text-transform:uppercase; letter-spacing:0.2em; align-self:center;">Cédula</span>
-                            <strong style="font-style:normal; color:#111;">V-32.189.355</strong>
+                            <span style="color:#aaa; font-size:9px; font-style:normal; text-transform:uppercase; letter-spacing:0.2em; align-self:center; user-select:none;">Banco</span>
+                            <div style="display:flex; align-items:center; gap:8px;">
+                                <strong style="font-style:normal; color:#111;">Venezuela — 0102</strong>
+                                <button type="button" onclick="event.preventDefault(); event.stopPropagation(); navigator.clipboard.writeText('0102'); if(window.showCopyToast) window.showCopyToast('¡Banco copiado!');" style="background:none; border:none; cursor:pointer; font-size:9px; color:#B8860B; text-transform:uppercase; font-weight:700; letter-spacing:0.1em; display:flex; align-items:center; gap:4px; padding:4px 6px; border-radius:4px; transition:all 0.2s; white-space:nowrap; user-select:none; -webkit-user-select:none;" onmouseover="this.style.background='rgba(184,134,11,0.1)'" onmouseout="this.style.background='none'">
+                                    <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg> Copiar
+                                </button>
+                            </div>
+                            <span style="color:#aaa; font-size:9px; font-style:normal; text-transform:uppercase; letter-spacing:0.2em; align-self:center; user-select:none;">Teléfono</span>
+                            <div style="display:flex; align-items:center; gap:8px;">
+                                <strong style="font-style:normal; color:#111;">0412-0708031</strong>
+                                <button type="button" onclick="event.preventDefault(); event.stopPropagation(); navigator.clipboard.writeText('04120708031'); if(window.showCopyToast) window.showCopyToast('¡Teléfono copiado!');" style="background:none; border:none; cursor:pointer; font-size:9px; color:#B8860B; text-transform:uppercase; font-weight:700; letter-spacing:0.1em; display:flex; align-items:center; gap:4px; padding:4px 6px; border-radius:4px; transition:all 0.2s; white-space:nowrap; user-select:none; -webkit-user-select:none;" onmouseover="this.style.background='rgba(184,134,11,0.1)'" onmouseout="this.style.background='none'">
+                                    <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg> Copiar
+                                </button>
+                            </div>
+                            <span style="color:#aaa; font-size:9px; font-style:normal; text-transform:uppercase; letter-spacing:0.2em; align-self:center; user-select:none;">Cédula</span>
+                            <div style="display:flex; align-items:center; gap:8px;">
+                                <strong style="font-style:normal; color:#111;">V-32.189.355</strong>
+                                <button type="button" onclick="event.preventDefault(); event.stopPropagation(); navigator.clipboard.writeText('32189355'); if(window.showCopyToast) window.showCopyToast('¡Cédula copiada!');" style="background:none; border:none; cursor:pointer; font-size:9px; color:#B8860B; text-transform:uppercase; font-weight:700; letter-spacing:0.1em; display:flex; align-items:center; gap:4px; padding:4px 6px; border-radius:4px; transition:all 0.2s; white-space:nowrap; user-select:none; -webkit-user-select:none;" onmouseover="this.style.background='rgba(184,134,11,0.1)'" onmouseout="this.style.background='none'">
+                                    <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg> Copiar
+                                </button>
+                            </div>
                         </div>
                     </div>
                     <input type="text" id="pay-reference"
@@ -319,12 +351,20 @@ const deliveryZones = settingsData?.find((s: any) => s.key === 'delivery_zones')
                             <span style="font-size:9px; text-transform:uppercase; letter-spacing:0.4em; font-weight:900; color:#0a0a0a;">Datos de Zelle</span>
                         </div>
                         <div style="display:grid; grid-template-columns:auto 1fr; gap:0.5rem 1.5rem; font-size:12px; font-style:italic; color:#555;">
-                            <span style="color:#aaa; font-size:9px; font-style:normal; text-transform:uppercase; letter-spacing:0.2em; align-self:center;">Correo</span>
-                            <strong style="font-style:normal; color:#111;">zelle.foreverone@gmail.com</strong>
-                            <span style="color:#aaa; font-size:9px; font-style:normal; text-transform:uppercase; letter-spacing:0.2em; align-self:center;">Titular</span>
-                            <strong style="font-style:normal; color:#111;">Forever One Atelier</strong>
-                            <span style="color:#aaa; font-size:9px; font-style:normal; text-transform:uppercase; letter-spacing:0.2em; align-self:center;">Banco</span>
-                            <strong style="font-style:normal; color:#111;">Bank of America</strong>
+                            <span style="color:#aaa; font-size:9px; font-style:normal; text-transform:uppercase; letter-spacing:0.2em; align-self:center; user-select:none;">Teléfono</span>
+                            <div style="display:flex; align-items:center; gap:8px;">
+                                <strong style="font-style:normal; color:#111;">9044458718</strong>
+                                <button type="button" onclick="event.preventDefault(); event.stopPropagation(); navigator.clipboard.writeText('9044458718'); if(window.showCopyToast) window.showCopyToast('¡Teléfono copiado!');" style="background:none; border:none; cursor:pointer; font-size:9px; color:#B8860B; text-transform:uppercase; font-weight:700; letter-spacing:0.1em; display:flex; align-items:center; gap:4px; padding:4px 6px; border-radius:4px; transition:all 0.2s; white-space:nowrap; user-select:none; -webkit-user-select:none;" onmouseover="this.style.background='rgba(184,134,11,0.1)'" onmouseout="this.style.background='none'">
+                                    <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg> Copiar
+                                </button>
+                            </div>
+                            <span style="color:#aaa; font-size:9px; font-style:normal; text-transform:uppercase; letter-spacing:0.2em; align-self:center; user-select:none;">Titular</span>
+                            <div style="display:flex; align-items:center; gap:8px;">
+                                <strong style="font-style:normal; color:#111;">Eduiglis palacios</strong>
+                                <button type="button" onclick="event.preventDefault(); event.stopPropagation(); navigator.clipboard.writeText('Eduiglis palacios'); if(window.showCopyToast) window.showCopyToast('¡Titular copiado!');" style="background:none; border:none; cursor:pointer; font-size:9px; color:#B8860B; text-transform:uppercase; font-weight:700; letter-spacing:0.1em; display:flex; align-items:center; gap:4px; padding:4px 6px; border-radius:4px; transition:all 0.2s; white-space:nowrap; user-select:none; -webkit-user-select:none;" onmouseover="this.style.background='rgba(184,134,11,0.1)'" onmouseout="this.style.background='none'">
+                                    <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg> Copiar
+                                </button>
+                            </div>
                         </div>
                     </div>
                     <p style="font-size:10px; color:#555; font-style:italic; line-height:1.6; background:rgba(110,60,180,0.04); border:1px solid rgba(110,60,180,0.12); padding:0.875rem 1rem;">
@@ -427,6 +467,120 @@ const deliveryZones = settingsData?.find((s: any) => s.key === 'delivery_zones')
         </div>
     </div>
 </div>
+
+<!-- ══ MODAL ZELLE ══════════════════════════════════════════ -->
+<div id="zelle-modal-overlay"
+     onclick="if(event.target===this) closeZelleModal()"
+     style="display:none; position:fixed; inset:0; z-index:9999;
+            background:rgba(0,0,0,0.72); backdrop-filter:blur(6px);
+            align-items:center; justify-content:center;
+            opacity:0; transition:opacity 0.35s ease;">
+    <div style="background:#0a0a0a;
+                border:1px solid rgba(184,134,11,0.4);
+                border-radius:24px; padding:2.5rem 2rem;
+                max-width:360px; width:calc(100% - 3rem);
+                box-shadow:0 24px 80px rgba(0,0,0,0.8), 0 0 0 1px rgba(184,134,11,0.15);
+                text-align:center; position:relative;
+                animation:zelleModalIn 0.4s cubic-bezier(0.34,1.56,0.64,1);">
+
+        <!-- Ícono decorativo -->
+        <div style="width:64px; height:64px; border-radius:50%;
+                    background:linear-gradient(135deg,#8B6508,#B8860B);
+                    box-shadow:0 0 30px rgba(184,134,11,0.3);
+                    display:flex; align-items:center; justify-content:center;
+                    margin:0 auto 1.5rem;">
+            <svg width="28" height="28" fill="none" stroke="white" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M13 10V3L4 14h7v7l9-11h-7z"/>
+            </svg>
+        </div>
+
+        <!-- Título -->
+        <p style="font-size:8px; text-transform:uppercase; letter-spacing:0.5em;
+                  color:#B8860B; font-weight:800; margin-bottom:0.75rem;">
+            ✦ Pago por Zelle
+        </p>
+        <p style="font-size:11px; color:rgba(255,255,255,0.7); margin-bottom:1.5rem;
+                  letter-spacing:0.05em; line-height:1.6;">
+            Tu total a enviar por Zelle es:
+        </p>
+
+        <!-- Monto -->
+        <div id="zelle-modal-amount"
+             style="font-family:'Playfair Display',serif; font-size:3.5rem;
+                    font-weight:900; font-style:italic; color:#f3cf7a;
+                    line-height:1; margin-bottom:0.5rem;
+                    text-shadow:0 0 30px rgba(184,134,11,0.4);">
+            $0.00
+        </div>
+        <p style="font-size:9px; color:rgba(255,255,255,0.4); margin-bottom:2rem;
+                  letter-spacing:0.1em;">
+            USD · Zelle
+        </p>
+
+        <!-- Botón continuar -->
+        <button onclick="closeZelleModal()"
+                style="width:100%; padding:1.1rem; border:none; border-radius:12px;
+                       background:linear-gradient(135deg,#8B6508 0%,#B8860B 50%,#8B6508 100%);
+                       background-size:200% auto;
+                       color:#fff; font-size:9px; letter-spacing:0.45em;
+                       text-transform:uppercase; font-weight:900;
+                       cursor:pointer; transition:all 0.3s;
+                       box-shadow:0 8px 24px rgba(184,134,11,0.25);"
+                onmouseenter="this.style.backgroundPosition='right center'; this.style.transform='translateY(-2px)'; this.style.boxShadow='0 12px 32px rgba(184,134,11,0.35)'"
+                onmouseleave="this.style.backgroundPosition='left center'; this.style.transform='translateY(0)'; this.style.boxShadow='0 8px 24px rgba(184,134,11,0.25)'">
+            ✦ Continuar
+        </button>
+    </div>
+</div>
+
+<style>
+    @keyframes zelleModalIn {
+        from { opacity:0; transform:scale(0.85) translateY(20px); }
+        to   { opacity:1; transform:scale(1) translateY(0); }
+    }
+</style>
+
+<script>
+    function showZelleModal(amount: string) {
+        const overlay = document.getElementById('zelle-modal-overlay');
+        const amountEl = document.getElementById('zelle-modal-amount');
+        if (!overlay) return;
+        if (amountEl) amountEl.textContent = amount;
+        overlay.style.display = 'flex';
+        requestAnimationFrame(() => { overlay.style.opacity = '1'; });
+    }
+    function closeZelleModal() {
+        const overlay = document.getElementById('zelle-modal-overlay');
+        if (!overlay) return;
+        overlay.style.opacity = '0';
+        setTimeout(() => { overlay.style.display = 'none'; }, 350);
+    }
+
+    function showCopyToast(msg: string) {
+        const t = document.createElement('div');
+        t.innerHTML = `<div style="display:flex; align-items:center; gap:8px;">
+            <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+            <span>${msg}</span>
+        </div>`;
+        t.style.cssText = 'position:fixed; top:50%; left:50%; transform:translate(-50%, -50%) scale(0.85); opacity:0; background:rgba(20,20,20,0.95); color:#B8860B; padding:16px 32px; border-radius:16px; font-weight:700; font-size:12px; letter-spacing:0.2em; text-transform:uppercase; z-index:999999; backdrop-filter:blur(8px); box-shadow:0 12px 40px rgba(0,0,0,0.4), 0 0 0 1px rgba(184,134,11,0.3); transition:all 0.3s cubic-bezier(0.34,1.56,0.64,1); pointer-events:none; font-family:"Inter",sans-serif; text-align:center;';
+        document.body.appendChild(t);
+        requestAnimationFrame(() => {
+            t.style.transform = 'translate(-50%, -50%) scale(1)';
+            t.style.opacity = '1';
+        });
+        setTimeout(() => {
+            t.style.transform = 'translate(-50%, -50%) scale(0.85)';
+            t.style.opacity = '0';
+            setTimeout(() => t.remove(), 350);
+        }, 2200);
+    }
+
+    // Exponer globalmente para que el script del carrito las use
+    (window as any).showZelleModal  = showZelleModal;
+    (window as any).closeZelleModal = closeZelleModal;
+    (window as any).showCopyToast   = showCopyToast;
+</script>
 
 <!-- Cart FAB (Bottom-Right) -->
 <button id="open-cart-fab"
@@ -611,6 +765,18 @@ const deliveryZones = settingsData?.find((s: any) => s.key === 'delivery_zones')
             if(totalUSD) totalUSD.textContent = '$' + total.toFixed(2);
             if(totalBS) totalBS.textContent = 'Bs. ' + (total * dollarRate).toLocaleString('es-VE', { minimumFractionDigits: 2 });
 
+            // Si está seleccionado Zelle, actualizar también el cuadro Zelle
+            if (_selectedPaymentMethod === 'zelle') {
+                const drawer = el('cart-drawer');
+                const zelleRateVal = parseFloat(drawer?.dataset.zelleRate || '780');
+                const totalBs = total * dollarRate;
+                const zelleUSD = zelleRateVal > 0 ? totalBs / zelleRateVal : total;
+                const zelleUSDEl = el('cart-zelle-total-usd');
+                if (zelleUSDEl) zelleUSDEl.textContent = '$' + zelleUSD.toFixed(2);
+                const zelleRateDisplayEl = el('cart-zelle-rate-display');
+                if (zelleRateDisplayEl) zelleRateDisplayEl.textContent = zelleRateVal.toFixed(2);
+            }
+
             const hasItems = cart.length > 0;
             const form = el('checkout-form-container');
             const empty = el('cart-empty-msg');
@@ -739,9 +905,42 @@ const deliveryZones = settingsData?.find((s: any) => s.key === 'delivery_zones')
                 const panel = el('pay-fields-' + m);
                 if(panel) panel.style.display = m === method ? 'flex' : 'none';
             });
+            // Zelle: mostrar total en USD Zelle + tachado en totales + modal
+            const zelleTotalBox = el('cart-zelle-total-box');
+            const totalUSDEl   = el('cart-total-usd');
+            const totalBSEl    = el('cart-total-bs');
+            if (method === 'zelle') {
+                const drawer = el('cart-drawer');
+                const zelleRateVal = parseFloat(drawer?.dataset.zelleRate || '780');
+                const totalUSD = cartTotal();
+                const zelleUSD = zelleRateVal > 0 ? (totalUSD * dollarRateFromDrawer()) / zelleRateVal : totalUSD;
+                // Actualizar caja Zelle
+                const zelleUSDEl = el('cart-zelle-total-usd');
+                if (zelleUSDEl) zelleUSDEl.textContent = '$' + zelleUSD.toFixed(2);
+                const zelleRateDisplayEl = el('cart-zelle-rate-display');
+                if (zelleRateDisplayEl) zelleRateDisplayEl.textContent = zelleRateVal.toFixed(2);
+                if (zelleTotalBox) zelleTotalBox.style.display = 'block';
+                // Tachar Total USD y Bs.
+                if (totalUSDEl) totalUSDEl.style.textDecoration = 'line-through';
+                if (totalBSEl)  totalBSEl.style.textDecoration  = 'line-through';
+                // Mostrar modal
+                if (typeof (window as any).showZelleModal === 'function') {
+                    (window as any).showZelleModal('$' + zelleUSD.toFixed(2));
+                }
+            } else {
+                if (zelleTotalBox) zelleTotalBox.style.display = 'none';
+                // Quitar tachado
+                if (totalUSDEl) totalUSDEl.style.textDecoration = 'none';
+                if (totalBSEl)  totalBSEl.style.textDecoration  = 'none';
+            }
         };
 
         (window as any).__getPaymentMethod = function() { return _selectedPaymentMethod; };
+
+        // Helper: obtiene la tasa BCV desde el drawer
+        function dollarRateFromDrawer(): number {
+            return parseFloat(el('cart-drawer')?.dataset.rate || '0');
+        }
 
         (window as any).__checkout = async function() {
             const cart = (window as any).__getCart?.() || [];
@@ -867,7 +1066,16 @@ const deliveryZones = settingsData?.find((s: any) => s.key === 'delivery_zones')
             const payMethodLabel: Record<string,string> = { pagoMovil: 'Pago Móvil', zelle: 'Zelle', binance: 'Binance Pay (USDT)' };
             let paymentSummary = `• Método: ${payMethodLabel[payMethod] || payMethod}`;
             if(payMethod === 'pagoMovil') paymentSummary += `\n• Referencia: ${vals.payRef}`;
-            else if(payMethod === 'zelle') paymentSummary += `\n• Correo Zelle: zelle.foreverone@gmail.com`;
+            else if(payMethod === 'zelle') {
+                const drawer = el('cart-drawer');
+                const zelleRateVal = parseFloat(drawer?.dataset.zelleRate || '780');
+                const totalBs = totalUSD * dollarRate;
+                const zelleUSD = zelleRateVal > 0 ? totalBs / zelleRateVal : totalUSD;
+                paymentSummary += `\n• Teléfono Zelle: 9044458718`;
+                paymentSummary += `\n• Titular Zelle: Eduiglis palacios`;
+                paymentSummary += `\n• *MONTO A ENVIAR (ZELLE):* $${zelleUSD.toFixed(2)} USD`;
+                paymentSummary += `\n• Tasa Zelle aplicada: Bs. ${zelleRateVal.toFixed(2)} / $1`;
+            }
             else if(payMethod === 'binance') paymentSummary += `\n• ID Binance Pay: 123456789\n• Moneda: USDT (TRC20 / BEP20)`;
 
             const msg = `✦ *RESUMEN DE COMPRA — FOREVER ONE* ✦

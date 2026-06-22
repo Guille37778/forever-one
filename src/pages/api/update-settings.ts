@@ -15,7 +15,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     }
 
     // 2. Obtener datos del cuerpo de la petición
-    const { enabled, zones } = await request.json();
+    const { enabled, zones, zelleRate } = await request.json();
 
     // 3. Guardar en site_settings usando el cliente Admin (salta RLS)
     const { error: err1 } = await supabaseAdmin
@@ -26,8 +26,17 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       .from('site_settings')
       .upsert({ key: 'delivery_zones', value: zones }, { onConflict: 'key' });
 
-    if (err1 || err2) {
-      console.error('Error de Supabase:', err1 || err2);
+    // Guardar tasa Zelle si fue enviada
+    let err3 = null;
+    if (zelleRate !== undefined && zelleRate !== null) {
+      const { error } = await supabaseAdmin
+        .from('site_settings')
+        .upsert({ key: 'zelle_rate', value: zelleRate.toString() }, { onConflict: 'key' });
+      err3 = error;
+    }
+
+    if (err1 || err2 || err3) {
+      console.error('Error de Supabase:', err1 || err2 || err3);
       throw new Error('Error al guardar en la base de datos');
     }
 
