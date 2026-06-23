@@ -169,7 +169,9 @@ const Icons = {
 
     /* Rate Card */
     .rate-card { background: #0a0a0a; border: 1px solid rgba(184,134,11,0.15); border-radius: 16px; padding: 1.5rem; margin-bottom: 2rem; display: flex; flex-direction: column; gap: 1.5rem; position: relative; overflow: hidden; box-shadow: 0 15px 40px rgba(0,0,0,0.15); }
-    @media (min-width: 768px) { .rate-card { flex-direction: row; justify-content: space-between; align-items: center; padding: 2.5rem 3rem; } }
+    @media (min-width: 768px) { .rate-card { padding: 2.5rem 3rem; } }
+    .rate-card-top { display: flex; flex-direction: column; gap: 1.5rem; }
+    @media (min-width: 768px) { .rate-card-top { flex-direction: row; justify-content: space-between; align-items: center; } }
     .rate-info h3 { font-size: 8px; letter-spacing: 0.4em; text-transform: uppercase; color: #B8860B; margin-bottom: 0.75rem; font-weight: 800; }
     .rate-value { font-family: 'Playfair Display', serif; font-size: 2.75rem; font-weight: 700; font-style: italic; color: white; line-height: 1; }
     .rate-value span { font-size: 1rem; color: rgba(255,255,255,0.3); margin-right: 0.75rem; font-weight: 400; }
@@ -203,14 +205,40 @@ const Icons = {
 
   <!-- BCV Rate Section -->
   <div class="rate-card">
-    <div class="rate-info">
-      <h3>Tasa BCV Oficial (exacta)</h3>
-      <div class="rate-value"><span>Bs.</span>{stats.bcvRate}</div>
-      <p style="font-size: 9px; color: rgba(255,255,255,0.3); margin-top: 0.75rem; letter-spacing: 0.1em;">
-        ULTIMA SINCRONIZACION: {stats.lastUpdate}
-      </p>
+    <div class="rate-card-top">
+      <div class="rate-info">
+        <h3>Tasa BCV Oficial (exacta)</h3>
+        <div class="rate-value"><span>Bs.</span>{stats.bcvRate}</div>
+        <p style="font-size: 9px; color: rgba(255,255,255,0.3); margin-top: 0.75rem; letter-spacing: 0.1em;">
+          ULTIMA SINCRONIZACION: {stats.lastUpdate}
+        </p>
+      </div>
+      <button id="sync-rate-btn" class="sync-btn">↻ Sincronizar Ahora</button>
     </div>
-    <button id="sync-rate-btn" class="sync-btn">↻ Sincronizar Ahora</button>
+
+    <!-- Tasa Zelle (movida aquí) -->
+    <div style="border-top: 1px solid rgba(184,134,11,0.15); padding-top: 1.5rem; margin-top: 0.5rem;">
+      <label for="zelle-rate-input" style="display:flex; align-items:center; gap:0.75rem; font-size:8px; text-transform:uppercase; letter-spacing:0.3em; color:rgba(184,134,11,0.7); margin-bottom:0.75rem; font-weight:700;">
+        <span style="display:inline-flex; align-items:center; justify-content:center; width:8px; height:8px; border-radius:50%; background:#6e3cb4;"></span>
+        Tasa Zelle (Bs. por $1 USD)
+      </label>
+      <div style="display:flex; align-items:center; gap:0.75rem;">
+        <span style="font-size:12px; color:rgba(255,255,255,0.4); font-weight:700; flex-shrink:0;">Bs.</span>
+        <input
+          type="number"
+          id="zelle-rate-input"
+          value={stats.zelleRate}
+          min="1"
+          step="0.01"
+          placeholder="780.00"
+          style="flex:1; padding:0.85rem 1.25rem; background:rgba(255,255,255,0.05); border:1px solid rgba(184,134,11,0.2); border-radius:12px; font-size:14px; font-weight:700; font-family:inherit; outline:none; transition: all 0.3s; color:#f3cf7a;"
+          onfocus="this.style.borderColor='#6e3cb4'; this.style.background='rgba(255,255,255,0.08)';"
+          onblur="this.style.borderColor='rgba(184,134,11,0.2)'; this.style.background='rgba(255,255,255,0.05)';"
+        />
+        <span style="font-size:10px; color:#6e3cb4; font-weight:700; flex-shrink:0; text-transform:uppercase; letter-spacing:0.1em;">/ $1</span>
+      </div>
+      <p style="font-size:9px; color:rgba(255,255,255,0.3); margin-top:0.5rem; letter-spacing:0.05em; font-style:italic;">Este valor se usa para convertir el total en Bs. a USD cuando el cliente paga por Zelle.</p>
+    </div>
   </div>
 
   <script>
@@ -315,28 +343,7 @@ const Icons = {
       <label for="delivery-toggle" style="font-size:10px; text-transform:uppercase; letter-spacing: 0.2em; color:#111; font-weight:700; cursor:pointer;">Habilitar Delivery local</label>
     </div>
 
-    <div class="form-group" style="margin-bottom:2rem;">
-      <label for="zelle-rate-input" style="display:flex; align-items:center; gap:0.75rem; font-size:8px; text-transform:uppercase; letter-spacing:0.3em; color:#aaa; margin-bottom:0.75rem; font-weight:700;">
-        <span style="display:inline-flex; align-items:center; justify-content:center; width:8px; height:8px; border-radius:50%; background:#6e3cb4;"></span>
-        Tasa Zelle (Bs. por $1 USD)
-      </label>
-      <div style="display:flex; align-items:center; gap:0.75rem;">
-        <span style="font-size:12px; color:#aaa; font-weight:700; flex-shrink:0;">Bs.</span>
-        <input
-          type="number"
-          id="zelle-rate-input"
-          value={stats.zelleRate}
-          min="1"
-          step="0.01"
-          placeholder="780.00"
-          style="flex:1; padding:1rem 1.25rem; background:#fcfcfc; border:1px solid #f0f0f0; border-radius:12px; font-size:14px; font-weight:700; font-family:inherit; outline:none; transition: all 0.3s; color:#111;"
-          onfocus="this.style.borderColor='#6e3cb4'; this.style.background='white';"
-          onblur="this.style.borderColor='#f0f0f0'; this.style.background='#fcfcfc';"
-        />
-        <span style="font-size:10px; color:#6e3cb4; font-weight:700; flex-shrink:0; text-transform:uppercase; letter-spacing:0.1em;">/ $1</span>
-      </div>
-      <p style="font-size:9px; color:#bbb; margin-top:0.5rem; letter-spacing:0.05em; font-style:italic;">Este valor se usa para convertir el total en Bs. a USD cuando el cliente paga por Zelle.</p>
-    </div>
+
     
     <div class="form-group" style="margin-bottom:2rem;">
       <label style="display:block; font-size:8px; text-transform:uppercase; letter-spacing:0.3em; color:#aaa; margin-bottom:0.75rem; font-weight:700;">Zonas de Reparto Operativas</label>
