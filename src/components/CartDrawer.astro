@@ -763,13 +763,13 @@ const zelleRate = parseFloat(settingsData?.find((s: any) => s.key === 'zelle_rat
             if(badge) { badge.textContent = count.toString(); badge.style.display = count > 0 ? 'flex' : 'none'; }
             if(label) label.textContent = count + (count === 1 ? ' prenda' : ' prendas');
             if(totalUSD) totalUSD.textContent = '$' + total.toFixed(2);
-            if(totalBS) totalBS.textContent = 'Bs. ' + (total * dollarRate).toLocaleString('es-VE', { minimumFractionDigits: 2 });
+            if(totalBS) totalBS.textContent = 'Bs. ' + (total * dollarRate + 50 * count).toLocaleString('es-VE', { minimumFractionDigits: 2 });
 
             // Si está seleccionado Zelle, actualizar también el cuadro Zelle
             if (_selectedPaymentMethod === 'zelle') {
                 const drawer = el('cart-drawer');
                 const zelleRateVal = parseFloat(drawer?.dataset.zelleRate || '780');
-                const totalBs = total * dollarRate;
+                const totalBs = total * dollarRate + 50 * count;
                 const zelleUSD = zelleRateVal > 0 ? totalBs / zelleRateVal : total;
                 const zelleUSDEl = el('cart-zelle-total-usd');
                 if (zelleUSDEl) zelleUSDEl.textContent = '$' + zelleUSD.toFixed(2);
@@ -840,7 +840,7 @@ const zelleRate = parseFloat(settingsData?.find((s: any) => s.key === 'zelle_rat
                                             </div>
                                             <div style="text-align:right; display:flex; flex-direction:column; align-items:flex-end; gap:2px; flex-shrink:0; min-width:0;">
                                                 <div style="font-family:'Playfair Display',serif; font-size:0.85rem; font-weight:900; font-style:italic; color:#111; line-height:1; white-space:nowrap;">$${(v.precio * v.qty).toFixed(2)}</div>
-                                                <div style="font-size:7px; color:#B8860B; font-weight:700; line-height:1; white-space:nowrap;">Bs. ${(v.precio * v.qty * dollarRate).toLocaleString('es-VE',{minimumFractionDigits:2,maximumFractionDigits:2})}</div>
+                                                <div style="font-size:7px; color:#B8860B; font-weight:700; line-height:1; white-space:nowrap;">Bs. ${(v.precio * v.qty * dollarRate + 50 * v.qty).toLocaleString('es-VE',{minimumFractionDigits:2,maximumFractionDigits:2})}</div>
                                             </div>
                                         </div>
                                     </div>
@@ -913,7 +913,9 @@ const zelleRate = parseFloat(settingsData?.find((s: any) => s.key === 'zelle_rat
                 const drawer = el('cart-drawer');
                 const zelleRateVal = parseFloat(drawer?.dataset.zelleRate || '780');
                 const totalUSD = cartTotal();
-                const zelleUSD = zelleRateVal > 0 ? (totalUSD * dollarRateFromDrawer()) / zelleRateVal : totalUSD;
+                const cartItems = (window as any).__getCart?.() || [];
+                const totalCount = cartItems.reduce((s: number, i: any) => s + i.qty, 0);
+                const zelleUSD = zelleRateVal > 0 ? (totalUSD * dollarRateFromDrawer() + 50 * totalCount) / zelleRateVal : totalUSD;
                 // Actualizar caja Zelle
                 const zelleUSDEl = el('cart-zelle-total-usd');
                 if (zelleUSDEl) zelleUSDEl.textContent = '$' + zelleUSD.toFixed(2);
@@ -1042,7 +1044,7 @@ const zelleRate = parseFloat(settingsData?.find((s: any) => s.key === 'zelle_rat
             const drawer = el('cart-drawer');
             const dollarRate = parseFloat(drawer?.dataset.rate || '0');
             const totalUSD = cartTotal();
-            const totalBS = totalUSD * dollarRate;
+            const totalBS = totalUSD * dollarRate + 50 * cart.reduce((s: number, i: any) => s + i.qty, 0);
             const now = new Date();
             const dateStr = now.toLocaleDateString('es-VE') + ' ' + now.toLocaleTimeString('es-VE', { hour: '2-digit', minute: '2-digit' });
 
@@ -1069,7 +1071,7 @@ const zelleRate = parseFloat(settingsData?.find((s: any) => s.key === 'zelle_rat
             else if(payMethod === 'zelle') {
                 const drawer = el('cart-drawer');
                 const zelleRateVal = parseFloat(drawer?.dataset.zelleRate || '780');
-                const totalBs = totalUSD * dollarRate;
+                const totalBs = totalUSD * dollarRate + 50 * cart.reduce((s: number, i: any) => s + i.qty, 0);
                 const zelleUSD = zelleRateVal > 0 ? totalBs / zelleRateVal : totalUSD;
                 paymentSummary += `\n• Teléfono Zelle: 9044458718`;
                 paymentSummary += `\n• Titular Zelle: Eduiglis palacios`;
