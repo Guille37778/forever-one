@@ -1,68 +1,50 @@
-<section id="beneficios" class="py-24 md:py-32 bg-[#050505] border-t border-white/5 overflow-hidden w-full relative">
+<section id="quienes-somos" class="py-12 md:py-16 bg-[#050505] border-t border-white/5 overflow-hidden w-full relative">
     <!-- Decorative background elements -->
     <div class="absolute top-0 left-1/4 w-96 h-96 bg-gold/5 blur-[120px] rounded-full pointer-events-none"></div>
     <div class="absolute bottom-0 right-1/4 w-96 h-96 bg-gold/5 blur-[120px] rounded-full pointer-events-none"></div>
 
     <div class="max-w-7xl mx-auto px-6 relative z-10">
-        
-        <div class="text-center mb-24" data-aos="fade-up">
-            <span class="text-gold font-bold tracking-[0.4em] uppercase text-[10px] mb-4 block">Nuestro Estándar</span>
-            <h4 class="text-2xl md:text-6xl font-serif text-white font-black italic tracking-tighter leading-none">
-                Pilares de la Casa <br> <span class="metal-gold-text pr-10">Forever One</span>
-            </h4>
-            <div class="mt-8 h-px w-32 bg-gold/30 mx-auto"></div>
-        </div>
-
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-12 lg:gap-20">
-            <!-- Selección Premium -->
-            <div class="flex flex-col items-center text-center group" data-aos="fade-up">
-                <div class="relative w-24 h-24 mb-10 flex items-center justify-center transition-all duration-700">
-                    <div class="absolute inset-0 bg-gold/20 blur-2xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
-                    
-                    <div class="relative w-20 h-20 border border-gold/20 flex items-center justify-center bg-black/40 backdrop-blur-md group-hover:border-gold/50 transition-all duration-700 p-4 rounded-xl transform group-hover:scale-110 group-hover:-translate-y-2">
-                        <!-- Award Icon -->
-                        <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="text-gold opacity-80 group-hover:opacity-100 transition-opacity duration-700">
-                            <circle cx="12" cy="8" r="6"></circle>
-                            <path d="M15.477 12.89 17 22l-5-3-5 3 1.523-9.11"></path>
-                        </svg>
-                    </div>
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-center">
+            
+            <!-- Left side: Image -->
+            <div data-aos="fade-right" class="flex flex-col items-center">
+                <div class="relative w-full max-w-xs md:max-w-sm aspect-[4/5] rounded-2xl overflow-hidden border border-gold/20 group mb-4">
+                    <div class="absolute inset-0 bg-black/20 group-hover:bg-transparent transition-colors duration-500 z-10"></div>
+                    <img 
+                        src="/Nazareth.jpeg" 
+                        alt="Nazareth Hernández - Fundadora de Forever One" 
+                        class="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-700"
+                    />
                 </div>
-                <h5 class="text-xl md:text-2xl font-serif font-black text-white italic mb-4 tracking-tight">Selección <span class="text-gold">Premium</span></h5>
-                <p class="text-slate-400 text-sm font-light leading-relaxed max-w-xs transition-colors duration-500 group-hover:text-slate-200">Buscamos piezas excepcionales de tendencia en los catálogos más exclusivos del mundo. Solo lo mejor pasa nuestro filtro de estilo.</p>
+                <div class="text-center mt-2">
+                    <h5 class="text-xl font-serif font-bold text-white tracking-wide">Nazareth Hernández</h5>
+                    <p class="text-gold text-sm italic font-light mt-1">Imagen de la fundadora</p>
+                </div>
             </div>
 
-            <!-- Importación Limitada -->
-            <div class="flex flex-col items-center text-center group" data-aos="fade-up" data-aos-delay="200">
-                <div class="relative w-24 h-24 mb-10 flex items-center justify-center transition-all duration-700">
-                    <div class="absolute inset-0 bg-gold/20 blur-2xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
-                    
-                    <div class="relative w-20 h-20 border border-gold/20 flex items-center justify-center bg-black/40 backdrop-blur-md group-hover:border-gold/50 transition-all duration-700 p-4 rounded-xl transform group-hover:scale-110 group-hover:-translate-y-2">
-                        <!-- Crown / Exclusive Icon -->
-                        <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="text-gold opacity-80 group-hover:opacity-100 transition-opacity duration-700">
-                           <path d="m2 4 3 12h14l3-12-6 7-4-7-4 7-6-7zm3 16h14"></path>
-                        </svg>
-                    </div>
+            <!-- Right side: Text -->
+            <div class="flex flex-col space-y-6" data-aos="fade-left">
+                <div class="mb-4">
+                    <span class="text-gold font-bold tracking-[0.4em] uppercase text-[10px] mb-4 block">Nuestra Historia</span>
+                    <h4 class="text-4xl md:text-5xl font-serif text-white font-black italic tracking-tighter leading-none mb-6">
+                        ¿Quiénes <span class="metal-gold-text">somos?</span>
+                    </h4>
+                    <div class="h-px w-32 bg-gold/30"></div>
                 </div>
-                <h5 class="text-xl md:text-2xl font-serif font-black text-white italic mb-4 tracking-tight">Importación <span class="text-gold">Limitada</span></h5>
-                <p class="text-slate-400 text-sm font-light leading-relaxed max-w-xs transition-colors duration-500 group-hover:text-slate-200">Nuestros hallazgos son finitos. Traemos un número reducido de ejemplares por diseño para garantizar la exclusividad de su imagen.</p>
+
+                <div class="space-y-4 text-slate-300 font-light leading-relaxed text-sm md:text-base">
+                    <p>
+                        <strong class="text-white font-medium">Forever One Fashion</strong> nace de un sueño inspirado en la fe, la elegancia y la autenticidad. Somos una tienda de ropa cristiana creada para mujeres que desean vestir con estilo sin dejar de reflejar sus valores y esencia.
+                    </p>
+                    <p>
+                        Nuestro nombre representa una verdad que nos identifica: <span class="text-gold italic">siempre única</span>. Creemos que cada mujer ha sido creada con un propósito especial y una belleza única, por eso seleccionamos prendas que combinan calidad, tendencia y distinción, permitiendo que cada persona exprese su identidad con confianza.
+                    </p>
+                    <p>
+                        Fundada por <strong class="text-white font-medium">Nazareth Hernández</strong>, Forever One Fashion surge con la visión de ofrecer más que moda: una experiencia que inspire seguridad, feminidad y fe en cada paso.
+                    </p>
+                </div>
             </div>
 
-            <!-- Atención Exclusiva -->
-            <div class="flex flex-col items-center text-center group" data-aos="fade-up" data-aos-delay="400">
-                <div class="relative w-24 h-24 mb-10 flex items-center justify-center transition-all duration-700">
-                    <div class="absolute inset-0 bg-gold/20 blur-2xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
-                    
-                    <div class="relative w-20 h-20 border border-gold/20 flex items-center justify-center bg-black/40 backdrop-blur-md group-hover:border-gold/50 transition-all duration-700 p-4 rounded-xl transform group-hover:scale-110 group-hover:-translate-y-2">
-                        <!-- Bell / Concierge Icon -->
-                        <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="text-gold opacity-80 group-hover:opacity-100 transition-opacity duration-700">
-                            <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"></path>
-                            <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"></path>
-                        </svg>
-                    </div>
-                </div>
-                <h5 class="text-xl md:text-2xl font-serif font-black text-white italic mb-4 tracking-tight">Atención <span class="text-gold">VIP</span></h5>
-                <p class="text-slate-400 text-sm font-light leading-relaxed max-w-xs transition-colors duration-500 group-hover:text-slate-200">Brindamos una experiencia de compra personalizada y dedicada para asegurar que su elección sea tan impecable como su estilo.</p>
-            </div>
         </div>
     </div>
 </section>
