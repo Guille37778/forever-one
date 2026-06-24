@@ -360,7 +360,7 @@ const zelleRate = parseFloat(settingsData?.find((s: any) => s.key === 'zelle_rat
                                 </button>
                             </div>
                             <span style="color:#aaa; font-size:9px; font-style:normal; text-transform:uppercase; letter-spacing:0.2em; align-self:center; user-select:none;">Titular</span>
-                            <div style="display:flex; align-items:center; gap:6px; min-width:0; overflow:hidden;">
+                            <div style="display:flex; flex-direction:column; align-items:flex-start; gap:4px; min-width:0;">
                                 <strong style="font-style:normal; color:#111; flex-shrink:0;">Eduiglis palacios</strong>
                                 <button type="button" onclick="event.preventDefault(); event.stopPropagation(); navigator.clipboard.writeText('Eduiglis palacios'); if(window.showCopyToast) window.showCopyToast('¡Titular copiado!');" style="background:none; border:none; cursor:pointer; font-size:9px; color:#B8860B; text-transform:uppercase; font-weight:700; letter-spacing:0.05em; display:flex; align-items:center; gap:3px; padding:4px 6px; border-radius:4px; transition:all 0.2s; flex-shrink:0; user-select:none; -webkit-user-select:none;" onmouseover="this.style.background='rgba(184,134,11,0.1)'" onmouseout="this.style.background='none'">
                                     <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg> Copiar
