@@ -987,13 +987,6 @@ const zelleRate = parseFloat(settingsData?.find((s: any) => s.key === 'zelle_rat
                 return;
             }
 
-            // Convertir el archivo a Base64
-            const fileToBase64 = (file: File): Promise<string> => new Promise((resolve, reject) => {
-                const reader = new FileReader();
-                reader.readAsDataURL(file);
-                reader.onload = () => resolve(reader.result as string);
-                reader.onerror = error => reject(error);
-            });
 
             const { selectedMethod, selectedCourier } = (window as any). __getDeliveryData?.() || {};
             const shipAgency = (el('ship-agency-code') as HTMLInputElement)?.value.trim();
@@ -1013,24 +1006,25 @@ const zelleRate = parseFloat(settingsData?.find((s: any) => s.key === 'zelle_rat
 
             let orderCode = 'PENDIENTE';
             try {
-                const payCaptureBase64 = await fileToBase64(payCaptureFile);
                 const total = cartTotal();
-                const res = await fetch('/api/orders', { 
-                    method: 'POST', 
-                    headers: { 'Content-Type': 'application/json' }, 
-                    body: JSON.stringify({ 
-                        items: cart, 
-                        total, 
-                        customer: { ...vals, payCaptureBase64, payCaptureName: payCaptureFile.name, payMethod },
-                        delivery: {
-                            method: selectedMethod,
-                            courier: selectedCourier,
-                            agency: shipAgency,
-                            shipAddress: shipAddr,
-                            delAddress: delAddr,
-                            delZone: delZone
-                        }
-                    })
+                const formData = new FormData();
+                formData.append('payCapture', payCaptureFile);
+                formData.append('data', JSON.stringify({
+                    items: cart,
+                    total,
+                    customer: { ...vals, payMethod },
+                    delivery: {
+                        method: selectedMethod,
+                        courier: selectedCourier,
+                        agency: shipAgency,
+                        shipAddress: shipAddr,
+                        delAddress: delAddr,
+                        delZone: delZone
+                    }
+                }));
+                const res = await fetch('/api/orders', {
+                    method: 'POST',
+                    body: formData
                 });
                 if(res.ok) {
                     const data = await res.json();

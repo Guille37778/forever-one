@@ -36,44 +36,24 @@ async function sendTelegramMessage(text: string): Promise<void> {
 }
 
 async function sendTelegramNotification(
-  captureBase64: string,
-  captureName:   string,
-  caption:       string
+  captureFile: File | Blob,
+  captureName: string,
+  caption:     string
 ): Promise<void> {
-  // 1. Convertir Base64 → Blob para enviar como archivo real
-  let b64 = captureBase64;
-  let mimeType = 'image/jpeg';
-  if (b64.includes('base64,')) {
-    const parts = b64.split('base64,');
-    const header = parts[0];
-    b64 = parts[1];
-    const mimeMatch = header.match(/data:([^;]+)/);
-    if (mimeMatch) mimeType = mimeMatch[1];
-  }
-
-  // Decodificar Base64 a bytes
-  const byteChars   = atob(b64);
-  const byteNumbers = new Uint8Array(byteChars.length);
-  for (let i = 0; i < byteChars.length; i++) {
-    byteNumbers[i] = byteChars.charCodeAt(i);
-  }
-  const blob = new Blob([byteNumbers], { type: mimeType });
-
-  // 2. Verificar tamaño — Telegram rechaza fotos > 10 MB vía Bot API
+  // Verificar tamaño — Telegram rechaza fotos > 10 MB vía Bot API
   const MAX_PHOTO_BYTES = 10 * 1024 * 1024; // 10 MB
-  if (blob.size > MAX_PHOTO_BYTES) {
-    // Fallback: enviar solo el texto + aviso de que el comprobante es demasiado grande
-    console.warn(`Comprobante muy grande (${blob.size} bytes), enviando solo texto a Telegram.`);
+  if (captureFile.size > MAX_PHOTO_BYTES) {
+    console.warn(`Comprobante muy grande (${captureFile.size} bytes), enviando solo texto a Telegram.`);
     await sendTelegramMessage(
       caption + '\n\n📎 <i>[Comprobante demasiado grande para adjuntar — solicitar al cliente]</i>'
     );
     return;
   }
 
-  // 3. Enviar foto con caption (respetando límite de 1024 chars)
+  // Enviar foto directamente a Telegram (sin conversión base64 → bytes)
   const form = new FormData();
   form.append('chat_id',    TELEGRAM_CHAT);
-  form.append('photo',      blob, captureName || 'comprobante.jpg');
+  form.append('photo',      captureFile, captureName || 'comprobante.jpg');
   form.append('caption',    truncateText(caption, TG_CAPTION_LIMIT));
   form.append('parse_mode', 'HTML');
 
@@ -81,7 +61,6 @@ async function sendTelegramNotification(
   if (!res.ok) {
     const errBody = await res.text();
     console.error('sendPhoto falló, intentando fallback con sendMessage:', errBody);
-    // Fallback: mandar el texto solo + aviso
     await sendTelegramMessage(
       caption + '\n\n📎 <i>[Error al adjuntar comprobante — solicitar al cliente]</i>'
     );
@@ -97,7 +76,14 @@ export const POST: APIRoute = async ({ request, locals }) => {
     const env = (locals as any).runtime?.env || {};
     initSupabase(env);
 
-    const { customer, items, total, courier, delivery } = await request.json();
+    // Parsear FormData: el cliente envía el capture como archivo binario + datos en JSON
+    const formData = await request.formData();
+    const payCapture = formData.get('payCapture') as File | null;
+    const dataField = formData.get('data');
+    if (!dataField) {
+      return new Response(JSON.stringify({ error: 'Faltan datos de la orden (campo data)' }), { status: 400 });
+    }
+    const { customer, items, total, courier, delivery } = JSON.parse(dataField as string);
 
     if (!customer || !items || items.length === 0) {
       return new Response(JSON.stringify({ error: 'Faltan datos de la orden' }), { status: 400 });
@@ -210,7 +196,8 @@ export const POST: APIRoute = async ({ request, locals }) => {
     }
 
     // 4. Enviar comprobante de pago + resumen a Telegram
-    if (customer.payCaptureBase64) {
+    console.log(`[Telegram] Preparando envío de comprobante para orden #${order.order_code || order.id} (archivo: ${payCapture ? payCapture.size + ' bytes' : 'NO ADJUNTO'})`);
+    if (payCapture && payCapture.size > 0) {
       try {
         // Detectar método de pago para el mensaje
         const payMethodLabel: Record<string, string> = {
@@ -259,8 +246,8 @@ export const POST: APIRoute = async ({ request, locals }) => {
         ].filter(Boolean).join('\n');
 
         await sendTelegramNotification(
-          customer.payCaptureBase64,
-          customer.payCaptureName || 'comprobante.jpg',
+          payCapture,
+          (payCapture as File).name || 'comprobante.jpg',
           caption
         );
       } catch (tgErr) {
