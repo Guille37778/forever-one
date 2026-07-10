@@ -66,6 +66,180 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
 				<path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
 			</svg>
 		</a>
+
+	<!-- ─── BANNER DE COOKIES ─── -->
+	<div id="cookie-banner" style="display:none;" role="dialog" aria-label="Aviso de cookies">
+		<div id="cookie-inner">
+			<div id="cookie-icon">🍪</div>
+			<div id="cookie-content">
+				<p id="cookie-title">Uso de Cookies</p>
+				<p id="cookie-text">
+					Utilizamos cookies propias y de terceros para mejorar tu experiencia de navegación,
+					analizar el tráfico del sitio y personalizar el contenido. Estas incluyen:
+					<strong>cookies esenciales</strong> (necesarias para el funcionamiento del sitio),
+					<strong>cookies de análisis</strong> (para entender cómo usas el sitio) y
+					<strong>cookies de preferencias</strong> (para recordar tus ajustes).
+					Al continuar navegando, aceptas el uso de estas cookies conforme a nuestra política de privacidad.
+				</p>
+			</div>
+			<div id="cookie-actions">
+				<button id="cookie-accept" onclick="acceptCookies()">Aceptar todo</button>
+				<button id="cookie-reject" onclick="rejectCookies()">Solo esenciales</button>
+			</div>
+		</div>
+	</div>
+
+	<style is:global>
+		#cookie-banner {
+			position: fixed;
+			bottom: 0;
+			left: 0;
+			right: 0;
+			z-index: 99999;
+			padding: 0 1rem 1.5rem;
+			animation: cookieSlideUp 0.5s cubic-bezier(0.16,1,0.3,1) both;
+		}
+		@keyframes cookieSlideUp {
+			from { transform: translateY(100%); opacity: 0; }
+			to   { transform: translateY(0);    opacity: 1; }
+		}
+		#cookie-inner {
+			max-width: 900px;
+			margin: 0 auto;
+			background: linear-gradient(135deg, #0d0d0d 0%, #1a1a1a 100%);
+			border: 1px solid rgba(184,134,11,0.25);
+			border-radius: 20px;
+			padding: 1.75rem 2rem;
+			display: flex;
+			align-items: flex-start;
+			gap: 1.25rem;
+			box-shadow: 0 -8px 40px rgba(0,0,0,0.4), 0 0 0 1px rgba(184,134,11,0.08);
+		}
+		#cookie-icon {
+			font-size: 2rem;
+			flex-shrink: 0;
+			line-height: 1;
+			margin-top: 0.1rem;
+		}
+		#cookie-content {
+			flex: 1;
+		}
+		#cookie-title {
+			font-family: 'Playfair Display', serif;
+			font-size: 1rem;
+			font-weight: 700;
+			font-style: italic;
+			color: #f3cf7a;
+			margin: 0 0 0.5rem;
+			letter-spacing: 0.02em;
+			text-transform: none;
+		}
+		#cookie-text {
+			font-size: 11px;
+			color: rgba(255,255,255,0.55);
+			line-height: 1.7;
+			margin: 0;
+			font-family: 'Montserrat', sans-serif;
+			font-weight: 400;
+			letter-spacing: 0.01em;
+			text-transform: none;
+		}
+		#cookie-text strong {
+			color: rgba(255,255,255,0.8);
+			font-weight: 600;
+		}
+		#cookie-actions {
+			display: flex;
+			flex-direction: column;
+			gap: 0.6rem;
+			flex-shrink: 0;
+			align-self: center;
+		}
+		#cookie-accept {
+			padding: 0.7rem 1.5rem;
+			background: linear-gradient(135deg, #8B6508, #B8860B, #f3cf7a, #B8860B, #8B6508);
+			background-size: 200% auto;
+			animation: cookieShine 4s linear infinite;
+			color: #0a0a0a;
+			border: none;
+			border-radius: 10px;
+			font-family: 'Montserrat', sans-serif;
+			font-size: 9px;
+			letter-spacing: 0.3em;
+			text-transform: uppercase;
+			font-weight: 800;
+			cursor: pointer;
+			transition: opacity 0.2s;
+			white-space: nowrap;
+		}
+		#cookie-accept:hover { opacity: 0.85; }
+		@keyframes cookieShine { to { background-position: 200% center; } }
+		#cookie-reject {
+			padding: 0.7rem 1.5rem;
+			background: transparent;
+			color: rgba(255,255,255,0.4);
+			border: 1px solid rgba(255,255,255,0.12);
+			border-radius: 10px;
+			font-family: 'Montserrat', sans-serif;
+			font-size: 9px;
+			letter-spacing: 0.3em;
+			text-transform: uppercase;
+			font-weight: 600;
+			cursor: pointer;
+			transition: all 0.2s;
+			white-space: nowrap;
+		}
+		#cookie-reject:hover {
+			color: rgba(255,255,255,0.7);
+			border-color: rgba(255,255,255,0.3);
+		}
+		@media (max-width: 640px) {
+			#cookie-inner {
+				flex-direction: column;
+				padding: 1.25rem;
+				gap: 1rem;
+				border-radius: 16px;
+			}
+			#cookie-actions {
+				flex-direction: row;
+				width: 100%;
+			}
+			#cookie-accept, #cookie-reject {
+				flex: 1;
+				padding: 0.65rem 0.75rem;
+				font-size: 8px;
+			}
+			#cookie-icon { display: none; }
+		}
+	</style>
+
+	<script is:inline>
+		function showCookieBanner() {
+			if (!localStorage.getItem('fo_cookie_consent')) {
+				document.getElementById('cookie-banner').style.display = 'block';
+			}
+		}
+		function acceptCookies() {
+			localStorage.setItem('fo_cookie_consent', 'all');
+			hideCookieBanner();
+		}
+		function rejectCookies() {
+			localStorage.setItem('fo_cookie_consent', 'essential');
+			hideCookieBanner();
+		}
+		function hideCookieBanner() {
+			const banner = document.getElementById('cookie-banner');
+			banner.style.animation = 'none';
+			banner.style.transition = 'transform 0.4s ease, opacity 0.4s ease';
+			banner.style.transform = 'translateY(100%)';
+			banner.style.opacity = '0';
+			setTimeout(() => { banner.style.display = 'none'; }, 400);
+		}
+		// Mostrar tras un pequeño delay para no bloquear la carga inicial
+		setTimeout(showCookieBanner, 800);
+		// Volver a revisar después de transiciones de página (Astro View Transitions)
+		document.addEventListener('astro:after-swap', () => setTimeout(showCookieBanner, 800));
+	</script>
 		
 		<script>
 			declare global {

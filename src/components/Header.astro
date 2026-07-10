@@ -57,7 +57,7 @@ const { isBlack = false } = Astro.props;
 
         <div class="hidden lg:flex items-center gap-8">
             <a href={homeUrl} class="nav-link">Inicio</a>
-            <a href={`${base}/catalogos`} class="nav-link">Catálogos</a>
+            <a href={`${base}/catalogos`} class="nav-link">Únete</a>
             
             <!-- Dropdown Prendas -->
             <div class="relative group" x-data="{ open: false }" @click.away="open = false">
@@ -143,7 +143,7 @@ const { isBlack = false } = Astro.props;
            class="text-[11px] uppercase tracking-[0.3em] text-white/90 hover:text-gold transition-colors font-medium">Inicio</a>
         
         <a @click="mobileMenuOpen = false" href={`${base}/catalogos`} 
-           class="text-[11px] uppercase tracking-[0.3em] text-white/90 hover:text-gold transition-colors font-medium">Catálogos</a>
+           class="text-[11px] uppercase tracking-[0.3em] text-white/90 hover:text-gold transition-colors font-medium">Únete</a>
         
         <div x-data="{ expanded: false }">
             <button @click="expanded = !expanded" 

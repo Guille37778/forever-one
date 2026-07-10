@@ -35,7 +35,8 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
                     </a>
                     <a href="https://wa.me/584244557693" class="w-10 h-10 border border-gold/30 rounded-full flex items-center justify-center text-gold hover:bg-gold hover:text-black transition-all duration-500 shadow-lg shadow-gold/5">
                         <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.148-.67-1.614-.918-2.213-.242-.588-.487-.51-.67-.51-.172-.001-.371-.001-.57-.001-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg>
-                     <a href="https://www.facebook.com/profile.php?id=61591089483397" target="_blank" class="w-10 h-10 border border-gold/30 rounded-full flex items-center justify-center text-gold hover:bg-gold hover:text-black transition-all duration-500 shadow-lg shadow-gold/5">
+                    </a>
+                    <a href="https://www.facebook.com/profile.php?id=61591089483397" target="_blank" class="w-10 h-10 border border-gold/30 rounded-full flex items-center justify-center text-gold hover:bg-gold hover:text-black transition-all duration-500 shadow-lg shadow-gold/5">
                         <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
                     </a>
                 </div>
@@ -45,7 +46,7 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
                 <h4 class="text-white font-bold uppercase tracking-[0.4em] text-[10px] mb-8">Navegación</h4>
                 <ul class="space-y-4 text-[11px] uppercase tracking-widest">
                     <li><a href={`${base}`} class="text-slate-500 hover:text-gold transition-colors">Inicio</a></li>
-                    <li><a href={`${base}/catalogos`} class="text-slate-500 hover:text-gold transition-colors">Catálogos</a></li>
+                    <li><a href={`${base}/catalogos`} class="text-slate-500 hover:text-gold transition-colors">Únete</a></li>
                     {/* <li><a href={`${base}/asesorias`} class="text-slate-500 hover:text-gold transition-colors">Asesorías</a></li> */}
                     <li><a href={`${base}/ropas`} class="text-slate-500 hover:text-gold transition-colors">Prendas</a></li>
                 </ul>
@@ -54,9 +55,21 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
             <div>
                 <h4 class="text-white font-bold uppercase tracking-[0.4em] text-[10px] mb-8">Legal</h4>
                 <ul class="space-y-4 text-[11px] uppercase tracking-widest">
-                    <li><a href="#" class="text-slate-500 hover:text-gold transition-colors">Privacidad</a></li>
-                    <li><a href="#" class="text-slate-500 hover:text-gold transition-colors">Términos</a></li>
-                    <li><a href="#" class="text-slate-500 hover:text-gold transition-colors">Cookies</a></li>
+                    <li>
+                        <button onclick="openLegalModal('privacidad')" class="text-slate-500 hover:text-gold transition-colors cursor-pointer bg-transparent border-none font-inherit tracking-[inherit] uppercase text-[11px]">
+                            Privacidad
+                        </button>
+                    </li>
+                    <li>
+                        <button onclick="openLegalModal('terminos')" class="text-slate-500 hover:text-gold transition-colors cursor-pointer bg-transparent border-none font-inherit tracking-[inherit] uppercase text-[11px]">
+                            Términos
+                        </button>
+                    </li>
+                    <li>
+                        <button onclick="openLegalModal('cookies')" class="text-slate-500 hover:text-gold transition-colors cursor-pointer bg-transparent border-none font-inherit tracking-[inherit] uppercase text-[11px]">
+                            Cookies
+                        </button>
+                    </li>
                 </ul>
             </div>
 
@@ -89,3 +102,188 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
         <span class="text-[20rem] font-serif font-black text-white leading-none italic">FO1</span>
     </div>
 </footer>
+
+<!-- ─── MODALES LEGALES ─── -->
+<div id="legal-modal-overlay" onclick="closeLegalModal()" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.75); backdrop-filter:blur(6px); z-index:99998; align-items:center; justify-content:center; padding:1rem;">
+    <div id="legal-modal-card" onclick="event.stopPropagation()" style="background:linear-gradient(160deg,#111 0%,#1a1a1a 100%); border:1px solid rgba(184,134,11,0.2); border-radius:20px; width:100%; max-width:580px; max-height:85vh; overflow:hidden; display:flex; flex-direction:column; box-shadow:0 30px 80px rgba(0,0,0,0.6);">
+        
+        <!-- Header del modal -->
+        <div style="padding:1.75rem 2rem; border-bottom:1px solid rgba(255,255,255,0.06); display:flex; align-items:center; justify-content:space-between; flex-shrink:0;">
+            <div>
+                <p id="legal-modal-label" style="font-size:8px; letter-spacing:0.45em; text-transform:uppercase; color:#B8860B; font-weight:700; margin-bottom:0.3rem;"></p>
+                <h3 id="legal-modal-title" style="font-family:'Playfair Display',serif; font-size:1.2rem; font-style:italic; font-weight:700; color:white; margin:0;"></h3>
+            </div>
+            <button onclick="closeLegalModal()" style="background:none; border:1px solid rgba(255,255,255,0.1); border-radius:50%; width:36px; height:36px; color:rgba(255,255,255,0.5); font-size:16px; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all 0.2s; flex-shrink:0;" onmouseover="this.style.borderColor='rgba(184,134,11,0.5)'; this.style.color='#B8860B';" onmouseout="this.style.borderColor='rgba(255,255,255,0.1)'; this.style.color='rgba(255,255,255,0.5)';">✕</button>
+        </div>
+
+        <!-- Contenido del modal -->
+        <div id="legal-modal-body" style="padding:2rem; overflow-y:auto; flex:1; line-height:1.8; color:rgba(255,255,255,0.6); font-size:13px; font-family:'Montserrat',sans-serif; font-weight:400; letter-spacing:0.01em; text-transform:none;"></div>
+    </div>
+</div>
+
+<style is:global>
+    #legal-modal-overlay.is-open {
+        display: flex !important;
+    }
+    #legal-modal-body h4 {
+        color: #f3cf7a;
+        font-size: 10px;
+        letter-spacing: 0.35em;
+        text-transform: uppercase;
+        font-weight: 700;
+        margin: 1.5rem 0 0.6rem;
+        font-family: 'Montserrat', sans-serif;
+    }
+    #legal-modal-body h4:first-child { margin-top: 0; }
+    #legal-modal-body p {
+        margin: 0 0 0.75rem;
+        color: rgba(255,255,255,0.55);
+        text-transform: none;
+    }
+    #legal-modal-body ul {
+        list-style: none;
+        padding: 0;
+        margin: 0 0 0.75rem;
+    }
+    #legal-modal-body ul li {
+        padding: 0.3rem 0 0.3rem 1.25rem;
+        position: relative;
+        color: rgba(255,255,255,0.5);
+        text-transform: none;
+    }
+    #legal-modal-body ul li::before {
+        content: '◇';
+        position: absolute;
+        left: 0;
+        color: #B8860B;
+        font-size: 9px;
+        top: 0.45rem;
+    }
+    #legal-modal-body strong {
+        color: rgba(255,255,255,0.85);
+        font-weight: 600;
+    }
+    #legal-modal-body .divider {
+        height: 1px;
+        background: rgba(184,134,11,0.15);
+        margin: 1.25rem 0;
+    }
+</style>
+
+<script is:inline>
+    var legalContent = {
+        privacidad: {
+            label: '✦ Política',
+            title: 'Política de Privacidad',
+            body: `
+                <h4>¿Quiénes somos?</h4>
+                <p><strong>Forever One Fashion</strong> es una marca de moda fundada por Nazareth Hernández, con sede en Güigüe, Carabobo, Venezuela. Puedes contactarnos a través de nuestro WhatsApp: +58 424 455 7693.</p>
+                <div class="divider"></div>
+                <h4>Información que recopilamos</h4>
+                <p>Al interactuar con nuestro sitio web y realizar pedidos, podemos recopilar:</p>
+                <ul>
+                    <li>Nombre completo y datos de contacto (teléfono, correo electrónico)</li>
+                    <li>Ciudad y datos de envío para gestionar el delivery</li>
+                    <li>Historial de compras y preferencias de productos</li>
+                    <li>Datos de navegación mediante cookies (ver Política de Cookies)</li>
+                </ul>
+                <div class="divider"></div>
+                <h4>¿Cómo usamos tu información?</h4>
+                <ul>
+                    <li>Para procesar y entregar tus pedidos</li>
+                    <li>Para comunicarnos contigo sobre tu compra vía WhatsApp</li>
+                    <li>Para enviarte catálogos y novedades si te unes a nuestra comunidad</li>
+                    <li>Para mejorar nuestros productos y servicios</li>
+                </ul>
+                <div class="divider"></div>
+                <h4>Protección de tus datos</h4>
+                <p>No vendemos, alquilamos ni compartimos tu información personal con terceros con fines comerciales. Tus datos se almacenan de forma segura y solo son accesibles por el equipo de Forever One Fashion.</p>
+                <div class="divider"></div>
+                <h4>Tus derechos</h4>
+                <p>Puedes solicitar en cualquier momento el acceso, corrección o eliminación de tus datos personales contactándonos por WhatsApp.</p>
+            `
+        },
+        terminos: {
+            label: '✦ Condiciones',
+            title: 'Términos y Condiciones',
+            body: `
+                <h4>Aceptación de los términos</h4>
+                <p>Al navegar por este sitio web y realizar compras en <strong>Forever One Fashion</strong>, aceptas cumplir con los presentes términos y condiciones.</p>
+                <div class="divider"></div>
+                <h4>Productos y disponibilidad</h4>
+                <ul>
+                    <li>Todos los productos están sujetos a disponibilidad de stock</li>
+                    <li>Las imágenes son referenciales; los colores pueden variar levemente según el dispositivo</li>
+                    <li>Nos reservamos el derecho de modificar precios sin previo aviso</li>
+                </ul>
+                <div class="divider"></div>
+                <h4>Proceso de compra y pago</h4>
+                <ul>
+                    <li>Los pedidos se confirman tras la verificación del comprobante de pago</li>
+                    <li>Aceptamos pagos por <strong>Zelle</strong> y <strong>transferencia bancaria</strong> (Tasa BCV oficial)</li>
+                    <li>El pedido no se procesa hasta verificar el pago</li>
+                </ul>
+                <div class="divider"></div>
+                <h4>Envíos y delivery</h4>
+                <ul>
+                    <li>Realizamos envíos a nivel nacional a través de empresas de courier (Zoom, MRW, Tealca, DHL)</li>
+                    <li>El delivery local está disponible en zonas operativas indicadas</li>
+                    <li>Los tiempos de entrega dependen de la empresa de mensajería seleccionada</li>
+                </ul>
+                <div class="divider"></div>
+                <h4>Devoluciones y cambios</h4>
+                <p>Aceptamos cambios por talla dentro de los <strong>3 días hábiles</strong> posteriores a la recepción del producto, siempre que la prenda esté en perfectas condiciones, sin uso y con su etiqueta original. Contáctanos por WhatsApp para gestionar cualquier solicitud.</p>
+                <div class="divider"></div>
+                <h4>Propiedad intelectual</h4>
+                <p>Todo el contenido de este sitio (imágenes, textos, diseños) es propiedad exclusiva de Forever One Fashion. Queda prohibida su reproducción sin autorización escrita.</p>
+            `
+        },
+        cookies: {
+            label: '✦ Cookies',
+            title: 'Política de Cookies',
+            body: `
+                <h4>¿Qué son las cookies?</h4>
+                <p>Las cookies son pequeños archivos de texto que se almacenan en tu dispositivo cuando visitas un sitio web. Nos ayudan a recordar tus preferencias y mejorar tu experiencia de navegación.</p>
+                <div class="divider"></div>
+                <h4>Tipos de cookies que usamos</h4>
+                <ul>
+                    <li><strong>Cookies esenciales:</strong> Necesarias para el funcionamiento del sitio. Incluyen tu sesión de usuario y el carrito de compras. No pueden desactivarse.</li>
+                    <li><strong>Cookies de preferencias:</strong> Recuerdan tus ajustes, como tu elección sobre el aviso de cookies y configuraciones de la tienda.</li>
+                    <li><strong>Cookies de análisis:</strong> Nos permiten entender cómo navegas por el sitio para mejorar el contenido y la experiencia. Los datos son anónimos.</li>
+                </ul>
+                <div class="divider"></div>
+                <h4>Cookies específicas que utilizamos</h4>
+                <ul>
+                    <li><strong>fo_cookie_consent:</strong> Guarda tu decisión sobre esta política de cookies (esencial)</li>
+                    <li><strong>sb-access-token:</strong> Gestiona tu sesión de usuario si tienes cuenta (esencial)</li>
+                    <li><strong>fo_cart:</strong> Mantiene los productos en tu carrito de compras (esencial)</li>
+                </ul>
+                <div class="divider"></div>
+                <h4>¿Cómo controlar las cookies?</h4>
+                <p>Puedes configurar tu navegador para rechazar todas las cookies o para que te avise cuando se envía una. Ten en cuenta que algunas funciones del sitio pueden no funcionar correctamente si deshabilitas las cookies esenciales.</p>
+                <div class="divider"></div>
+                <h4>Cookies de terceros</h4>
+                <p>Este sitio puede cargar recursos de terceros (Google Fonts, mapas) que pueden establecer sus propias cookies. No tenemos control sobre estas cookies y te recomendamos revisar las políticas de privacidad de dichos servicios.</p>
+            `
+        }
+    };
+
+    function openLegalModal(type) {
+        var content = legalContent[type];
+        if (!content) return;
+        document.getElementById('legal-modal-label').textContent = content.label;
+        document.getElementById('legal-modal-title').textContent = content.title;
+        document.getElementById('legal-modal-body').innerHTML = content.body;
+        document.getElementById('legal-modal-overlay').classList.add('is-open');
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeLegalModal() {
+        document.getElementById('legal-modal-overlay').classList.remove('is-open');
+        document.body.style.overflow = '';
+    }
+
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') closeLegalModal();
+    });
+</script>

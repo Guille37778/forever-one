@@ -238,6 +238,12 @@ const Icons = {
         <span style="font-size:10px; color:#6e3cb4; font-weight:700; flex-shrink:0; text-transform:uppercase; letter-spacing:0.1em;">/ $1</span>
       </div>
       <p style="font-size:9px; color:rgba(255,255,255,0.3); margin-top:0.5rem; letter-spacing:0.05em; font-style:italic;">Este valor se usa para convertir el total en Bs. a USD cuando el cliente paga por Zelle.</p>
+      <button
+        id="save-zelle-btn"
+        style="margin-top:1.25rem; width:100%; padding:0.9rem; background:linear-gradient(135deg,#4a1d8a,#6e3cb4,#9b6de0,#6e3cb4,#4a1d8a); background-size:200% auto; animation:shine 4s linear infinite; color:#fff; border:none; border-radius:12px; font-size:9px; letter-spacing:0.35em; text-transform:uppercase; font-weight:700; cursor:pointer; transition:opacity 0.3s;"
+        onmouseover="this.style.opacity='0.85'"
+        onmouseout="this.style.opacity='1'"
+      >✦ Guardar Tasa Zelle</button>
     </div>
   </div>
 
@@ -270,7 +276,40 @@ const Icons = {
       }
     });
 
-    // Delivery Save Logic
+    // ── Guardar Tasa Zelle (independiente) ──
+    const saveZelleBtn = document.getElementById('save-zelle-btn');
+    saveZelleBtn?.addEventListener('click', async () => {
+      try {
+        if (saveZelleBtn instanceof HTMLButtonElement) {
+          saveZelleBtn.disabled = true;
+          saveZelleBtn.textContent = 'Guardando...';
+        }
+
+        const zelleRate = parseFloat((document.getElementById('zelle-rate-input') as HTMLInputElement).value) || 780;
+
+        const response = await fetch('/api/update-settings', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ zelleRate })
+        });
+
+        const result = await response.json();
+        if (!result.success) throw new Error(result.error);
+
+        (window as any).showToast('Tasa Zelle guardada correctamente');
+        setTimeout(() => window.location.reload(), 1200);
+
+      } catch (e: any) {
+        (window as any).showToast(e.message || 'Error al guardar la tasa Zelle', 'error');
+      } finally {
+        if (saveZelleBtn instanceof HTMLButtonElement) {
+          saveZelleBtn.disabled = false;
+          saveZelleBtn.textContent = '✦ Guardar Tasa Zelle';
+        }
+      }
+    });
+
+    // ── Guardar Ajustes de Delivery (independiente) ──
     const saveSettingsBtn = document.getElementById('save-settings-btn');
     saveSettingsBtn?.addEventListener('click', async () => {
       try {
@@ -281,13 +320,11 @@ const Icons = {
 
         const enabled = (document.getElementById('delivery-toggle') as HTMLInputElement).checked;
         const zones = (document.getElementById('delivery-zones-input') as HTMLTextAreaElement).value;
-        const zelleRateInput = document.getElementById('zelle-rate-input') as HTMLInputElement;
-        const zelleRate = zelleRateInput ? parseFloat(zelleRateInput.value) || 780 : 780;
 
         const response = await fetch('/api/update-settings', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ enabled, zones, zelleRate })
+          body: JSON.stringify({ enabled, zones })
         });
 
         const result = await response.json();
