@@ -9,35 +9,40 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       return new Response(JSON.stringify({ error: 'No autorizado' }), { status: 401 });
     }
 
-    const { data: { user }, error: authError } = await await supabaseAdmin.auth.getUser(accessToken);
+    const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(accessToken);
     if (authError || !user) {
       return new Response(JSON.stringify({ error: 'Sesión inválida' }), { status: 401 });
     }
 
     // 2. Obtener datos del cuerpo de la petición
-    const { enabled, zones, zelleRate } = await request.json();
+    const body = await request.json();
+    const errors: any[] = [];
 
-    // 3. Guardar en site_settings usando el cliente Admin (salta RLS)
-    const { error: err1 } = await supabaseAdmin
-      .from('site_settings')
-      .upsert({ key: 'delivery_enabled', value: enabled.toString() }, { onConflict: 'key' });
-
-    const { error: err2 } = await supabaseAdmin
-      .from('site_settings')
-      .upsert({ key: 'delivery_zones', value: zones }, { onConflict: 'key' });
-
-    // Guardar tasa Zelle si fue enviada
-    let err3 = null;
-    if (zelleRate !== undefined && zelleRate !== null) {
+    // 3. Guardar solo los campos que fueron enviados
+    if (body.enabled !== undefined && body.enabled !== null) {
       const { error } = await supabaseAdmin
         .from('site_settings')
-        .upsert({ key: 'zelle_rate', value: zelleRate.toString() }, { onConflict: 'key' });
-      err3 = error;
+        .upsert({ key: 'delivery_enabled', value: body.enabled.toString() }, { onConflict: 'key' });
+      if (error) errors.push(error);
     }
 
-    if (err1 || err2 || err3) {
-      console.error('Error de Supabase:', err1 || err2 || err3);
-      throw new Error('Error al guardar en la base de datos');
+    if (body.zones !== undefined && body.zones !== null) {
+      const { error } = await supabaseAdmin
+        .from('site_settings')
+        .upsert({ key: 'delivery_zones', value: body.zones }, { onConflict: 'key' });
+      if (error) errors.push(error);
+    }
+
+    if (body.zelleRate !== undefined && body.zelleRate !== null) {
+      const { error } = await supabaseAdmin
+        .from('site_settings')
+        .upsert({ key: 'zelle_rate', value: body.zelleRate.toString() }, { onConflict: 'key' });
+      if (error) errors.push(error);
+    }
+
+    if (errors.length > 0) {
+      console.error('Error de Supabase:', errors[0]);
+      throw new Error(errors[0].message || 'Error al guardar en la base de datos');
     }
 
     return new Response(JSON.stringify({ success: true }), { 

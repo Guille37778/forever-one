@@ -52,13 +52,16 @@ const created = Astro.url.searchParams.get('created') === 'true';
 
 // Parallel fetching for high performance and stability
 const [productsResponse, subcategoriesResponse] = await Promise.all([
-    supabase.from('products')
+    supabaseAdmin.from('products')
         .select('*, collections(name), subcategories(name, id, parent_category), variants(size, color, stock_quantity)')
         .order('created_at', { ascending: false }),
-    supabase.from('subcategories')
+    supabaseAdmin.from('subcategories')
         .select('*')
         .order('name', { ascending: true })
 ]);
+
+console.log('[Inventory] Products error:', productsResponse.error);
+console.log('[Inventory] Products count:', productsResponse.data?.length);
 
 const products = productsResponse.data;
 const allSubcategories = subcategoriesResponse.data;

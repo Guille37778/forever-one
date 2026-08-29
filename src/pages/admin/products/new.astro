@@ -105,7 +105,13 @@ if (Astro.request.method === 'POST') {
                         });
                     }
                 }
-                await supabaseAdmin.from('variants').insert(variantsToInsert);
+                console.log('[NewProduct] Inserting variants:', JSON.stringify(variantsToInsert));
+                const { error: variantError } = await supabaseAdmin.from('variants').insert(variantsToInsert);
+                if (variantError) {
+                    console.error('[NewProduct] ❌ Variant insert error:', variantError);
+                } else {
+                    console.log('[NewProduct] ✅ Variants saved successfully');
+                }
             }
             return Astro.redirect('/admin/products?created=true');
         }
