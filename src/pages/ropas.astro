@@ -181,7 +181,7 @@ const sub = Astro.url.searchParams.get('sub') || '';
 
             if (activeSubcategory) {
                 const p = products.find(p => p.subcategory_slug === activeSubcategory);
-                const subName = (p ? p.subcategory_name : activeSubcategory).trim();
+                const subName = (p ? p.subcategory_name : activeSubcategory.replace(/-/g, ' ')).trim();
                 const words = subName.split(/\s+/);
                 
                 if (words.length > 1) {
