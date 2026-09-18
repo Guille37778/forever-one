@@ -63,11 +63,23 @@ const [productsResponse, subcategoriesResponse] = await Promise.all([
 console.log('[Inventory] Products error:', productsResponse.error);
 console.log('[Inventory] Products count:', productsResponse.data?.length);
 
-const products = productsResponse.data;
-const allSubcategories = subcategoriesResponse.data;
+const dbError = productsResponse.error || (productsResponse.data === null && !productsResponse.error ? 'No se pudo conectar a la base de datos.' : null);
+const products = productsResponse.data ?? [];
+const allSubcategories = subcategoriesResponse.data ?? [];
 
-const ropaProducts = products?.filter((p: any) => p.category === 'ropa' || (!p.category && p.subcategories?.parent_category === 'ropa')) || [];
-const accesoriosProducts = products?.filter((p: any) => p.category === 'accesorios' || (!p.category && p.subcategories?.parent_category === 'accesorios')) || [];
+// Función para resolver la categoría real de un producto
+// Prioridad: campo category > parent_category de subcategoría > default 'ropa'
+const resolveCategory = (p: any): string => {
+    if (p.category === 'ropa' || p.category === 'accesorios') return p.category;
+    if (p.subcategories?.parent_category === 'ropa' || p.subcategories?.parent_category === 'accesorios') {
+        return p.subcategories.parent_category;
+    }
+    // Fallback: si no hay categoría definida, va a ropa por defecto
+    return 'ropa';
+};
+
+const ropaProducts = products?.filter((p: any) => resolveCategory(p) === 'ropa') || [];
+const accesoriosProducts = products?.filter((p: any) => resolveCategory(p) === 'accesorios') || [];
 
 const ropaSubcategories = allSubcategories?.filter((s: any) => s.parent_category === 'ropa') || [];
 const accesoriosSubcategories = allSubcategories?.filter((s: any) => s.parent_category === 'accesorios') || [];
@@ -499,6 +511,18 @@ const accesoriosSubcategories = allSubcategories?.filter((s: any) => s.parent_ca
         <a href="/admin/products/new" class="add-btn">✦ Nueva Prenda</a>
     </div>
   </div>
+
+  <!-- Error de conexión a la BD -->
+  {dbError && (
+    <div style="background:#fff1f1; border:1px solid #dc2626; color:#dc2626; padding:1rem 1.5rem; border-radius:8px; margin-bottom:1.5rem; font-size:12px; font-weight:700; letter-spacing:0.05em;">
+      ⚠️ Error de conexión con la base de datos. Los productos no se pueden mostrar.<br/>
+      <span style="font-weight:400; font-size:11px;">
+        Si estás en el entorno online (Cloudflare), asegúrate de haber configurado las variables de entorno 
+        <code>SUPABASE_URL</code>, <code>SUPABASE_ANON_KEY</code> y <code>SUPABASE_SERVICE_ROLE_KEY</code> 
+        en el panel de Cloudflare Workers.
+      </span>
+    </div>
+  )}
 
   <!-- Inventory Tabs & Content -->
   <div x-data="{ activeTab: 'ropa', activeSubcategory: 'all' }">
