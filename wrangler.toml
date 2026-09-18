@@ -5,3 +5,9 @@ compatibility_flags = ["nodejs_compat"]
 
 [assets]
 directory = "dist"
+
+[vars]
+SUPABASE_URL = "https://wikofwhkvaelzgdxcjjo.supabase.co"
+SUPABASE_ANON_KEY = "sb_publishable_OPmTwoGBzXlsw-tqTRhyPg_RTbIw4md"
+PUBLIC_SUPABASE_URL = "https://wikofwhkvaelzgdxcjjo.supabase.co"
+PUBLIC_SUPABASE_ANON = "sb_publishable_OPmTwoGBzXlsw-tqTRhyPg_RTbIw4md"
