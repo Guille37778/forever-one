@@ -1,0 +1,1222 @@
+---
+import AdminLayout from '../../../layouts/AdminLayout.astro';
+import { supabase, supabaseAdmin } from '../../../lib/supabase';
+
+const accessToken = Astro.cookies.get('sb-access-token')?.value;
+if (!accessToken) return Astro.redirect('/admin/login');
+
+let user = null;
+try {
+  const { data: userData, error: authError } = await supabase.auth.getUser(accessToken);
+  if (authError || !userData?.user) return Astro.redirect('/admin/login');
+  user = userData.user;
+} catch (e) {
+  return Astro.redirect('/admin/login');
+}
+
+const { id } = Astro.params;
+
+// Fetch supplier
+const { data: supplier } = await supabaseAdmin
+  .from('suppliers')
+  .select('*')
+  .eq('id', id)
+  .single();
+
+if (!supplier) return Astro.redirect('/admin/suppliers');
+
+// Fetch related data
+const { data: socials = [] } = await supabaseAdmin
+  .from('supplier_social_profiles')
+  .select('*')
+  .eq('supplier_id', id);
+
+const { data: purchases = [] } = await supabaseAdmin
+  .from('supplier_purchases')
+  .select('*')
+  .eq('supplier_id', id)
+  .order('purchase_date', { ascending: false });
+
+const { data: documents = [] } = await supabaseAdmin
+  .from('supplier_documents')
+  .select('*')
+  .eq('supplier_id', id)
+  .order('uploaded_at', { ascending: false });
+
+// Compute stats
+const totalSpentUsd = purchases?.reduce((sum, p) => sum + (p.total_usd || 0), 0) || 0;
+const purchaseCount = purchases?.length || 0;
+const lastPurchase = purchases?.[0]?.purchase_date || null;
+
+// Calculate average ratings
+let avgQuality = 0;
+let avgPunctuality = 0;
+let avgCommunication = 0;
+let avgPrice = 0;
+let overallAvg = 0;
+
+if (purchaseCount > 0) {
+  let ratedPurchases = 0;
+  purchases.forEach(p => {
+    if (p.quality_rating) {
+      avgQuality += p.quality_rating;
+      avgPunctuality += p.punctuality_rating || 0;
+      avgCommunication += p.communication_rating || 0;
+      avgPrice += p.price_rating || 0;
+      ratedPurchases++;
+    }
+  });
+  
+  if (ratedPurchases > 0) {
+    avgQuality /= ratedPurchases;
+    avgPunctuality /= ratedPurchases;
+    avgCommunication /= ratedPurchases;
+    avgPrice /= ratedPurchases;
+    overallAvg = (avgQuality + avgPunctuality + avgCommunication + avgPrice) / 4;
+  }
+}
+
+// Helpers
+const formatDate = (dateString) => {
+  if (!dateString) return 'Sin compras';
+  const date = new Date(dateString);
+  return date.toLocaleDateString('es-VE', { year: 'numeric', month: 'short', day: 'numeric' });
+};
+
+const formatCurrency = (val) => `$${Number(val).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+// Determine quick action links based on socials
+let whatsappLink = '';
+let instagramLink = '';
+
+if (supplier.phone) {
+    const cleanPhone = supplier.phone.replace(/[^0-9]/g, '');
+    whatsappLink = `https://wa.me/${cleanPhone}`;
+}
+
+const igProfile = socials?.find(s => s.platform.toLowerCase() === 'instagram');
+if (igProfile) {
+    instagramLink = igProfile.url || `https://instagram.com/${igProfile.handle?.replace('@', '')}`;
+}
+
+const wpProfile = socials?.find(s => s.platform.toLowerCase() === 'whatsapp');
+if (wpProfile) {
+    const cleanWp = wpProfile.handle?.replace(/[^0-9]/g, '');
+    whatsappLink = wpProfile.url || `https://wa.me/${cleanWp}`;
+}
+---
+<AdminLayout title={supplier.company_name} activeNav="suppliers" user={{ email: user?.email || '' }}>
+  <div class="page-container">
+    
+    <!-- Header Section -->
+    <header class="supplier-header">
+      <div class="header-top">
+        <a href="/admin/suppliers" class="back-link">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+          Volver a Proveedores
+        </a>
+      </div>
+      
+      <div class="header-main">
+        <div class="header-title-row">
+          <h1 class="supplier-title">
+            {supplier.is_confidential && (
+              <svg class="lock-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+            )}
+            {supplier.company_name}
+          </h1>
+          <span class={`status-badge ${supplier.is_active ? 'active' : 'inactive'}`}>
+            {supplier.is_active ? 'Activo' : 'Inactivo'}
+          </span>
+        </div>
+
+        {supplier.tags && supplier.tags.length > 0 && (
+          <div class="tags-container">
+            {supplier.tags.map(tag => (
+              <span class="tag-pill">{tag}</span>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div class="quick-actions">
+        {whatsappLink && (
+          <a href={whatsappLink} target="_blank" class="quick-btn btn-whatsapp" title="WhatsApp">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
+            WhatsApp
+          </a>
+        )}
+        {instagramLink && (
+          <a href={instagramLink} target="_blank" class="quick-btn btn-instagram" title="Instagram">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg>
+            Instagram
+          </a>
+        )}
+        {supplier.phone && (
+          <a href={`tel:${supplier.phone}`} class="quick-btn btn-call" title="Llamar">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+            Llamar
+          </a>
+        )}
+        {supplier.email && (
+          <a href={`mailto:${supplier.email}`} class="quick-btn btn-email" title="Correo">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
+            Correo
+          </a>
+        )}
+      </div>
+    </header>
+
+    <!-- Stats Row -->
+    <div class="stats-row">
+      <div class="qs-card">
+        <div class="qs-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg>
+        </div>
+        <div class="qs-info">
+          <span class="qs-label">Total Compras</span>
+          <span class="qs-value">{purchaseCount}</span>
+        </div>
+      </div>
+      <div class="qs-card">
+        <div class="qs-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+        </div>
+        <div class="qs-info">
+          <span class="qs-label">Total Gastado</span>
+          <span class="qs-value">{formatCurrency(totalSpentUsd)}</span>
+        </div>
+      </div>
+      <div class="qs-card">
+        <div class="qs-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+        </div>
+        <div class="qs-info">
+          <span class="qs-label">Última Compra</span>
+          <span class="qs-value" style="font-size: 1.25rem;">{formatDate(lastPurchase)}</span>
+        </div>
+      </div>
+      <div class="qs-card">
+        <div class="qs-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+        </div>
+        <div class="qs-info">
+          <span class="qs-label">Calificación</span>
+          <div class="qs-value" style="font-size: 1.5rem; display: flex; align-items: center; gap: 0.25rem;">
+            {overallAvg.toFixed(1)} 
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="var(--gold)" stroke="var(--gold)" stroke-width="1"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab Navigation -->
+    <div class="tab-nav">
+      <button class="tab-btn active" data-target="tab-info">Información</button>
+      <button class="tab-btn" data-target="tab-purchases">Compras</button>
+      <button class="tab-btn" data-target="tab-socials">Redes Sociales</button>
+      <button class="tab-btn" data-target="tab-documents">Documentos</button>
+      <button class="tab-btn" data-target="tab-ratings">Calificaciones</button>
+    </div>
+
+    <div class="tab-container">
+      
+      <!-- TAB: INFORMACIÓN -->
+      <div id="tab-info" class="tab-panel active">
+        <div class="form-wrapper">
+          <form id="edit-supplier-form" data-id={id}>
+            <div class="form-grid">
+              
+              <!-- Company Info -->
+              <div class="form-section">
+                <h3>Información de la Empresa</h3>
+                <div class="form-group">
+                  <label for="company_name">Nombre de la Empresa *</label>
+                  <input type="text" id="company_name" name="company_name" value={supplier.company_name} required />
+                </div>
+                <div class="form-group">
+                  <label for="contact_person">Persona de Contacto</label>
+                  <input type="text" id="contact_person" name="contact_person" value={supplier.contact_person || ''} />
+                </div>
+                <div class="form-group">
+                  <label for="email">Correo Electrónico</label>
+                  <input type="email" id="email" name="email" value={supplier.email || ''} />
+                </div>
+                <div class="form-row">
+                  <div class="form-group">
+                    <label for="phone">Teléfono Principal</label>
+                    <input type="text" id="phone" name="phone" value={supplier.phone || ''} />
+                  </div>
+                  <div class="form-group">
+                    <label for="phone_secondary">Teléfono Secundario</label>
+                    <input type="text" id="phone_secondary" name="phone_secondary" value={supplier.phone_secondary || ''} />
+                  </div>
+                </div>
+              </div>
+
+              <!-- Location & Other Info -->
+              <div class="form-section">
+                <h3>Ubicación y Otros</h3>
+                <div class="form-row">
+                  <div class="form-group">
+                    <label for="city">Ciudad / Región</label>
+                    <input type="text" id="city" name="city" value={supplier.city || ''} />
+                  </div>
+                  <div class="form-group">
+                    <label for="website">Sitio Web</label>
+                    <input type="url" id="website" name="website" value={supplier.website || ''} placeholder="https://" />
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label for="address">Dirección Física</label>
+                  <textarea id="address" name="address" rows="2">{supplier.address || ''}</textarea>
+                </div>
+                <div class="form-group">
+                  <label for="payment_terms">Condiciones de Pago</label>
+                  <input type="text" id="payment_terms" name="payment_terms" value={supplier.payment_terms || ''} placeholder="Ej: 50% Adelanto, Zelle" />
+                </div>
+                <div class="form-group">
+                  <label for="next_restock_date">Próximo Reabastecimiento</label>
+                  <input type="date" id="next_restock_date" name="next_restock_date" value={supplier.next_restock_date || ''} />
+                </div>
+              </div>
+
+              <!-- Full Width Sections -->
+              <div class="form-section full-width">
+                <h3>Notas y Etiquetas</h3>
+                <div class="form-group">
+                  <label for="notes">Notas Internas</label>
+                  <textarea id="notes" name="notes" rows="3">{supplier.notes || ''}</textarea>
+                </div>
+                
+                <div class="form-group">
+                  <label>Etiquetas (Categorías, Productos, etc.)</label>
+                  <div class="tags-input-container">
+                    <input type="text" id="tag-input" placeholder="Escribe una etiqueta y presiona Enter" />
+                    <div id="tags-list" class="tags-list">
+                      {supplier.tags && supplier.tags.map(tag => (
+                        <span class="tag-item">
+                          {tag}
+                          <button type="button" class="remove-tag" data-tag={tag}>&times;</button>
+                        </span>
+                      ))}
+                    </div>
+                    <input type="hidden" id="tags-hidden" name="tags" value={supplier.tags ? JSON.stringify(supplier.tags) : '[]'} />
+                  </div>
+                </div>
+              </div>
+
+              <!-- Toggles -->
+              <div class="form-section full-width toggles-section">
+                <label class="toggle-label">
+                  <input type="checkbox" name="is_active" id="is_active" checked={supplier.is_active} />
+                  <span class="toggle-text">Proveedor Activo</span>
+                </label>
+                <label class="toggle-label">
+                  <input type="checkbox" name="is_confidential" id="is_confidential" checked={supplier.is_confidential} />
+                  <span class="toggle-text">Confidencial (Ocultar datos sensibles)</span>
+                </label>
+              </div>
+
+            </div>
+
+            <div class="form-actions">
+              <button type="submit" class="btn-primary" id="btn-save-info">Guardar Cambios</button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- TAB: COMPRAS -->
+      <div id="tab-purchases" class="tab-panel">
+        <div class="tab-header-actions">
+          <h3>Historial de Compras</h3>
+          <button type="button" class="btn-primary btn-small" id="btn-toggle-purchase-form">+ Registrar Compra</button>
+        </div>
+
+        <div id="new-purchase-form" class="inline-form-container hidden">
+          <form id="form-add-purchase" data-supplier={id}>
+            <h4>Registrar Nueva Compra</h4>
+            
+            <div class="form-grid">
+              <div class="form-group">
+                <label for="p_date">Fecha *</label>
+                <input type="date" id="p_date" name="purchase_date" required />
+              </div>
+              <div class="form-group">
+                <label for="p_ref">Código / Referencia</label>
+                <input type="text" id="p_ref" name="reference_code" />
+              </div>
+              <div class="form-group">
+                <label for="p_total_usd">Monto USD *</label>
+                <input type="number" step="0.01" id="p_total_usd" name="total_usd" required />
+              </div>
+              <div class="form-group">
+                <label for="p_method">Método de Pago</label>
+                <select id="p_method" name="payment_method">
+                  <option value="Transferencia">Transferencia</option>
+                  <option value="Zelle">Zelle</option>
+                  <option value="Binance">Binance</option>
+                  <option value="Pago Móvil">Pago Móvil</option>
+                  <option value="Efectivo">Efectivo</option>
+                  <option value="Otro">Otro</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="p_desc">Descripción General</label>
+              <textarea id="p_desc" name="description" rows="2"></textarea>
+            </div>
+
+            <div class="ratings-input-grid">
+              <h5>Calificar Compra</h5>
+              <div class="rating-group">
+                <label>Calidad</label>
+                <div class="star-selector" data-name="quality_rating">
+                  {[1,2,3,4,5].map(v => <button type="button" class="star-btn" data-val={v}>★</button>)}
+                  <input type="hidden" name="quality_rating" value="0" />
+                </div>
+              </div>
+              <div class="rating-group">
+                <label>Puntualidad</label>
+                <div class="star-selector" data-name="punctuality_rating">
+                  {[1,2,3,4,5].map(v => <button type="button" class="star-btn" data-val={v}>★</button>)}
+                  <input type="hidden" name="punctuality_rating" value="0" />
+                </div>
+              </div>
+              <div class="rating-group">
+                <label>Comunicación</label>
+                <div class="star-selector" data-name="communication_rating">
+                  {[1,2,3,4,5].map(v => <button type="button" class="star-btn" data-val={v}>★</button>)}
+                  <input type="hidden" name="communication_rating" value="0" />
+                </div>
+              </div>
+              <div class="rating-group">
+                <label>Precio</label>
+                <div class="star-selector" data-name="price_rating">
+                  {[1,2,3,4,5].map(v => <button type="button" class="star-btn" data-val={v}>★</button>)}
+                  <input type="hidden" name="price_rating" value="0" />
+                </div>
+              </div>
+            </div>
+
+            <div class="form-actions">
+              <button type="button" class="btn-secondary" id="btn-cancel-purchase">Cancelar</button>
+              <button type="submit" class="btn-primary">Guardar Compra</button>
+            </div>
+          </form>
+        </div>
+
+        <div class="table-wrapper">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>Fecha</th>
+                <th>Referencia</th>
+                <th>Descripción</th>
+                <th>Monto USD</th>
+                <th>Método</th>
+                <th>Calificación</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              {purchases.length === 0 ? (
+                <tr><td colspan="7" class="empty-state">No hay compras registradas.</td></tr>
+              ) : (
+                purchases.map(p => {
+                  const rSum = (p.quality_rating || 0) + (p.punctuality_rating || 0) + (p.communication_rating || 0) + (p.price_rating || 0);
+                  const rAvg = rSum / 4;
+                  return (
+                    <tr>
+                      <td>{formatDate(p.purchase_date)}</td>
+                      <td>{p.reference_code || '-'}</td>
+                      <td>{p.description || '-'}</td>
+                      <td class="money-cell">{formatCurrency(p.total_usd)}</td>
+                      <td>{p.payment_method || '-'}</td>
+                      <td>
+                        {rAvg > 0 ? (
+                          <div class="mini-rating">
+                            <span class="rating-val">{rAvg.toFixed(1)}</span>
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="var(--gold)" stroke="var(--gold)"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+                          </div>
+                        ) : '-'}
+                      </td>
+                      <td>
+                        <button class="btn-icon delete-purchase" data-id={p.id} title="Eliminar">
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"></path><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- TAB: REDES SOCIALES -->
+      <div id="tab-socials" class="tab-panel">
+        <div class="tab-header-actions">
+          <h3>Perfiles de Redes Sociales</h3>
+          <button type="button" class="btn-primary btn-small" id="btn-toggle-social-form">+ Agregar Perfil</button>
+        </div>
+
+        <div id="new-social-form" class="inline-form-container hidden">
+          <form id="form-add-social" data-supplier={id}>
+            <div class="form-row">
+              <div class="form-group">
+                <label>Plataforma *</label>
+                <select name="platform" required>
+                  <option value="Instagram">Instagram</option>
+                  <option value="WhatsApp">WhatsApp</option>
+                  <option value="TikTok">TikTok</option>
+                  <option value="Facebook">Facebook</option>
+                  <option value="LinkedIn">LinkedIn</option>
+                  <option value="Otro">Otro</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Usuario / Número *</label>
+                <input type="text" name="handle" required placeholder="@usuario o +58412..." />
+              </div>
+              <div class="form-group">
+                <label>URL Directa</label>
+                <input type="url" name="url" placeholder="https://..." />
+              </div>
+            </div>
+            <div class="form-actions" style="margin-top: 1rem;">
+              <button type="button" class="btn-secondary" id="btn-cancel-social">Cancelar</button>
+              <button type="submit" class="btn-primary">Guardar Perfil</button>
+            </div>
+          </form>
+        </div>
+
+        <div class="social-cards-grid">
+          {socials.length === 0 ? (
+             <p class="empty-state">No hay redes sociales registradas.</p>
+          ) : (
+            socials.map(s => {
+              const platformLower = s.platform.toLowerCase();
+              return (
+                <div class={`social-card platform-${platformLower}`}>
+                  <div class="social-card-header">
+                    <span class="social-platform">{s.platform}</span>
+                    <button class="btn-icon delete-social" data-id={s.id}>&times;</button>
+                  </div>
+                  <div class="social-handle">{s.handle}</div>
+                  {s.url && (
+                    <a href={s.url} target="_blank" class="social-link-btn">Visitar Perfil</a>
+                  )}
+                </div>
+              );
+            })
+          )}
+        </div>
+      </div>
+
+      <!-- TAB: DOCUMENTOS -->
+      <div id="tab-documents" class="tab-panel">
+        <div class="tab-header-actions">
+          <h3>Documentos Adjuntos</h3>
+          <button type="button" class="btn-primary btn-small" id="btn-toggle-doc-form">+ Agregar Documento</button>
+        </div>
+
+        <div id="new-doc-form" class="inline-form-container hidden">
+          <form id="form-add-doc" data-supplier={id}>
+            <div class="form-row">
+              <div class="form-group">
+                <label>Nombre del Documento *</label>
+                <input type="text" name="name" required placeholder="Ej: Catálogo 2024" />
+              </div>
+              <div class="form-group">
+                <label>URL del Archivo *</label>
+                <input type="url" name="file_url" required placeholder="https://..." />
+              </div>
+              <div class="form-group">
+                <label>Tipo</label>
+                <select name="file_type">
+                  <option value="pdf">PDF</option>
+                  <option value="image">Imagen</option>
+                  <option value="excel">Excel</option>
+                  <option value="doc">Word</option>
+                  <option value="otro">Otro</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-actions" style="margin-top: 1rem;">
+              <button type="button" class="btn-secondary" id="btn-cancel-doc">Cancelar</button>
+              <button type="submit" class="btn-primary">Guardar Documento</button>
+            </div>
+          </form>
+        </div>
+
+        <div class="doc-cards-grid">
+          {documents.length === 0 ? (
+            <p class="empty-state">No hay documentos registrados.</p>
+          ) : (
+            documents.map(d => (
+              <div class="doc-card">
+                <div class="doc-icon">
+                  {d.file_type === 'pdf' ? '📄' : d.file_type === 'excel' ? '📊' : d.file_type === 'image' ? '🖼️' : '📁'}
+                </div>
+                <div class="doc-info">
+                  <div class="doc-name">{d.name}</div>
+                  <div class="doc-date">{formatDate(d.uploaded_at)}</div>
+                </div>
+                <div class="doc-actions">
+                  <a href={d.file_url} target="_blank" class="btn-icon" title="Abrir">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+                  </a>
+                  <button class="btn-icon delete-doc" data-id={d.id} title="Eliminar">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                  </button>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+
+      <!-- TAB: CALIFICACIONES -->
+      <div id="tab-ratings" class="tab-panel">
+        <h3>Resumen de Calificaciones</h3>
+        <p style="color: #999; font-size: 0.85rem; margin-bottom: 2rem;">Promedio basado en {purchaseCount} compras registradas con calificación.</p>
+        
+        <div class="ratings-summary-grid">
+          <div class="rating-overall">
+            <div class="overall-circle">
+              <span class="overall-score">{overallAvg.toFixed(1)}</span>
+              <span class="overall-max">/ 5</span>
+            </div>
+            <h4>Promedio General</h4>
+          </div>
+          
+          <div class="rating-bars">
+            <div class="rating-bar-item">
+              <div class="r-bar-label"><span>Calidad</span> <span>{avgQuality.toFixed(1)}</span></div>
+              <div class="r-bar-track"><div class="r-bar-fill" style={`width: ${(avgQuality/5)*100}%`}></div></div>
+            </div>
+            <div class="rating-bar-item">
+              <div class="r-bar-label"><span>Puntualidad</span> <span>{avgPunctuality.toFixed(1)}</span></div>
+              <div class="r-bar-track"><div class="r-bar-fill" style={`width: ${(avgPunctuality/5)*100}%`}></div></div>
+            </div>
+            <div class="rating-bar-item">
+              <div class="r-bar-label"><span>Comunicación</span> <span>{avgCommunication.toFixed(1)}</span></div>
+              <div class="r-bar-track"><div class="r-bar-fill" style={`width: ${(avgCommunication/5)*100}%`}></div></div>
+            </div>
+            <div class="rating-bar-item">
+              <div class="r-bar-label"><span>Precio</span> <span>{avgPrice.toFixed(1)}</span></div>
+              <div class="r-bar-track"><div class="r-bar-fill" style={`width: ${(avgPrice/5)*100}%`}></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</AdminLayout>
+
+<style>
+  /* Base Layout */
+  .page-container {
+    padding: 2rem;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+  
+  /* Header */
+  .supplier-header {
+    margin-bottom: 2rem;
+  }
+  .header-top {
+    margin-bottom: 1rem;
+  }
+  .back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: #666;
+    text-decoration: none;
+    font-size: 0.9rem;
+    font-weight: 500;
+  }
+  .back-link:hover {
+    color: var(--gold);
+  }
+  .header-main {
+    margin-bottom: 1.5rem;
+  }
+  .header-title-row {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 0.5rem;
+  }
+  .supplier-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 2.5rem;
+    font-weight: 700;
+    font-style: italic;
+    color: #111;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .status-badge {
+    padding: 0.25rem 0.75rem;
+    border-radius: 99px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .status-badge.active { background: #e6f4ea; color: #1e8e3e; }
+  .status-badge.inactive { background: #fce8e6; color: #d93025; }
+  
+  .tags-container {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+  .tag-pill {
+    background: #fdfaf0;
+    border: 1px solid rgba(184,134,11,0.2);
+    color: var(--gold);
+    padding: 0.25rem 0.75rem;
+    border-radius: 99px;
+    font-size: 0.75rem;
+    font-weight: 600;
+  }
+
+  .quick-actions {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+  }
+  .quick-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.2s;
+  }
+  .btn-whatsapp { background: #25D366; color: white; }
+  .btn-instagram { background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%); color: white; }
+  .btn-call { background: #333; color: white; }
+  .btn-email { background: #eee; color: #333; }
+  .quick-btn:hover { opacity: 0.9; transform: translateY(-1px); }
+
+  /* Stats */
+  .stats-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+  }
+  .qs-card {
+    background: white;
+    border: 1px solid rgba(184,134,11,0.08);
+    border-radius: 14px;
+    padding: 1.25rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.02);
+  }
+  .qs-icon {
+    width: 48px;
+    height: 48px;
+    background: #fdfaf0;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--gold);
+    flex-shrink: 0;
+  }
+  .qs-info {
+    display: flex;
+    flex-direction: column;
+  }
+  .qs-label {
+    font-size: 8px;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: #aaa;
+    font-weight: 700;
+  }
+  .qs-value {
+    font-family: 'Playfair Display', serif;
+    font-size: 2rem;
+    font-weight: 900;
+    font-style: italic;
+    color: #111;
+    line-height: 1.2;
+  }
+
+  /* Tabs */
+  .tab-nav {
+    display: flex;
+    gap: 2rem;
+    border-bottom: 1px solid #eee;
+    margin-bottom: 2rem;
+    overflow-x: auto;
+  }
+  .tab-btn {
+    background: none;
+    border: none;
+    padding: 1rem 0;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    font-weight: 700;
+    color: #999;
+    cursor: pointer;
+    position: relative;
+    white-space: nowrap;
+  }
+  .tab-btn.active {
+    color: #111;
+  }
+  .tab-btn.active::after {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: var(--gold);
+  }
+  .tab-panel {
+    display: none;
+    animation: fadeIn 0.3s ease;
+  }
+  .tab-panel.active {
+    display: block;
+  }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+  .tab-header-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+  }
+  .tab-header-actions h3 {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.5rem;
+    font-style: italic;
+    margin: 0;
+  }
+
+  /* Forms & Inputs */
+  .form-wrapper { background: white; padding: 2rem; border-radius: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.02); }
+  .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem; }
+  .form-section h3 { font-size: 1rem; color: #111; margin-bottom: 1.5rem; padding-bottom: 0.5rem; border-bottom: 1px solid #eee; }
+  .form-group { margin-bottom: 1.25rem; }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+  .full-width { grid-column: 1 / -1; }
+  
+  label { display: block; font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; color: #666; font-weight: 700; margin-bottom: 0.5rem; }
+  input[type="text"], input[type="email"], input[type="url"], input[type="date"], input[type="number"], select, textarea {
+    width: 100%; padding: 0.75rem; border: 1px solid #ddd; border-radius: 8px; font-family: 'Montserrat', sans-serif; font-size: 0.9rem;
+    transition: border-color 0.2s;
+  }
+  input:focus, select:focus, textarea:focus { outline: none; border-color: var(--gold); }
+  
+  /* Buttons */
+  .btn-primary { background: var(--black); color: var(--gold); border: 1px solid var(--gold); padding: 0.75rem 1.5rem; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+  .btn-primary:hover { background: #222; }
+  .btn-secondary { background: white; color: #333; border: 1px solid #ddd; padding: 0.75rem 1.5rem; border-radius: 8px; font-weight: 600; cursor: pointer; }
+  .btn-small { padding: 0.5rem 1rem; font-size: 0.8rem; }
+  .btn-icon { background: none; border: none; color: #999; cursor: pointer; padding: 0.25rem; border-radius: 4px; }
+  .btn-icon:hover { color: #111; background: #eee; }
+  
+  .form-actions { display: flex; justify-content: flex-end; gap: 1rem; margin-top: 2rem; }
+
+  /* Tags Input */
+  .tags-input-container { border: 1px solid #ddd; border-radius: 8px; padding: 0.5rem; min-height: 100px; }
+  .tags-input-container input { border: none; padding: 0.5rem; margin-bottom: 0.5rem; }
+  .tags-list { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+  .tag-item { background: #f5f5f5; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.8rem; display: flex; align-items: center; gap: 0.5rem; }
+  .remove-tag { background: none; border: none; cursor: pointer; font-size: 1rem; line-height: 1; padding: 0; color: #666; }
+
+  /* Toggles */
+  .toggles-section { display: flex; gap: 2rem; padding: 1rem; background: #fdfaf0; border-radius: 8px; border: 1px solid rgba(184,134,11,0.2); }
+  .toggle-label { display: flex; align-items: center; gap: 0.5rem; cursor: pointer; }
+
+  /* Inline Forms */
+  .inline-form-container { background: #fafafa; padding: 1.5rem; border-radius: 12px; border: 1px solid #eee; margin-bottom: 2rem; }
+  .inline-form-container.hidden { display: none; }
+  .inline-form-container h4 { margin-top: 0; margin-bottom: 1.5rem; }
+
+  /* Star Ratings */
+  .ratings-input-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem; background: white; padding: 1rem; border-radius: 8px; border: 1px solid #eee; margin-top: 1rem; }
+  .ratings-input-grid h5 { grid-column: 1 / -1; margin: 0 0 0.5rem 0; font-size: 0.9rem; }
+  .star-selector { display: flex; gap: 0.25rem; }
+  .star-btn { background: none; border: none; font-size: 1.5rem; color: #ddd; cursor: pointer; padding: 0; line-height: 1; }
+  .star-btn.active, .star-btn:hover, .star-btn:hover ~ .star-btn { color: var(--gold); }
+  
+  .mini-rating { display: flex; align-items: center; gap: 0.25rem; font-weight: 600; color: #111; }
+
+  /* Tables */
+  .table-wrapper { background: white; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.02); }
+  .admin-table { width: 100%; border-collapse: collapse; }
+  .admin-table th { padding: 1rem; text-align: left; font-size: 8px; text-transform: uppercase; letter-spacing: 0.3em; color: #aaa; font-weight: 800; border-bottom: 1px solid #eee; }
+  .admin-table td { padding: 1rem; font-size: 12px; color: #444; border-bottom: 1px solid #eee; }
+  .admin-table tr:hover td { background: #fdfaf0; }
+  .money-cell { font-weight: 600; font-family: monospace; font-size: 13px !important; }
+
+  /* Cards Grid */
+  .social-cards-grid, .doc-cards-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 1.5rem; }
+  
+  /* Social Card */
+  .social-card { background: white; border-radius: 12px; padding: 1.5rem; border: 1px solid #eee; border-left: 4px solid #ccc; box-shadow: 0 2px 8px rgba(0,0,0,0.02); }
+  .social-card.platform-instagram { border-left-color: #e1306c; }
+  .social-card.platform-whatsapp { border-left-color: #25d366; }
+  .social-card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
+  .social-platform { font-size: 10px; text-transform: uppercase; font-weight: 700; color: #666; }
+  .social-handle { font-size: 1.25rem; font-weight: 600; margin-bottom: 1.5rem; word-break: break-all; }
+  .social-link-btn { display: block; text-align: center; padding: 0.5rem; background: #f9f9f9; border-radius: 6px; text-decoration: none; font-size: 0.85rem; color: #333; font-weight: 500; }
+  .social-link-btn:hover { background: #eee; }
+
+  /* Doc Card */
+  .doc-card { background: white; border-radius: 12px; padding: 1.25rem; border: 1px solid #eee; display: flex; align-items: center; gap: 1rem; }
+  .doc-icon { font-size: 2rem; }
+  .doc-info { flex: 1; min-width: 0; }
+  .doc-name { font-weight: 600; font-size: 0.95rem; margin-bottom: 0.25rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .doc-date { font-size: 0.75rem; color: #999; }
+  .doc-actions { display: flex; gap: 0.5rem; }
+
+  /* Ratings Summary */
+  .ratings-summary-grid { display: grid; grid-template-columns: 1fr 2fr; gap: 3rem; align-items: center; background: white; padding: 3rem; border-radius: 16px; border: 1px solid rgba(184,134,11,0.1); }
+  .rating-overall { text-align: center; }
+  .overall-circle { width: 150px; height: 150px; border-radius: 50%; border: 4px solid var(--gold); display: flex; flex-direction: column; align-items: center; justify-content: center; margin: 0 auto 1rem; background: #fdfaf0; }
+  .overall-score { font-family: 'Playfair Display', serif; font-size: 3rem; font-weight: 900; color: #111; line-height: 1; }
+  .overall-max { color: #999; font-size: 1rem; font-weight: 600; }
+  
+  .rating-bars { display: flex; flex-direction: column; gap: 1.5rem; }
+  .r-bar-label { display: flex; justify-content: space-between; margin-bottom: 0.5rem; font-size: 0.85rem; font-weight: 600; text-transform: uppercase; }
+  .r-bar-track { height: 8px; background: #eee; border-radius: 4px; overflow: hidden; }
+  .r-bar-fill { height: 100%; background: linear-gradient(90deg, var(--gold-pale), var(--gold)); border-radius: 4px; }
+  
+  .empty-state { color: #999; font-style: italic; text-align: center; padding: 2rem; }
+  
+  @media (max-width: 768px) {
+    .stats-row { grid-template-columns: 1fr 1fr; }
+    .ratings-summary-grid { grid-template-columns: 1fr; gap: 2rem; }
+    .form-row { grid-template-columns: 1fr; }
+  }
+</style>
+
+<script is:inline>
+  document.addEventListener('DOMContentLoaded', () => {
+    
+    // --- Tabs Logic ---
+    const tabBtns = document.querySelectorAll('.tab-btn');
+    const tabPanels = document.querySelectorAll('.tab-panel');
+    
+    tabBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const target = btn.dataset.target;
+        tabBtns.forEach(b => b.classList.remove('active'));
+        tabPanels.forEach(p => p.classList.remove('active'));
+        
+        btn.classList.add('active');
+        document.getElementById(target).classList.add('active');
+      });
+    });
+
+    // --- Tags Logic ---
+    const tagInput = document.getElementById('tag-input');
+    const tagsList = document.getElementById('tags-list');
+    const tagsHidden = document.getElementById('tags-hidden');
+    
+    let tags = [];
+    try { tags = JSON.parse(tagsHidden.value || '[]'); } catch(e){}
+
+    const renderTags = () => {
+      tagsList.innerHTML = '';
+      tags.forEach(tag => {
+        const span = document.createElement('span');
+        span.className = 'tag-item';
+        span.innerHTML = `${tag} <button type="button" class="remove-tag" data-tag="${tag}">&times;</button>`;
+        tagsList.appendChild(span);
+      });
+      tagsHidden.value = JSON.stringify(tags);
+    };
+
+    tagInput?.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        const val = tagInput.value.trim();
+        if (val && !tags.includes(val)) {
+          tags.push(val);
+          renderTags();
+          tagInput.value = '';
+        }
+      }
+    });
+
+    tagsList?.addEventListener('click', (e) => {
+      if (e.target.classList.contains('remove-tag')) {
+        const tag = e.target.dataset.tag;
+        tags = tags.filter(t => t !== tag);
+        renderTags();
+      }
+    });
+
+    // --- Edit Info Form ---
+    const editForm = document.getElementById('edit-supplier-form');
+    editForm?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const btn = document.getElementById('btn-save-info');
+      const originalText = btn.textContent;
+      btn.textContent = 'Guardando...';
+      btn.disabled = true;
+
+      const formData = new FormData(editForm);
+      const data = Object.fromEntries(formData.entries());
+      data.is_active = formData.has('is_active');
+      data.is_confidential = formData.has('is_confidential');
+      data.tags = JSON.parse(data.tags || '[]');
+
+      try {
+        const res = await fetch(`/api/suppliers/${editForm.dataset.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+        
+        if (res.ok) {
+          window.showToast('Proveedor actualizado exitosamente', 'success');
+          setTimeout(() => window.location.reload(), 1000);
+        } else {
+          window.showToast('Error al actualizar proveedor', 'error');
+        }
+      } catch (err) {
+        window.showToast('Error de conexión', 'error');
+      } finally {
+        btn.textContent = originalText;
+        btn.disabled = false;
+      }
+    });
+
+    // --- Star Rating Selector Logic ---
+    const starGroups = document.querySelectorAll('.star-selector');
+    starGroups.forEach(group => {
+      const stars = group.querySelectorAll('.star-btn');
+      const hiddenInput = group.querySelector('input[type="hidden"]');
+      
+      stars.forEach(star => {
+        star.addEventListener('click', () => {
+          const val = parseInt(star.dataset.val);
+          hiddenInput.value = val;
+          // reset all
+          stars.forEach(s => s.classList.remove('active'));
+          // highlight up to val
+          stars.forEach(s => {
+            if (parseInt(s.dataset.val) <= val) s.classList.add('active');
+          });
+        });
+      });
+    });
+
+    // --- Toggles for inline forms ---
+    const toggleForm = (btnId, formContainerId, cancelBtnId) => {
+      const btn = document.getElementById(btnId);
+      const form = document.getElementById(formContainerId);
+      const cancel = document.getElementById(cancelBtnId);
+      
+      btn?.addEventListener('click', () => {
+        form.classList.remove('hidden');
+        btn.style.display = 'none';
+      });
+      
+      cancel?.addEventListener('click', () => {
+        form.classList.add('hidden');
+        btn.style.display = 'block';
+        form.querySelector('form').reset();
+      });
+    };
+
+    toggleForm('btn-toggle-purchase-form', 'new-purchase-form', 'btn-cancel-purchase');
+    toggleForm('btn-toggle-social-form', 'new-social-form', 'btn-cancel-social');
+    toggleForm('btn-toggle-doc-form', 'new-doc-form', 'btn-cancel-doc');
+
+    // --- Add Purchase ---
+    const formAddPurchase = document.getElementById('form-add-purchase');
+    formAddPurchase?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const id = formAddPurchase.dataset.supplier;
+      const formData = new FormData(formAddPurchase);
+      const data = Object.fromEntries(formData.entries());
+      
+      // Parse numbers
+      data.total_usd = parseFloat(data.total_usd);
+      data.quality_rating = parseInt(data.quality_rating);
+      data.punctuality_rating = parseInt(data.punctuality_rating);
+      data.communication_rating = parseInt(data.communication_rating);
+      data.price_rating = parseInt(data.price_rating);
+
+      const btn = formAddPurchase.querySelector('button[type="submit"]');
+      btn.disabled = true;
+
+      try {
+        const res = await fetch(`/api/suppliers/${id}/purchases`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+        if (res.ok) {
+          window.showToast('Compra registrada exitosamente', 'success');
+          setTimeout(() => window.location.reload(), 1000);
+        } else {
+          window.showToast('Error al registrar compra', 'error');
+          btn.disabled = false;
+        }
+      } catch (err) {
+        window.showToast('Error de conexión', 'error');
+        btn.disabled = false;
+      }
+    });
+
+    // --- Delete Purchase ---
+    document.querySelectorAll('.delete-purchase').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        if (!confirm('¿Estás seguro de eliminar esta compra?')) return;
+        const purchaseId = btn.dataset.id;
+        const supplierId = document.getElementById('edit-supplier-form').dataset.id;
+        
+        try {
+          const res = await fetch(`/api/suppliers/${supplierId}/purchases?purchaseId=${purchaseId}`, {
+            method: 'DELETE'
+          });
+          if (res.ok) {
+            window.showToast('Compra eliminada', 'success');
+            setTimeout(() => window.location.reload(), 1000);
+          } else {
+            window.showToast('Error al eliminar compra', 'error');
+          }
+        } catch (e) {
+          window.showToast('Error de conexión', 'error');
+        }
+      });
+    });
+
+    // --- Add Social ---
+    const formAddSocial = document.getElementById('form-add-social');
+    formAddSocial?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const id = formAddSocial.dataset.supplier;
+      const formData = new FormData(formAddSocial);
+      const data = Object.fromEntries(formData.entries());
+
+      const btn = formAddSocial.querySelector('button[type="submit"]');
+      btn.disabled = true;
+
+      try {
+        const res = await fetch(`/api/suppliers/${id}/socials`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+        if (res.ok) {
+          window.showToast('Perfil agregado exitosamente', 'success');
+          setTimeout(() => window.location.reload(), 1000);
+        } else {
+          window.showToast('Error al agregar perfil', 'error');
+          btn.disabled = false;
+        }
+      } catch (err) {
+        window.showToast('Error de conexión', 'error');
+        btn.disabled = false;
+      }
+    });
+
+    // --- Delete Social ---
+    document.querySelectorAll('.delete-social').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        if (!confirm('¿Eliminar este perfil social?')) return;
+        const socialId = btn.dataset.id;
+        const supplierId = document.getElementById('edit-supplier-form').dataset.id;
+        
+        try {
+          const res = await fetch(`/api/suppliers/${supplierId}/socials?socialId=${socialId}`, {
+            method: 'DELETE'
+          });
+          if (res.ok) {
+            window.showToast('Perfil eliminado', 'success');
+            setTimeout(() => window.location.reload(), 1000);
+          } else {
+            window.showToast('Error al eliminar perfil', 'error');
+          }
+        } catch (e) {
+          window.showToast('Error de conexión', 'error');
+        }
+      });
+    });
+
+    // --- Add Document ---
+    const formAddDoc = document.getElementById('form-add-doc');
+    formAddDoc?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const id = formAddDoc.dataset.supplier;
+      const formData = new FormData(formAddDoc);
+      const data = Object.fromEntries(formData.entries());
+
+      const btn = formAddDoc.querySelector('button[type="submit"]');
+      btn.disabled = true;
+
+      try {
+        const res = await fetch(`/api/suppliers/${id}/documents`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+        if (res.ok) {
+          window.showToast('Documento agregado exitosamente', 'success');
+          setTimeout(() => window.location.reload(), 1000);
+        } else {
+          window.showToast('Error al agregar documento', 'error');
+          btn.disabled = false;
+        }
+      } catch (err) {
+        window.showToast('Error de conexión', 'error');
+        btn.disabled = false;
+      }
+    });
+
+    // --- Delete Document ---
+    document.querySelectorAll('.delete-doc').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        if (!confirm('¿Eliminar este documento?')) return;
+        const docId = btn.dataset.id;
+        const supplierId = document.getElementById('edit-supplier-form').dataset.id;
+        
+        try {
+          const res = await fetch(`/api/suppliers/${supplierId}/documents?documentId=${docId}`, {
+            method: 'DELETE'
+          });
+          if (res.ok) {
+            window.showToast('Documento eliminado', 'success');
+            setTimeout(() => window.location.reload(), 1000);
+          } else {
+            window.showToast('Error al eliminar documento', 'error');
+          }
+        } catch (e) {
+          window.showToast('Error de conexión', 'error');
+        }
+      });
+    });
+
+  });
+</script>

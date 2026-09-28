@@ -175,6 +175,9 @@ const { title, activeNav = '', user } = Astro.props;
       <p class="nav-label" style="margin-top:1.5rem;">Reportes</p>
       <a href="/admin/ventas" class={`nav-item ${activeNav === 'ventas' ? 'active' : ''}`}>Ventas</a>
       
+      <p class="nav-label" style="margin-top:1.5rem;">Interno</p>
+      <a href="/admin/suppliers" class={`nav-item ${activeNav === 'suppliers' ? 'active' : ''}`}>Proveedores</a>
+
       <p class="nav-label" style="margin-top:1.5rem;">Sistema</p>
       <a href="/" target="_blank" class="nav-item">Ver Sitio Público</a>
     </nav>

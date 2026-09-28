@@ -1,0 +1,674 @@
+---
+import AdminLayout from '../../../layouts/AdminLayout.astro';
+import { supabase } from '../../../lib/supabase';
+
+const accessToken = Astro.cookies.get('sb-access-token')?.value;
+if (!accessToken) return Astro.redirect('/admin/login');
+let user = null;
+try {
+  const { data: userData, error: authError } = await supabase.auth.getUser(accessToken);
+  if (authError || !userData?.user) return Astro.redirect('/admin/login');
+  user = userData.user;
+} catch (e) {
+  return Astro.redirect('/admin/login');
+}
+---
+
+<AdminLayout title="Nuevo Proveedor" activeNav="suppliers" user={{ email: user?.email || '' }}>
+  <div class="page-container">
+    <a href="/admin/suppliers" class="back-link">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="19" y1="12" x2="5" y2="12"></line>
+        <polyline points="12 19 5 12 12 5"></polyline>
+      </svg>
+      Volver a Proveedores
+    </a>
+
+    <header class="page-header">
+      <h2>Registrar Proveedor</h2>
+      <p>Agrega un nuevo proveedor a tu libreta de contactos</p>
+    </header>
+
+    <form id="supplierForm" class="supplier-form">
+      <!-- Section 1: Información Básica -->
+      <div class="form-card">
+        <h3 class="form-section-title">Información Básica</h3>
+        <div class="form-row">
+          <div class="form-group" style="flex: 2">
+            <label class="form-label" for="company_name">Nombre de la Empresa *</label>
+            <input type="text" id="company_name" name="company_name" class="form-input" required>
+          </div>
+          <div class="form-group" style="flex: 1">
+            <label class="form-label" for="contact_person">Persona de Contacto</label>
+            <input type="text" id="contact_person" name="contact_person" class="form-input">
+          </div>
+        </div>
+        
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="email">Correo Electrónico</label>
+            <input type="email" id="email" name="email" class="form-input">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="phone">Teléfono Principal</label>
+            <input type="tel" id="phone" name="phone" class="form-input">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="phone_secondary">Teléfono Secundario</label>
+            <input type="tel" id="phone_secondary" name="phone_secondary" class="form-input">
+          </div>
+        </div>
+      </div>
+
+      <!-- Section 2: Ubicación -->
+      <div class="form-card">
+        <h3 class="form-section-title">Ubicación</h3>
+        <div class="form-row">
+          <div class="form-group" style="flex: 1">
+            <label class="form-label" for="city">Ciudad</label>
+            <input type="text" id="city" name="city" class="form-input">
+          </div>
+          <div class="form-group" style="flex: 1">
+            <label class="form-label" for="website">Sitio Web</label>
+            <input type="url" id="website" name="website" class="form-input">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="address">Dirección</label>
+          <textarea id="address" name="address" class="form-input" rows="2"></textarea>
+        </div>
+      </div>
+
+      <!-- Section 3: Etiquetas -->
+      <div class="form-card">
+        <h3 class="form-section-title">Etiquetas</h3>
+        <div class="tags-container">
+          <div class="predefined-tags" id="predefinedTags">
+            <button type="button" class="tag-pill" data-tag="Mayorista">Mayorista</button>
+            <button type="button" class="tag-pill" data-tag="Premium">Premium</button>
+            <button type="button" class="tag-pill" data-tag="Dropshipping">Dropshipping</button>
+            <button type="button" class="tag-pill" data-tag="Nacional">Nacional</button>
+            <button type="button" class="tag-pill" data-tag="Instagram">Instagram</button>
+            <button type="button" class="tag-pill" data-tag="Alibaba">Alibaba</button>
+            <button type="button" class="tag-pill" data-tag="Nuevo">Nuevo</button>
+          </div>
+          <div class="custom-tag-group form-group">
+            <input type="text" id="customTagInput" class="form-input" placeholder="Agregar etiqueta personalizada (Presiona Enter)">
+          </div>
+          <div class="selected-tags" id="selectedTagsContainer">
+            <!-- Selected tags will appear here -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Section 4: Redes Sociales -->
+      <div class="form-card">
+        <h3 class="form-section-title">Redes Sociales</h3>
+        <div id="socialsContainer" class="socials-container">
+          <!-- Dynamic rows go here -->
+        </div>
+        <button type="button" id="addSocialBtn" class="add-btn">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+          </svg>
+          Agregar Red Social
+        </button>
+      </div>
+
+      <!-- Section 5: Configuración -->
+      <div class="form-card">
+        <h3 class="form-section-title">Configuración</h3>
+        <div class="form-group">
+          <label class="form-label" for="payment_terms">Condiciones de Pago</label>
+          <textarea id="payment_terms" name="payment_terms" class="form-input" rows="2"></textarea>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="next_restock_date">Próxima Fecha de Compra Estimada</label>
+            <input type="date" id="next_restock_date" name="next_restock_date" class="form-input">
+          </div>
+        </div>
+        
+        <div class="checkbox-group">
+          <label class="checkbox-label">
+            <input type="checkbox" id="is_active" name="is_active" checked>
+            <span class="checkmark"></span>
+            Proveedor Activo
+          </label>
+          
+          <label class="checkbox-label">
+            <input type="checkbox" id="is_confidential" name="is_confidential">
+            <span class="checkmark"></span>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:4px;">
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+              <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+            </svg>
+            Marcar como Confidencial
+          </label>
+        </div>
+
+        <div class="form-group" style="margin-top: 1.5rem;">
+          <label class="form-label" for="notes">Notas Internas</label>
+          <textarea id="notes" name="notes" class="form-input" rows="3"></textarea>
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button type="submit" id="submitBtn" class="submit-btn">Registrar Proveedor</button>
+      </div>
+    </form>
+  </div>
+</AdminLayout>
+
+<style>
+  .page-container {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 2rem 0;
+  }
+  
+  .back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--gold, #B8860B);
+    font-size: 10px;
+    text-transform: uppercase;
+    font-weight: 700;
+    margin-bottom: 1.5rem;
+    text-decoration: none;
+    letter-spacing: 0.1em;
+  }
+  
+  .back-link:hover {
+    text-decoration: underline;
+  }
+
+  .page-header {
+    margin-bottom: 2rem;
+  }
+  
+  .page-header h2 {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.5rem;
+    font-weight: 700;
+    font-style: italic;
+    color: #111;
+    margin: 0 0 0.5rem 0;
+  }
+  
+  .page-header p {
+    font-size: 10px;
+    color: #999;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    font-weight: 600;
+    margin: 0;
+  }
+  
+  .supplier-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  .form-card {
+    background-color: #fff;
+    border-radius: 16px;
+    padding: 2rem;
+    border: 1px solid rgba(0,0,0,0.06);
+    box-shadow: 0 2px 10px rgba(0,0,0,0.02);
+  }
+
+  .form-section-title {
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 0.35em;
+    font-weight: 800;
+    color: var(--gold, #B8860B);
+    margin: 0 0 1.5rem 0;
+  }
+
+  .form-row {
+    display: flex;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+  }
+  
+  .form-row > .form-group {
+    flex: 1;
+    min-width: 200px;
+  }
+
+  .form-group {
+    margin-bottom: 1.25rem;
+  }
+  
+  .form-group:last-child {
+    margin-bottom: 0;
+  }
+
+  .form-label {
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 0.2em;
+    color: #666;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+    display: block;
+  }
+
+  .form-input {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: 1px solid #e5e5e5;
+    border-radius: 10px;
+    font-size: 13px;
+    font-family: inherit;
+    transition: all 0.3s ease;
+    background-color: #fafafa;
+    color: #333;
+    box-sizing: border-box;
+  }
+
+  .form-input:focus {
+    border-color: var(--gold, #B8860B);
+    box-shadow: 0 0 0 3px rgba(184,134,11,0.08);
+    outline: none;
+    background-color: #fff;
+  }
+  
+  /* Tags */
+  .tags-container {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+  
+  .predefined-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+  
+  .tag-pill {
+    padding: 0.4rem 0.8rem;
+    border: 1px solid rgba(184,134,11,0.3);
+    border-radius: 20px;
+    background: transparent;
+    color: #666;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  
+  .tag-pill:hover {
+    border-color: var(--gold, #B8860B);
+    color: var(--gold, #B8860B);
+  }
+  
+  .tag-pill.active {
+    background-color: rgba(184,134,11,0.1);
+    border-color: var(--gold, #B8860B);
+    color: var(--gold, #B8860B);
+  }
+  
+  .selected-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    min-height: 24px;
+  }
+  
+  .selected-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.3rem 0.6rem;
+    background-color: var(--gold, #B8860B);
+    color: #fff;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 600;
+  }
+  
+  .remove-tag {
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.2);
+  }
+  .remove-tag:hover {
+    background: rgba(255,255,255,0.4);
+  }
+
+  /* Socials */
+  .socials-container {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    margin-bottom: 1rem;
+  }
+  
+  .social-row {
+    display: flex;
+    gap: 1rem;
+    align-items: flex-end;
+  }
+  
+  .social-row .form-group {
+    margin-bottom: 0;
+  }
+  
+  .delete-social-btn {
+    background: none;
+    border: none;
+    color: #ff4444;
+    cursor: pointer;
+    padding: 0.75rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    transition: background 0.2s;
+  }
+  
+  .delete-social-btn:hover {
+    background: rgba(255,68,68,0.1);
+  }
+  
+  .add-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: none;
+    border: 1px dashed rgba(184,134,11,0.5);
+    color: var(--gold, #B8860B);
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  
+  .add-btn:hover {
+    background: rgba(184,134,11,0.05);
+    border-color: var(--gold, #B8860B);
+  }
+
+  /* Checkboxes */
+  .checkbox-group {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    margin-top: 1rem;
+  }
+  
+  .checkbox-label {
+    display: flex;
+    align-items: center;
+    font-size: 12px;
+    color: #444;
+    cursor: pointer;
+    font-weight: 500;
+  }
+  
+  .checkbox-label input {
+    margin-right: 0.75rem;
+    width: 16px;
+    height: 16px;
+    accent-color: var(--gold, #B8860B);
+  }
+
+  /* Submit */
+  .form-actions {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 1rem;
+  }
+
+  .submit-btn {
+    background-color: var(--black, #0a0a0a);
+    color: var(--gold, #B8860B);
+    border: 1px solid rgba(184,134,11,0.3);
+    border-radius: 10px;
+    padding: 1rem 2rem;
+    font-size: 10px;
+    text-transform: uppercase;
+    font-weight: 800;
+    letter-spacing: 0.2em;
+    cursor: pointer;
+    transition: all 0.3s;
+  }
+
+  .submit-btn:hover {
+    background-color: #1a1a1a;
+    border-color: var(--gold, #B8860B);
+    box-shadow: 0 4px 12px rgba(184,134,11,0.15);
+  }
+  
+  .submit-btn:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+  }
+</style>
+
+<script is:inline>
+  document.addEventListener('DOMContentLoaded', () => {
+    let selectedTags = [];
+    const tagsContainer = document.getElementById('selectedTagsContainer');
+    const predefinedTags = document.querySelectorAll('.tag-pill');
+    const customTagInput = document.getElementById('customTagInput');
+    
+    // Render tags
+    function renderTags() {
+      tagsContainer.innerHTML = '';
+      selectedTags.forEach(tag => {
+        const span = document.createElement('span');
+        span.className = 'selected-tag';
+        span.innerHTML = `${tag} <span class="remove-tag" data-tag="${tag}">×</span>`;
+        tagsContainer.appendChild(span);
+      });
+      
+      // Update pills visual state
+      predefinedTags.forEach(btn => {
+        const tag = btn.getAttribute('data-tag');
+        if (selectedTags.includes(tag)) {
+          btn.classList.add('active');
+        } else {
+          btn.classList.remove('active');
+        }
+      });
+    }
+    
+    // Add tag logic
+    function addTag(tag) {
+      const t = tag.trim();
+      if (t && !selectedTags.includes(t)) {
+        selectedTags.push(t);
+        renderTags();
+      }
+    }
+    
+    // Remove tag logic
+    function removeTag(tag) {
+      selectedTags = selectedTags.filter(t => t !== tag);
+      renderTags();
+    }
+    
+    // Listeners for predefined tags
+    predefinedTags.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const tag = btn.getAttribute('data-tag');
+        if (selectedTags.includes(tag)) {
+          removeTag(tag);
+        } else {
+          addTag(tag);
+        }
+      });
+    });
+    
+    // Listener for custom tags
+    customTagInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        addTag(e.target.value);
+        e.target.value = '';
+      }
+    });
+    
+    // Listener for removing selected tags
+    tagsContainer.addEventListener('click', (e) => {
+      if (e.target.classList.contains('remove-tag')) {
+        removeTag(e.target.getAttribute('data-tag'));
+      }
+    });
+    
+    // Prevent form submission on enter in text inputs
+    document.getElementById('supplierForm').addEventListener('keypress', function(e) {
+      if (e.key === 'Enter' && e.target.tagName !== 'TEXTAREA' && e.target.tagName !== 'BUTTON') {
+        e.preventDefault();
+      }
+    });
+
+    // Socials dynamic rows
+    const socialsContainer = document.getElementById('socialsContainer');
+    const addSocialBtn = document.getElementById('addSocialBtn');
+    let socialCounter = 0;
+    
+    function addSocialRow() {
+      const row = document.createElement('div');
+      row.className = 'social-row';
+      row.id = `social-row-${socialCounter}`;
+      
+      row.innerHTML = `
+        <div class="form-group" style="flex: 1">
+          <label class="form-label">Plataforma</label>
+          <select name="social_platform[]" class="form-input" required>
+            <option value="Instagram">Instagram</option>
+            <option value="WhatsApp">WhatsApp</option>
+            <option value="TikTok">TikTok</option>
+            <option value="Facebook">Facebook</option>
+            <option value="Telegram">Telegram</option>
+            <option value="Twitter/X">Twitter/X</option>
+            <option value="Otro">Otro</option>
+          </select>
+        </div>
+        <div class="form-group" style="flex: 1.5">
+          <label class="form-label">Usuario / Handle</label>
+          <input type="text" name="social_handle[]" class="form-input" placeholder="@usuario o +58..." required>
+        </div>
+        <div class="form-group" style="flex: 2">
+          <label class="form-label">URL (Opcional)</label>
+          <input type="url" name="social_url[]" class="form-input" placeholder="https://...">
+        </div>
+        <button type="button" class="delete-social-btn" onclick="document.getElementById('social-row-${socialCounter}').remove()">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="3 6 5 6 21 6"></polyline>
+            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+          </svg>
+        </button>
+      `;
+      
+      socialsContainer.appendChild(row);
+      socialCounter++;
+    }
+    
+    addSocialBtn.addEventListener('click', addSocialRow);
+    
+    // Add first row by default
+    addSocialRow();
+
+    // Form submission
+    const form = document.getElementById('supplierForm');
+    const submitBtn = document.getElementById('submitBtn');
+    
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const formData = new FormData(form);
+      
+      // Basic validation
+      const companyName = formData.get('company_name');
+      if (!companyName) {
+        if(window.showToast) window.showToast('El nombre de la empresa es obligatorio', 'error');
+        return;
+      }
+      
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'REGISTRANDO...';
+      
+      try {
+        // Collect supplier data
+        const supplierData = {
+          company_name: companyName,
+          contact_person: formData.get('contact_person'),
+          email: formData.get('email'),
+          phone: formData.get('phone'),
+          phone_secondary: formData.get('phone_secondary'),
+          city: formData.get('city'),
+          address: formData.get('address'),
+          website: formData.get('website'),
+          tags: selectedTags,
+          payment_terms: formData.get('payment_terms'),
+          next_restock_date: formData.get('next_restock_date') || null,
+          is_active: formData.get('is_active') === 'on',
+          is_confidential: formData.get('is_confidential') === 'on',
+          notes: formData.get('notes')
+        };
+        
+        // Save supplier
+        const res = await fetch('/api/suppliers', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(supplierData)
+        });
+        
+        if (!res.ok) {
+          const errorData = await res.json();
+          throw new Error(errorData.error || 'Error al guardar el proveedor');
+        }
+        
+        const { supplier } = await res.json();
+        
+        // Collect and save socials if any
+        const platforms = formData.getAll('social_platform[]');
+        const handles = formData.getAll('social_handle[]');
+        const urls = formData.getAll('social_url[]');
+        
+        for (let i = 0; i < platforms.length; i++) {
+          if (handles[i]) {
+            await fetch(`/api/suppliers/${supplier.id}/socials`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                platform: platforms[i],
+                handle: handles[i],
+                url: urls[i]
+              })
+            });
+          }
+        }
+        
+        if(window.showToast) window.showToast('Proveedor registrado exitosamente');
+        
+        setTimeout(() => {
+          window.location.href = `/admin/suppliers/${supplier.id}`;
+        }, 1000);
+        
+      } catch (err) {
+        console.error(err);
+        if(window.showToast) window.showToast(err.message, 'error');
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'REGISTRAR PROVEEDOR';
+      }
+    });
+  });
+</script>
