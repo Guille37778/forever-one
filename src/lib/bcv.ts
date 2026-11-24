@@ -1,47 +1,50 @@
 import { supabase } from './supabase';
 
 /**
- * Scrapes the BCV website to get the USD exchange rate.
+ * Fetches the official BCV USD rate from reliable third-party APIs
+ * that mirror the Banco Central de Venezuela's published rate.
+ * Uses dolarapi.com as primary and pydolarve.org as fallback.
  * @returns {Promise<number>} The exact BCV rate, no markup applied.
  */
 export async function getBcvRate(): Promise<number> {
-  const BCV_URL = 'https://www.bcv.org.ve/';
-  
+  // --- Primary: ve.dolarapi.com ---
   try {
-    // BCV has certificate issues frequently. We disable SSL verification for this specific fetch.
-    process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
-    
-    const response = await fetch(BCV_URL, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-      },
+    const response = await fetch('https://ve.dolarapi.com/v1/dolares/oficial', {
+      headers: { 'Accept': 'application/json' },
     });
 
-    // Re-enable it immediately for other requests
-    process.env.NODE_TLS_REJECT_UNAUTHORIZED = '1';
+    if (!response.ok) throw new Error(`dolarapi HTTP error: ${response.status}`);
 
-    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-    
-    const html = await response.text();
-    
-    // Regex to find the dollar rate in the HTML structure: <div id="dolar"> ... <strong> 47,40598000 </strong>
-    // Made more flexible with optional spaces and tags
-    const dolarMatch = html.match(/id=['"]dolar['"][^>]*>[\s\S]*?<strong[^>]*>\s*([\d,.]+)\s*<\/strong>/i);
-    
-    if (!dolarMatch || !dolarMatch[1]) {
-      throw new Error('Could not find USD rate in BCV HTML');
-    }
+    const data = await response.json() as { venta?: number; promedio?: number };
+    // 'venta' is the BCV selling rate; fallback to 'promedio' if needed
+    const rate = data.venta ?? data.promedio;
 
-    // BCV uses comma for decimals
-    const rawRate = parseFloat(dolarMatch[1].replace(/\./g, '').replace(',', '.'));
-    
-    if (isNaN(rawRate)) throw new Error('Parsed rate is NaN');
+    if (!rate || isNaN(rate)) throw new Error('dolarapi: invalid rate value');
 
-    // Return the exact BCV rate with no markup
-    return rawRate;
-  } catch (error) {
-    console.error('[BCV Scraper Error]:', error);
-    throw error;
+    console.log('[BCV Rate] Fetched from dolarapi.com:', rate);
+    return rate;
+  } catch (primaryError) {
+    console.warn('[BCV Primary API failed]:', primaryError);
+  }
+
+  // --- Fallback: pydolarve.org ---
+  try {
+    const response = await fetch('https://pydolarve.org/api/v1/dollar?monitor=bcv', {
+      headers: { 'Accept': 'application/json' },
+    });
+
+    if (!response.ok) throw new Error(`pydolarve HTTP error: ${response.status}`);
+
+    const data = await response.json() as { price?: number; data?: { price?: number } };
+    const rate = data.price ?? data.data?.price;
+
+    if (!rate || isNaN(rate)) throw new Error('pydolarve: invalid rate value');
+
+    console.log('[BCV Rate] Fetched from pydolarve.org:', rate);
+    return rate;
+  } catch (fallbackError) {
+    console.error('[BCV Fallback API failed]:', fallbackError);
+    throw new Error('No se pudo obtener la tasa BCV. Ambas fuentes fallaron.');
   }
 }
 
