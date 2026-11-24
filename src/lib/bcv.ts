@@ -15,9 +15,9 @@ export async function getBcvRate(): Promise<number> {
 
     if (!response.ok) throw new Error(`dolarapi HTTP error: ${response.status}`);
 
-    const data = await response.json() as { venta?: number; promedio?: number };
-    // 'venta' is the BCV selling rate; fallback to 'promedio' if needed
-    const rate = data.venta ?? data.promedio;
+    const data = await response.json() as { promedio?: number; venta?: number };
+    // El BCV publica una única tasa de referencia → campo 'promedio'
+    const rate = data.promedio ?? data.venta;
 
     if (!rate || isNaN(rate)) throw new Error('dolarapi: invalid rate value');
 
